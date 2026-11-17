@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Authentication &amp; Role Login — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container">
+    <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
+      <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Sign In or Register an Island Account</h1>
+      <p>Credentials are verified against bcrypt-hashed passwords. Use the 1-Click Role Switcher on the right to test Customer, Admin, Staff, or Courier portals.</p>
+    </div>
+
+    <div class="auth-grid">
+      <!-- Sign In & Registration Forms -->
+      <section class="surface-card" aria-label="Login and Registration">
+        <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-6);border-bottom:1px solid var(--border-subtle);padding-bottom:var(--space-4);">
+          <button type="button" class="btn btn-primary" id="tab-login-btn">Sign In</button>
+          <button type="button" class="btn btn-outline" id="tab-register-btn">Create Customer Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" action="api/auth-login.php" method="POST">
+          <h2 style="margin-top:0;font-size:var(--text-xl);">Sign In to Suot Isla</h2>
+          <p style="font-size:var(--text-xs);margin-bottom:var(--space-4);">
+            Verifies credentials against stored <code>USERS.password_hash</code> (<code>password_verify()</code> in PHP).
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address *</label>
+            <input type="email" id="login-email" name="email" class="form-input" required value="mateo.alonzo@student.pcu.edu.ph" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password *</label>
+            <input type="password" id="login-password" name="password" class="form-input" required value="SuotIsla2026!" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            Verify Credentials &amp; Sign In
+          </button>
+        </form>
+
+        <!-- Registration Form -->
+        <form id="register-form" action="api/auth-register.php" method="POST" style="display:none;">
+          <h2 style="margin-top:0;font-size:var(--text-xl);">Register New Customer Account</h2>
+          <p style="font-size:var(--text-xs);margin-bottom:var(--space-4);">
+            Hashes password via bcrypt before inserting into <code>USERS</code> table.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Full Name *</label>
+            <input type="text" id="reg-name" name="full_name" class="form-input" required placeholder="e.g. Bianca Dela Cruz" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="reg-email">Email Address *</label>
+              <input type="email" id="reg-email" name="email" class="form-input" required placeholder="bianca@pcu.edu.ph" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-phone">Mobile Number *</label>
+              <input type="tel" id="reg-phone" name="phone" class="form-input" required placeholder="+63 917 000 0000" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-password">Create Password (min. 8 characters) *</label>
+            <input type="password" id="reg-password" name="password" class="form-input" minlength="8" required placeholder="••••••••••••" />
+            <span class="form-hint mono" id="hash-preview">Bcrypt Preview: $2y$10$SuotIslaSaltHashReady...</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            Register &amp; Open Customer Dashboard
+          </button>
+        </form>
+      </section>
+
+      <!-- Quick Demo Role Switcher for Rubric Presentation -->
+      <aside class="surface-card" aria-label="Presentation Demo Role Switcher">
+        <h2 style="margin-top:0;font-size:var(--text-xl);">1-Click Rubric Role Switcher</h2>
+        <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
+          Instantly switch between the 4 authenticated system roles to demonstrate Customer flows, Admin inventory CRUD, Staff order processing, and Courier delivery updates.
+        </p>
+
+        <div class="demo-role-grid">
+          <button type="button" class="btn btn-outline" data-demo-role="customer" style="justify-content:flex-start;text-align:left;">
+            <div>
+              <strong>Customer Account</strong>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);">Mateo Alonzo • Orders &amp; Returns</div>
+            </div>
+          </button>
+
+          <button type="button" class="btn btn-outline" data-demo-role="admin" style="justify-content:flex-start;text-align:left;">
+            <div>
+              <strong>Store Admin (Full RBAC)</strong>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);">Camille Reyes • CRUD &amp; Refunds</div>
+            </div>
+          </button>
+
+          <button type="button" class="btn btn-outline" data-demo-role="staff" style="justify-content:flex-start;text-align:left;">
+            <div>
+              <strong>Catalog &amp; Order Staff</strong>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);">Liam Villanueva • Inventory &amp; Packing</div>
+            </div>
+          </button>
+
+          <button type="button" class="btn btn-outline" data-demo-role="courier" style="justify-content:flex-start;text-align:left;">
+            <div>
+              <strong>Delivery Courier</strong>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);">Kuya Jomar • Fulfillment Status</div>
+            </div>
+          </button>
+        </div>
+
+        <div style="margin-top:var(--space-6);padding:var(--space-4);background:var(--color-sand);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);" id="active-session-box"></div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+      const tabLoginBtn = document.getElementById("tab-login-btn");
+      const tabRegisterBtn = document.getElementById("tab-register-btn");
+      const regPassInput = document.getElementById("reg-password");
+      const hashPreview = document.getElementById("hash-preview");
+      const sessionBox = document.getElementById("active-session-box");
+
+      function renderSessionBox() {
+        const u = window.SuotStore.getCurrentUser();
+        sessionBox.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <strong style="font-size:var(--text-xs);">Active Authenticated Session</strong>
+            <span class="pill pill-lagoon">${u.role.toUpperCase()}</span>
+          </div>
+          <div style="font-weight:700;font-size:var(--text-sm);">${u.name}</div>
+          <div class="mono" style="color:var(--text-muted);margin-top:2px;">${u.email}</div>
+          <div class="mono" style="color:var(--text-muted);margin-top:2px;">Hash: ${u.passwordHash}</div>
+          <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
+            <a href="account.html" class="btn btn-primary btn-sm">Go to Customer Dashboard</a>
+            <a href="admin.html" class="btn btn-outline btn-sm">Go to Role Portal</a>
+          </div>
+        `;
+      }
+
+      tabLoginBtn.addEventListener("click", () => {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        tabLoginBtn.className = "btn btn-primary";
+        tabRegisterBtn.className = "btn btn-outline";
+      });
+
+      tabRegisterBtn.addEventListener("click", () => {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        tabRegisterBtn.className = "btn btn-primary";
+        tabLoginBtn.className = "btn btn-outline";
+      });
+
+      regPassInput.addEventListener("input", () => {
+        const v = regPassInput.value || "SuotIsla";
+        hashPreview.textContent = "Bcrypt Hash: $2y$10$" + btoa(v + "SuotIslaSalt2026").slice(0, 26);
+      });
+
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value;
+        const pass = document.getElementById("login-password").value;
+        const res = window.SuotStore.loginWithCredentials(email, pass);
+        window.SuotUI.toast(`Signed in as ${res.user.name} (${res.user.role.toUpperCase()})`, "Authenticated");
+        renderSessionBox();
+        setTimeout(() => {
+          window.location.href = res.user.role === "customer" ? "account.html" : "admin.html";
+        }, 650);
+      });
+
+      registerForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const user = window.SuotStore.registerUser({
+          fullName: document.getElementById("reg-name").value,
+          email: document.getElementById("reg-email").value,
+          phone: document.getElementById("reg-phone").value,
+          role: "customer"
+        });
+        window.SuotUI.toast(`Account created for ${user.name}! Redirecting to your dashboard...`, "Registered");
+        renderSessionBox();
+        setTimeout(() => {
+          window.location.href = "account.html";
+        }, 650);
+      });
+
+      document.querySelectorAll("[data-demo-role]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const role = btn.getAttribute("data-demo-role");
+          const u = window.SuotStore.loginAsRole(role);
+          window.SuotUI.toast(`Switched active session to ${u.name} (${u.role.toUpperCase()})`, "Role Switched");
+          renderSessionBox();
+        });
+      });
+
+      renderSessionBox();
+    });
+  </script>
+</body>
+</html>

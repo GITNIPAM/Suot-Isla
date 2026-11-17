@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Details — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container">
+    <nav aria-label="Breadcrumb" style="padding-top:var(--space-6);font-size:var(--text-xs);">
+      <a href="index.html">Home</a>
+      <span style="margin-inline:6px;color:var(--text-muted);">/</span>
+      <a href="catalog.html">Catalog</a>
+      <span style="margin-inline:6px;color:var(--text-muted);">/</span>
+      <span id="pdp-breadcrumb-name" style="color:var(--text-secondary);font-weight:700;">Product Details</span>
+    </nav>
+
+    <section class="pdp-grid" id="pdp-mount"></section>
+
+    <section class="section-block" style="border-top:1px solid var(--border-subtle);">
+      <div class="section-head">
+        <div>
+          <h2>More from This Island Collection</h2>
+          <p>Complete your coastal kit with companion pieces from the same series.</p>
+        </div>
+        <a href="catalog.html" class="btn btn-outline btn-sm">View Full Catalog</a>
+      </div>
+      <div class="product-grid" id="pdp-related-grid"></div>
+    </section>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("id") || "siargao-cloud9-boardshorts";
+      const product = window.SuotStore.getProductById(pid);
+
+      let chosenColor = product.colors[0];
+      let chosenSize = product.sizes[0];
+      let chosenQty = 1;
+
+      const breadcrumbEl = document.getElementById("pdp-breadcrumb-name");
+      const mountEl = document.getElementById("pdp-mount");
+      const relatedEl = document.getElementById("pdp-related-grid");
+
+      document.title = `${product.name} — Suot Isla`;
+      breadcrumbEl.textContent = product.name;
+
+      function renderPDP() {
+        const isLowStock = product.stock <= 5;
+        mountEl.innerHTML = `
+          <div class="pdp-gallery">
+            <div class="product-badges">
+              <span class="pill pill-lagoon">${product.series} Series</span>
+              ${
+                isLowStock
+                  ? `<span class="pill pill-coral">Low Stock: Only ${product.stock} left</span>`
+                  : `<span class="pill pill-delivery">In Stock (${product.stock} units)</span>`
+              }
+            </div>
+            <div style="margin-block:var(--space-6);">
+              ${window.SuotStore.renderProductVisual(product, chosenColor)}
+            </div>
+            <div style="text-align:center;font-size:var(--text-xs);color:var(--text-muted);">
+              Previewing Colorway: <strong style="color:var(--text-primary);">${chosenColor}</strong> • Size: <strong style="color:var(--text-primary);">${chosenSize}</strong>
+            </div>
+          </div>
+
+          <div class="pdp-info">
+            <h1>${product.name}</h1>
+            <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+              <span class="pill pill-sand">${product.category}</span>
+              <span class="mono" style="color:var(--text-muted);">SKU: ${product.sku}</span>
+              <span class="mono" style="color:var(--text-muted);">• ${product.soldCount || 42} sold</span>
+            </div>
+
+            <div class="pdp-price-row">
+              <span class="pdp-price">${window.SuotStore.formatPrice(product.price)}</span>
+              <span style="font-size:var(--text-xs);color:var(--color-palm);font-weight:700;">
+                ✓ Verified Stock Ready for Philippine Island Dispatch
+              </span>
+            </div>
+
+            <p style="margin-bottom:var(--space-6);">${product.description}</p>
+
+            <form id="pdp-add-form" onsubmit="return false;">
+              <input type="hidden" name="product_id" value="${product.id}" />
+              <input type="hidden" name="color" value="${chosenColor}" />
+              <input type="hidden" name="size" value="${chosenSize}" />
+
+              <div class="variant-selector-block">
+                <label>1. Select Colorway: <span style="color:var(--color-lagoon);">${chosenColor}</span></label>
+                <div class="swatch-row" style="margin-bottom:0;">
+                  ${product.colors
+                    .map(
+                      (c) => `
+                      <button
+                        type="button"
+                        class="color-swatch ${c === chosenColor ? "active" : ""}"
+                        style="background-color:${window.SuotStore.getColorHex(c)};width:28px;height:28px;"
+                        title="${c}"
+                        data-pdp-color="${c}"
+                      ></button>
+                    `
+                    )
+                    .join("")}
+                </div>
+              </div>
+
+              <div class="variant-selector-block">
+                <label>2. Select Size / Spec: <span style="color:var(--color-lagoon);">${chosenSize}</span></label>
+                <div class="size-chip-grid">
+                  ${product.sizes
+                    .map(
+                      (sz) => `
+                      <button
+                        type="button"
+                        class="size-chip ${sz === chosenSize ? "active" : ""}"
+                        data-pdp-size="${sz}"
+                      >${sz}</button>
+                    `
+                    )
+                    .join("")}
+                </div>
+              </div>
+
+              <div class="qty-action-row">
+                <div class="qty-stepper" aria-label="Quantity">
+                  <button type="button" id="pdp-qty-dec">−</button>
+                  <input type="number" name="quantity" id="pdp-qty-input" value="${chosenQty}" min="1" max="${product.stock}" readonly />
+                  <button type="button" id="pdp-qty-inc">+</button>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-lg" id="pdp-add-btn" style="flex:1;">
+                  Add to Island Bag — ${window.SuotStore.formatPrice(product.price * chosenQty)}
+                </button>
+
+                <button type="button" class="btn btn-coral btn-lg" id="pdp-buy-now-btn">
+                  Buy Now
+                </button>
+              </div>
+            </form>
+
+            <div class="spec-grid">
+              <div class="spec-box">
+                <strong>Material &amp; Construction</strong>
+                <span>${product.fabric || "Coastal Performance Weave"}</span>
+              </div>
+              <div class="spec-box">
+                <strong>Island Care Guide</strong>
+                <span>${product.care || "Rinse cold after salt immersion; shade dry."}</span>
+              </div>
+              <div class="spec-box">
+                <strong>Delivery Estimate</strong>
+                <span>2–4 Days Metro Manila / 4–6 Days Island Ports</span>
+              </div>
+              <div class="spec-box">
+                <strong>Returns &amp; Refunds</strong>
+                <span>14-Day Easy Return or Cancellation via Dashboard</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        mountEl.querySelectorAll("[data-pdp-color]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            chosenColor = btn.getAttribute("data-pdp-color");
+            renderPDP();
+          });
+        });
+
+        mountEl.querySelectorAll("[data-pdp-size]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            chosenSize = btn.getAttribute("data-pdp-size");
+            renderPDP();
+          });
+        });
+
+        document.getElementById("pdp-qty-dec").addEventListener("click", () => {
+          chosenQty = Math.max(1, chosenQty - 1);
+          renderPDP();
+        });
+
+        document.getElementById("pdp-qty-inc").addEventListener("click", () => {
+          chosenQty = Math.min(product.stock || 20, chosenQty + 1);
+          renderPDP();
+        });
+
+        document.getElementById("pdp-add-btn").addEventListener("click", () => {
+          window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          window.SuotUI.toast(`Added ${chosenQty}× ${product.name} (${chosenSize}, ${chosenColor}) to your bag!`, "Added to Bag");
+          window.SuotUI.openDrawer("cart");
+        });
+
+        document.getElementById("pdp-buy-now-btn").addEventListener("click", () => {
+          window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          window.location.href = "checkout.html";
+        });
+      }
+
+      // Render Related Products from the same Island Series
+      const related = window.SuotStore.getProducts()
+        .filter((p) => p.series === product.series && p.id !== product.id)
+        .slice(0, 3);
+
+      relatedEl.innerHTML = related
+        .map(
+          (p) => `
+          <article class="product-card">
+            <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-thumb-wrap">
+              <div class="product-badges">
+                <span class="pill pill-lagoon">${p.series}</span>
+              </div>
+              <div class="product-svg-stage">
+                ${window.SuotStore.renderProductVisual(p, p.colors[0])}
+              </div>
+            </a>
+            <div class="product-body">
+              <div class="product-meta-row">
+                <span>${p.category}</span>
+                <span class="mono">${p.sku}</span>
+              </div>
+              <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-title-link">
+                <h3>${p.name}</h3>
+              </a>
+              <div class="product-card-footer">
+                <span class="product-price">${window.SuotStore.formatPrice(p.price)}</span>
+                <a href="product.html?id=${encodeURIComponent(p.id)}" class="btn btn-outline btn-sm">View Piece</a>
+              </div>
+            </div>
+          </article>
+        `
+        )
+        .join("");
+
+      renderPDP();
+    });
+  </script>
+</body>
+</html>

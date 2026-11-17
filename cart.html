@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping Bag &amp; Totals — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container">
+    <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
+      <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Your Island Shopping Bag</h1>
+      <p>Session state persists across all pages. Adjust quantities, remove items, or apply an island promo code before checkout.</p>
+    </div>
+
+    <div class="split-checkout-grid" id="cart-page-mount"></div>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const mountEl = document.getElementById("cart-page-mount");
+
+      function renderCartPage() {
+        const cart = window.SuotStore.getCart();
+        const totals = window.SuotStore.getCartTotals();
+
+        if (!cart.length) {
+          mountEl.innerHTML = `
+            <div class="surface-card" style="grid-column:1 / -1;text-align:center;padding:var(--space-12);">
+              <h2 style="margin-top:0;">Your Shopping Bag is Currently Empty</h2>
+              <p style="margin:var(--space-2) auto var(--space-6);">
+                Add boardshorts, resort linen, beach throws, or dry bags from our 16-item catalog.
+              </p>
+              <a href="catalog.html" class="btn btn-primary btn-lg">Explore the 16-Product Catalog</a>
+            </div>
+          `;
+          return;
+        }
+
+        mountEl.innerHTML = `
+          <section class="surface-card" aria-label="Shopping Cart Items">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
+              <h2 style="margin:0;font-size:var(--text-xl);">Selected Gear (${totals.itemCount} Item/s)</h2>
+              <button type="button" class="btn btn-ghost btn-sm" id="clear-entire-bag-btn" style="color:var(--color-coral-deep);">
+                Clear Bag
+              </button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="cart-table">
+                <thead>
+                  <tr>
+                    <th>Product &amp; Variant</th>
+                    <th>Unit Price</th>
+                    <th>Quantity</th>
+                    <th>Line Subtotal</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${cart
+                    .map((item, idx) => {
+                      const prod = window.SuotStore.getProductById(item.productId);
+                      return `
+                        <tr>
+                          <td>
+                            <div style="display:flex;align-items:center;gap:var(--space-3);">
+                              <div style="width:64px;height:56px;background:var(--color-sand);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
+                              </div>
+                              <div>
+                                <span class="pill pill-lagoon" style="margin-bottom:4px;">${item.series} Series</span>
+                                <div style="font-weight:700;">
+                                  <a href="product.html?id=${encodeURIComponent(item.productId)}" style="text-decoration:none;color:var(--text-primary);">${item.name}</a>
+                                </div>
+                                <div style="font-size:var(--text-xs);color:var(--text-muted);">
+                                  Size: <strong>${item.size}</strong> • Color: <strong>${item.color}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="price">${window.SuotStore.formatPrice(item.price)}</td>
+                          <td>
+                            <div class="qty-stepper">
+                              <button type="button" data-page-dec="${idx}">−</button>
+                              <input type="number" value="${item.qty}" min="1" max="25" readonly aria-label="Quantity for ${item.name}" />
+                              <button type="button" data-page-inc="${idx}">+</button>
+                            </div>
+                          </td>
+                          <td class="price" style="font-weight:700;">${window.SuotStore.formatPrice(item.price * item.qty)}</td>
+                          <td>
+                            <button type="button" class="btn btn-outline btn-sm" data-page-rem="${idx}" style="color:var(--color-coral-deep);">
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      `;
+                    })
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-6);">
+              <a href="catalog.html" class="btn btn-outline">← Continue Shopping</a>
+              <span style="font-size:var(--text-xs);color:var(--text-muted);">
+                Free Philippine island shipping automatically unlocks at ₱3,500+
+              </span>
+            </div>
+          </section>
+
+          <aside class="surface-card" aria-label="Order Totals and Coupon">
+            <h2 style="margin-top:0;font-size:var(--text-xl);margin-bottom:var(--space-4);">Order Summary</h2>
+
+            <!-- Coupon Application Form (Use Case: Apply Coupon <<extend>> Checkout) -->
+            <form id="coupon-form" style="margin-bottom:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--border-subtle);">
+              <label for="coupon-code-input" class="form-label" style="display:block;margin-bottom:6px;">
+                Promo / Coupon Code
+              </label>
+              <div style="display:flex;gap:var(--space-2);">
+                <input
+                  type="text"
+                  id="coupon-code-input"
+                  name="coupon_code"
+                  class="form-input mono"
+                  placeholder="ISLA10, SURF15, or FREESHIP"
+                  value="${totals.coupon ? totals.coupon.code : ""}"
+                />
+                <button type="submit" class="btn btn-outline">Apply</button>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-fill-coupon="ISLA10">ISLA10 (10% Off)</button>
+                <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-fill-coupon="SURF15">SURF15 (15% Off ₱2.5k+)</button>
+                <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-fill-coupon="FREESHIP">FREESHIP</button>
+              </div>
+              ${
+                totals.coupon
+                  ? `<div style="margin-top:8px;font-size:var(--text-xs);color:var(--color-palm);display:flex;justify-content:space-between;align-items:center;">
+                      <span>✓ Active: <strong>${totals.coupon.code}</strong> (${totals.coupon.label})</span>
+                      <button type="button" id="remove-coupon-btn" style="background:none;border:none;color:var(--color-coral-deep);cursor:pointer;font-weight:700;">Remove</button>
+                    </div>`
+                  : ""
+              }
+            </form>
+
+            <div class="summary-row">
+              <span>Items Subtotal (${totals.itemCount})</span>
+              <strong class="price">${window.SuotStore.formatPrice(totals.subtotal)}</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Philippine Island Delivery Fee</span>
+              <strong class="price">${totals.deliveryFee === 0 ? "FREE (₱0)" : window.SuotStore.formatPrice(totals.deliveryFee)}</strong>
+            </div>
+
+            ${
+              totals.discount > 0
+                ? `<div class="summary-row" style="color:var(--color-palm);">
+                    <span>Coupon Discount (${totals.coupon.code})</span>
+                    <strong class="price">−${window.SuotStore.formatPrice(totals.discount)}</strong>
+                  </div>`
+                : ""
+            }
+
+            <div class="summary-row total">
+              <span>Grand Total</span>
+              <span class="price">${window.SuotStore.formatPrice(totals.total)}</span>
+            </div>
+
+            <a href="checkout.html" class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-5);">
+              Proceed to Structured Checkout →
+            </a>
+          </aside>
+        `;
+
+        mountEl.querySelectorAll("[data-page-dec]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-page-dec"));
+            window.SuotStore.updateCartQty(idx, cart[idx].qty - 1);
+          });
+        });
+
+        mountEl.querySelectorAll("[data-page-inc]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-page-inc"));
+            window.SuotStore.updateCartQty(idx, cart[idx].qty + 1);
+          });
+        });
+
+        mountEl.querySelectorAll("[data-page-rem]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-page-rem"));
+            window.SuotStore.removeFromCart(idx);
+            window.SuotUI.toast("Item removed from your bag.", "Bag Updated");
+          });
+        });
+
+        const clearBtn = document.getElementById("clear-entire-bag-btn");
+        if (clearBtn) {
+          clearBtn.addEventListener("click", () => {
+            window.SuotStore.clearCart();
+            window.SuotUI.toast("Cleared all items from your bag.", "Bag Cleared");
+          });
+        }
+
+        const couponForm = document.getElementById("coupon-form");
+        if (couponForm) {
+          couponForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const code = document.getElementById("coupon-code-input").value;
+            const res = window.SuotStore.applyCoupon(code);
+            window.SuotUI.toast(res.message, res.ok ? "Coupon Applied" : "Coupon Notice");
+            renderCartPage();
+          });
+        }
+
+        mountEl.querySelectorAll("[data-fill-coupon]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const code = btn.getAttribute("data-fill-coupon");
+            const res = window.SuotStore.applyCoupon(code);
+            window.SuotUI.toast(res.message, res.ok ? "Coupon Applied" : "Coupon Notice");
+            renderCartPage();
+          });
+        });
+
+        const remCouponBtn = document.getElementById("remove-coupon-btn");
+        if (remCouponBtn) {
+          remCouponBtn.addEventListener("click", () => {
+            window.SuotStore.removeCoupon();
+            renderCartPage();
+          });
+        }
+      }
+
+      window.addEventListener("suotisla:statechange", renderCartPage);
+      renderCartPage();
+    });
+  </script>
+</body>
+</html>

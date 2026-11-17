@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T02:59:50+08:00",
+  "title": "Design System: Suot Isla",
+  "extensions": {
+    "colorMeta": {
+      "lagoon-teal": {
+        "role": "primary",
+        "displayName": "Deep Lagoon Teal",
+        "canonical": "#0E6B74",
+        "tonalRamp": ["#052529", "#073F45", "#0A535A", "#0E6B74", "#2B8A93", "#64B0B8", "#B3DCDF", "#E1EFF0"]
+      },
+      "sun-bleached-coral": {
+        "role": "secondary",
+        "displayName": "Sun-Bleached Coral",
+        "canonical": "#F27D63",
+        "tonalRamp": ["#4A1509", "#8C2B16", "#B8432A", "#D95D43", "#F27D63", "#F7A28F", "#FAC8BC", "#FDECE8"]
+      },
+      "warm-sand": {
+        "role": "neutral",
+        "displayName": "Warm Sand",
+        "canonical": "#F4EAD5",
+        "tonalRamp": ["#2C2416", "#54462D", "#85714D", "#B9A47E", "#D8C8AA", "#E8D9BC", "#F4EAD5", "#FAF6EE"]
+      },
+      "palm-green": {
+        "role": "tertiary",
+        "displayName": "Palm Leaf Green",
+        "canonical": "#2E5A44",
+        "tonalRamp": ["#0F2419", "#1B3B2B", "#2E5A44", "#437A5E", "#689E82", "#A8D5BA", "#CEE8D8", "#E5F3EB"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Headline", "purpose": "Storefront hero headline and brand showcase." },
+      "headline": { "displayName": "Section Headline", "purpose": "Primary page and section headings." },
+      "title": { "displayName": "Card & Modal Title", "purpose": "Product card titles, series cards, and modal headers." },
+      "body": { "displayName": "Body Copy", "purpose": "Descriptions, specifications, and form labels." },
+      "label": { "displayName": "Monospace Spec Label", "purpose": "SKUs, order references, coordinates, and tabular prices." }
+    },
+    "shadows": [
+      { "name": "shadow-float", "value": "0 14px 34px rgba(9, 44, 48, 0.14)", "purpose": "Toast notifications and floating popovers." },
+      { "name": "shadow-modal", "value": "0 24px 56px rgba(9, 44, 48, 0.22)", "purpose": "Slide-over drawers and modal dialogs." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Snappy coastal drawer and button transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "600px" },
+      { "name": "lg", "value": "960px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Lagoon Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action button for Add to Bag, Checkout, and Admin saves.",
+      "html": "<button class=\"ds-btn-primary\">Explore the 16-Piece Catalog</button>",
+      "css": ".ds-btn-primary { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.9rem; background: #0E6B74; color: #FAF6EE; padding: 12px 22px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: background 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #0A535A; } .ds-btn-primary:focus-visible { outline: 2px solid #0E6B74; outline-offset: 3px; }"
+    },
+    {
+      "name": "Sun-Bleached Coral Button",
+      "kind": "button",
+      "refersTo": "button-coral",
+      "description": "Secondary high-emphasis button for Buy Now, promos, and return requests.",
+      "html": "<button class=\"ds-btn-coral\">Buy Now</button>",
+      "css": ".ds-btn-coral { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.9rem; background: #F27D63; color: #092C30; padding: 12px 22px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: background 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-coral:hover { background: #E56A4E; }"
+    },
+    {
+      "name": "Delivery Status Pill",
+      "kind": "chip",
+      "refersTo": "pill-delivery",
+      "description": "Seafoam Mist and Palm Leaf Green status badge for fulfillment and stock verification.",
+      "html": "<span class=\"ds-pill-delivery\">Out for Delivery</span>",
+      "css": ".ds-pill-delivery { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; background: #A8D5BA; color: #1B3B2B; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 700; }"
+    },
+    {
+      "name": "Coastal Form Input",
+      "kind": "input",
+      "refersTo": "form-input",
+      "description": "Standard text and search input with warm sand border and Lagoon focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search boardshorts, linen, tote...\" />",
+      "css": ".ds-input { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: #092C30; background: #FDFBF7; border: 1px solid #B9A47E; border-radius: 8px; padding: 10px 14px; width: 260px; } .ds-input:focus { outline: none; border-color: #0E6B74; background: #FFFFFF; }"
+    },
+    {
+      "name": "Coastal Surface Card",
+      "kind": "card",
+      "refersTo": "surface-card",
+      "description": "Single-elevation bordered container on Bleached Linen (#FAF6EE).",
+      "html": "<div class=\"ds-card\"><strong>Siargao Cloud 9 Boardshorts</strong><p>Quick-dry recycled poly-stretch shorts.</p></div>",
+      "css": ".ds-card { background: #FAF6EE; border: 1px solid #D8C8AA; border-radius: 12px; padding: 20px; color: #092C30; font-family: 'DM Sans', sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Philippine Coastal Outfitters Dispatch",
+    "overview": "Suot Isla (\"Island Wear\") pairs tactile Philippine coastal material warmth with crisp e-commerce and operations clarity. Rather than generic sterile white fast-fashion templates or dark neon SaaS dashboards, every surface is grounded in Warm Sand (#F4EAD5), bleached linen (#FAF6EE), and Deep Lagoon Teal (#0E6B74), accented by Sun-Bleached Coral (#F27D63) for low-stock urgency and Palm Leaf Green (#2E5A44) on Seafoam Mist (#A8D5BA) for island fulfillment tracking.",
+    "keyCharacteristics": [
+      "Warm Sand (#F4EAD5) and bleached linen (#FAF6EE) structural grounds with zero pure gray (#666) or stark #000/#fff contrast.",
+      "Circular woven-stitch stamp badge emblem featuring a clean horizon sun arc and curling ocean wave.",
+      "Tabular monospace specs (JetBrains Mono) for SKUs, PHP (₱) prices, tracking numbers, and coordinates.",
+      "Single-elevation discipline: resting cards use a 1px solid #D8C8AA border without drop shadows; floating drawers and modals use soft lagoon-tinted depth without borders."
+    ],
+    "rules": [
+      {
+        "name": "The Tinted Shore Rule",
+        "body": "Never use pure gray (#666, #999) or pure black (#000). Every text, border, and surface neutral is tinted with either Deep Lagoon Teal (#092C30, #24494E) or Warm Sand (#D8C8AA).",
+        "section": "colors"
+      },
+      {
+        "name": "The Self-Sufficient Heading Rule",
+        "body": "Headings never carry small uppercase kicker or eyebrow labels above them; each heading establishes hierarchy through scale, weight, and generous top margin.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Ghost-Card Rule",
+        "body": "Declare elevation once—either a 1px border on resting surface cards or a soft shadow on floating overlays, never both on the same element.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do pair Deep Lagoon Teal (#0E6B74) primary actions with Warm Sand (#F4EAD5) and Bleached Linen (#FAF6EE) surfaces.",
+      "Do use font-variant-numeric: tabular-nums on all prices, SKUs, stock counts, and order tables.",
+      "Do trigger an entry in the Customer Email Notification Outbox whenever an order is placed, shipped, cancelled, or refunded."
+    ],
+    "donts": [
+      "Don't place small uppercase eyebrow/kicker labels above h1–h6 headings.",
+      "Don't combine a 1px border and a box-shadow on the same card.",
+      "Don't use pure gray (#666, #888) or stark #000000 text on coastal sand surfaces."
+    ]
+  }
+}

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERD, Use Case Diagram &amp; FourSys Cloud Guide — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+  <link rel="stylesheet" href="assets/css/admin.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container" style="padding-block:var(--space-8);">
+    <div style="padding-bottom:var(--space-6);border-bottom:1px solid var(--border-subtle);margin-bottom:var(--space-8);">
+      <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">System Architecture, ERD &amp; Use Case Specification</h1>
+      <p>Prepared for the PCU College of Informatics Web System Final Project Rubric (Brand 10 pts • Logo 10 pts • ERD 10 pts • Use Case 15 pts • Functionality 25 pts • UI/UX 10 pts).</p>
+    </div>
+
+    <!-- 1. Brand Identity & Logo Breakdown (20 Points) -->
+    <section style="margin-bottom:var(--space-12);" aria-label="Brand Name and Logo Criteria">
+      <h2>1. Brand Name &amp; Original Logo System (20 Points)</h2>
+      <div class="split-checkout-grid" style="padding-block:var(--space-4);">
+        <div class="surface-card">
+          <h3 style="margin-top:0;">Brand Meaning: Suot Isla ("Island Wear")</h3>
+          <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
+            Combines <strong>Suot</strong> (Tagalog for "wear" or "attire") and <strong>Isla</strong> (Spanish/Tagalog for "island"), literally translating to <strong>"Island Wear."</strong> It celebrates Philippine surf and coastal towns—<strong>Siargao, Boracay, El Nido, and La Union</strong>—with breathable, durable, UPF 50+ sun-ready gear.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3);">
+            <div style="padding:var(--space-3);background:#0E6B74;color:#FAF6EE;border-radius:var(--radius-sm);">
+              <strong>Deep Lagoon Teal</strong>
+              <div class="mono">#0E6B74 • Primary Actions &amp; Headers</div>
+            </div>
+            <div style="padding:var(--space-3);background:#F27D63;color:#092C30;border-radius:var(--radius-sm);">
+              <strong>Sun-Bleached Coral</strong>
+              <div class="mono">#F27D63 • Promos &amp; Low-Stock Alerts</div>
+            </div>
+            <div style="padding:var(--space-3);background:#F4EAD5;color:#092C30;border:1px solid var(--border-strong);border-radius:var(--radius-sm);">
+              <strong>Warm Sand</strong>
+              <div class="mono">#F4EAD5 • Coastal Page Canvas</div>
+            </div>
+            <div style="padding:var(--space-3);background:#A8D5BA;color:#1B3B2B;border-radius:var(--radius-sm);">
+              <strong>Palm &amp; Seafoam Mist</strong>
+              <div class="mono">#2E5A44 / #A8D5BA • Delivery Pills</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+          <img src="assets/images/logo-horizontal.svg" alt="Suot Isla Full Horizontal Logo" style="max-width:340px;width:100%;margin-bottom:var(--space-4);" />
+          <p style="font-size:var(--text-xs);">
+            Minimalist circular stamp badge featuring a clean line-art rising sun arc, curling ocean wave, and subtle woven-stitch border—paired with <strong>Plus Jakarta Sans ExtraBold</strong> and <strong>DM Sans</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Entity Relationship Diagram (ERD — 10 Points) -->
+    <section style="margin-bottom:var(--space-12);" aria-label="Entity Relationship Diagram">
+      <div class="section-head">
+        <div>
+          <h2>2. Entity Relationship Diagram (ERD — 10 Points)</h2>
+          <p>Includes all 15 normalized entities, Crow's Foot cardinalities (1:N, 1:1), Primary Keys (PK), and Foreign Keys (FK).</p>
+        </div>
+        <a href="docs/schema.sql" class="btn btn-outline btn-sm" download>Download SQL Schema (schema.sql)</a>
+      </div>
+
+      <!-- Visual SVG ERD Relationship Map -->
+      <div class="diagram-box">
+        <svg viewBox="0 0 1120 460" style="width:100%;min-width:860px;height:auto;" role="img" aria-label="Suot Isla Entity Relationship Diagram">
+          <!-- Connector Lines (Crow's Foot Relationships) -->
+          <g stroke="#0E6B74" stroke-width="2" fill="none">
+            <!-- USERS to USER_ADDRESSES, CARTS, ORDERS, EMAIL_LOGS -->
+            <path d="M210 85 H300"/>
+            <path d="M210 120 L300 220"/>
+            <path d="M210 100 L560 220"/>
+            <!-- CATEGORIES & ISLAND_SERIES to PRODUCTS -->
+            <path d="M210 300 L300 340"/>
+            <path d="M210 390 L300 365"/>
+            <!-- PRODUCTS to PRODUCT_VARIANTS & PRODUCT_IMAGES -->
+            <path d="M490 355 H560"/>
+            <!-- PRODUCT_VARIANTS to CART_ITEMS & ORDER_ITEMS -->
+            <path d="M655 310 V265"/>
+            <path d="M750 355 H830"/>
+            <!-- ORDERS to ORDER_ITEMS, PAYMENTS, DELIVERIES, RETURN_REQUESTS -->
+            <path d="M750 220 H830"/>
+            <path d="M655 175 V120"/>
+            <path d="M750 195 L830 100"/>
+            <path d="M750 245 L830 295"/>
+          </g>
+
+          <!-- Entity Boxes -->
+          <g font-family="'JetBrains Mono', monospace" font-size="9.5">
+            <!-- USERS -->
+            <rect x="20" y="45" width="195" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="20" y="45" width="195" height="26" rx="8" fill="#0E6B74"/>
+            <text x="30" y="62" fill="#FAF6EE" font-weight="700">USERS (1)</text>
+            <text x="30" y="88" fill="#092C30">PK user_id</text>
+            <text x="30" y="104" fill="#24494E">UK email, password_hash</text>
+            <text x="30" y="120" fill="#24494E">role (cust|admin|staff|courier)</text>
+
+            <!-- USER_ADDRESSES -->
+            <rect x="295" y="45" width="205" height="85" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="295" y="45" width="205" height="26" rx="8" fill="#0E6B74"/>
+            <text x="307" y="62" fill="#FAF6EE" font-weight="700">USER_ADDRESSES (0..N)</text>
+            <text x="307" y="88" fill="#092C30">PK address_id</text>
+            <text x="307" y="104" fill="#24494E">FK user_id → USERS</text>
+            <text x="307" y="120" fill="#24494E">street, barangay, city, postal</text>
+
+            <!-- CARTS & CART_ITEMS -->
+            <rect x="295" y="175" width="205" height="90" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="295" y="175" width="205" height="26" rx="8" fill="#0E6B74"/>
+            <text x="307" y="192" fill="#FAF6EE" font-weight="700">CARTS / CART_ITEMS (1:N)</text>
+            <text x="307" y="218" fill="#092C30">PK cart_id / cart_item_id</text>
+            <text x="307" y="234" fill="#24494E">FK user_id, session_token</text>
+            <text x="307" y="250" fill="#24494E">FK variant_id, quantity</text>
+
+            <!-- CATEGORIES -->
+            <rect x="20" y="260" width="195" height="70" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="20" y="260" width="195" height="26" rx="8" fill="#2E5A44"/>
+            <text x="30" y="277" fill="#FAF6EE" font-weight="700">CATEGORIES (1)</text>
+            <text x="30" y="303" fill="#092C30">PK category_id</text>
+            <text x="30" y="319" fill="#24494E">name (4 Categories), slug</text>
+
+            <!-- ISLAND_SERIES -->
+            <rect x="20" y="350" width="195" height="75" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="20" y="350" width="195" height="26" rx="8" fill="#2E5A44"/>
+            <text x="30" y="367" fill="#FAF6EE" font-weight="700">ISLAND_SERIES (1)</text>
+            <text x="30" y="393" fill="#092C30">PK series_id</text>
+            <text x="30" y="409" fill="#24494E">name (Siargao..La Union)</text>
+
+            <!-- PRODUCTS -->
+            <rect x="295" y="310" width="205" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="295" y="310" width="205" height="26" rx="8" fill="#2E5A44"/>
+            <text x="307" y="327" fill="#FAF6EE" font-weight="700">PRODUCTS (0..N)</text>
+            <text x="307" y="353" fill="#092C30">PK product_id</text>
+            <text x="307" y="369" fill="#24494E">FK category_id, FK series_id</text>
+            <text x="307" y="385" fill="#24494E">name, base_price, is_archived</text>
+
+            <!-- PRODUCT_VARIANTS -->
+            <rect x="555" y="310" width="205" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="555" y="310" width="205" height="26" rx="8" fill="#2E5A44"/>
+            <text x="567" y="327" fill="#FAF6EE" font-weight="700">PRODUCT_VARIANTS (1..N)</text>
+            <text x="567" y="353" fill="#092C30">PK variant_id • UK sku</text>
+            <text x="567" y="369" fill="#24494E">FK product_id → PRODUCTS</text>
+            <text x="567" y="385" fill="#24494E">size_label, color_name, stock</text>
+
+            <!-- PAYMENTS & COUPONS -->
+            <rect x="555" y="35" width="205" height="85" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="555" y="35" width="205" height="26" rx="8" fill="#0E6B74"/>
+            <text x="567" y="52" fill="#FAF6EE" font-weight="700">PAYMENTS (1:1)</text>
+            <text x="567" y="78" fill="#092C30">PK payment_id • FK order_id</text>
+            <text x="567" y="94" fill="#24494E">method (GCash|Maya|Card|COD)</text>
+            <text x="567" y="110" fill="#24494E">transaction_ref, status</text>
+
+            <!-- ORDERS -->
+            <rect x="555" y="175" width="205" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="555" y="175" width="205" height="26" rx="8" fill="#0E6B74"/>
+            <text x="567" y="192" fill="#FAF6EE" font-weight="700">ORDERS (0..N)</text>
+            <text x="567" y="218" fill="#092C30">PK order_id • UK order_num</text>
+            <text x="567" y="234" fill="#24494E">FK user_id, address_id, coupon</text>
+            <text x="567" y="250" fill="#24494E">subtotal, fee, order_status</text>
+
+            <!-- DELIVERIES -->
+            <rect x="830" y="35" width="260" height="85" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="830" y="35" width="260" height="26" rx="8" fill="#0E6B74"/>
+            <text x="842" y="52" fill="#FAF6EE" font-weight="700">DELIVERIES &amp; EMAIL_LOGS</text>
+            <text x="842" y="78" fill="#092C30">PK delivery_id • FK order_id</text>
+            <text x="842" y="94" fill="#24494E">FK courier_user_id → USERS</text>
+            <text x="842" y="110" fill="#24494E">tracking_number, delivery_status</text>
+
+            <!-- RETURN_REQUESTS -->
+            <rect x="830" y="175" width="260" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="830" y="175" width="260" height="26" rx="8" fill="#F27D63"/>
+            <text x="842" y="192" fill="#092C30" font-weight="700">RETURN_REQUESTS (0..N)</text>
+            <text x="842" y="218" fill="#092C30">PK return_id • FK order_id</text>
+            <text x="842" y="234" fill="#24494E">request_type (Cancel | Return)</text>
+            <text x="842" y="250" fill="#24494E">status, is_restocked, is_refunded</text>
+
+            <!-- ORDER_ITEMS -->
+            <rect x="830" y="310" width="260" height="95" rx="8" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
+            <rect x="830" y="310" width="260" height="26" rx="8" fill="#2E5A44"/>
+            <text x="842" y="327" fill="#FAF6EE" font-weight="700">ORDER_ITEMS (1..N)</text>
+            <text x="842" y="353" fill="#092C30">PK order_item_id</text>
+            <text x="842" y="369" fill="#24494E">FK order_id → ORDERS</text>
+            <text x="842" y="385" fill="#24494E">FK variant_id, quantity, unit_price</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 3. Use Case Diagram across the Order Lifecycle (15 Points) -->
+    <section style="margin-bottom:var(--space-12);" aria-label="Use Case Diagram">
+      <h2>3. Use Case Diagram Across the Order Lifecycle (15 Points)</h2>
+      <p style="margin-bottom:var(--space-4);">
+        Covers all <strong>5 Actors</strong> (Customer, Admin, Delivery Personnel / Courier, Payment Gateway, Email Service) across all <strong>7 Stages</strong> with explicit <code>&lt;&lt;include&gt;&gt;</code> and <code>&lt;&lt;extend&gt;&gt;</code> relationships.
+      </p>
+
+      <div class="diagram-box">
+        <svg viewBox="0 0 1120 540" style="width:100%;min-width:860px;height:auto;" role="img" aria-label="Suot Isla Use Case Diagram">
+          <!-- System Boundary -->
+          <rect x="210" y="15" width="690" height="510" rx="12" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2.5"/>
+          <text x="230" y="42" fill="#092C30" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="15">
+            System Boundary: Suot Isla E-Commerce Order Lifecycle
+          </text>
+
+          <!-- Left Actors: Customer & Admin -->
+          <g font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12" fill="#092C30">
+            <rect x="20" y="80" width="150" height="70" rx="8" fill="#F4EAD5" stroke="#0E6B74" stroke-width="2"/>
+            <text x="35" y="112">Actor: Customer</text>
+            <text x="35" y="130" font-size="10" fill="#24494E">(Registered User)</text>
+
+            <rect x="20" y="340" width="150" height="75" rx="8" fill="#F4EAD5" stroke="#0E6B74" stroke-width="2"/>
+            <text x="35" y="370">Actor: Admin / Staff</text>
+            <text x="35" y="388" font-size="10" fill="#24494E">(Inventory &amp; Orders)</text>
+          </g>
+
+          <!-- Right Actors: Courier, Payment Gateway, Email Service -->
+          <g font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12" fill="#092C30">
+            <rect x="940" y="80" width="160" height="70" rx="8" fill="#E5F3EB" stroke="#2E5A44" stroke-width="2"/>
+            <text x="952" y="110">Actor: Payment GW</text>
+            <text x="952" y="128" font-size="10" fill="#2E5A44">(External System)</text>
+
+            <rect x="940" y="230" width="160" height="70" rx="8" fill="#FDECE8" stroke="#F27D63" stroke-width="2"/>
+            <text x="952" y="260">Actor: Email Service</text>
+            <text x="952" y="278" font-size="10" fill="#8C2B16">(External Actor)</text>
+
+            <rect x="940" y="380" width="160" height="70" rx="8" fill="#E1EFF0" stroke="#0E6B74" stroke-width="2"/>
+            <text x="952" y="410">Actor: Courier</text>
+            <text x="952" y="428" font-size="10" fill="#0E6B74">(Delivery Personnel)</text>
+          </g>
+
+          <!-- Use Case Ovals inside Boundary -->
+          <g font-family="'DM Sans', sans-serif" font-size="11" fill="#092C30">
+            <!-- Stage 1 & 2: Browsing & Account -->
+            <rect x="235" y="60" width="260" height="62" rx="30" fill="#F4EAD5" stroke="#0E6B74" stroke-width="1.8"/>
+            <text x="255" y="86" font-weight="700">1. Browsing: Browse, Search, Filter &amp; Sort</text>
+            <text x="255" y="104" font-size="10">View Product Details &amp; Variants (16 Items)</text>
+
+            <rect x="235" y="135" width="260" height="58" rx="28" fill="#F4EAD5" stroke="#0E6B74" stroke-width="1.8"/>
+            <text x="255" y="160" font-weight="700">2. Account: Register, Log In, Profile</text>
+            <text x="255" y="177" font-size="10">View Order History &amp; Track Order</text>
+
+            <!-- Stage 3: Buying + <<include>> / <<extend>> -->
+            <rect x="235" y="208" width="260" height="65" rx="30" fill="#E1EFF0" stroke="#0E6B74" stroke-width="2"/>
+            <text x="255" y="234" font-weight="700">3. Buying: Add/Update Cart &amp; Checkout</text>
+            <text x="255" y="252" font-size="10">Make Payment • Apply Coupon (&lt;&lt;extend&gt;&gt;)</text>
+
+            <rect x="570" y="65" width="300" height="75" rx="12" fill="#E5F3EB" stroke="#2E5A44" stroke-width="1.8" stroke-dasharray="5 3"/>
+            <text x="586" y="88" font-weight="700" fill="#1B3B2B">&lt;&lt;include&gt;&gt; Mandatory Checkout Use Cases:</text>
+            <text x="586" y="106">• Validate Stock Availability</text>
+            <text x="586" y="122">• Validate Shipping Address &amp; Make Payment</text>
+
+            <!-- Stage 6: Returns & Refunds -->
+            <rect x="235" y="288" width="260" height="62" rx="30" fill="#FDECE8" stroke="#F27D63" stroke-width="1.8"/>
+            <text x="255" y="314" font-weight="700">6. Returns: Request Cancel / Return</text>
+            <text x="255" y="332" font-size="10">&lt;&lt;extend&gt;&gt; from View Order History</text>
+
+            <rect x="570" y="288" width="300" height="62" rx="30" fill="#FDECE8" stroke="#F27D63" stroke-width="1.8"/>
+            <text x="590" y="314" font-weight="700">Approve / Reject Return Request</text>
+            <text x="590" y="332" font-size="10">&lt;&lt;extend&gt;&gt; Restock Item &amp; Process Refund</text>
+
+            <!-- Stage 4, 5, 7: Order Processing, Delivery & Admin Management -->
+            <rect x="235" y="368" width="260" height="62" rx="30" fill="#F4EAD5" stroke="#0E6B74" stroke-width="1.8"/>
+            <text x="255" y="394" font-weight="700">4. Order Processing: Confirm &amp; Pack</text>
+            <text x="255" y="412" font-size="10">&lt;&lt;include&gt;&gt; Update Inventory &amp; Email</text>
+
+            <rect x="235" y="445" width="260" height="62" rx="30" fill="#F4EAD5" stroke="#0E6B74" stroke-width="1.8"/>
+            <text x="255" y="471" font-weight="700">7. Admin Management: Catalog CRUD</text>
+            <text x="255" y="489" font-size="10">Manage Stock, Categories &amp; RBAC Customers</text>
+
+            <rect x="570" y="380" width="300" height="75" rx="30" fill="#E1EFF0" stroke="#0E6B74" stroke-width="1.8"/>
+            <text x="592" y="408" font-weight="700">5. Delivery: Assign Courier &amp; Ship Order</text>
+            <text x="592" y="426" font-size="10">Update Delivery Status &amp; Confirm Delivery</text>
+            <text x="592" y="442" font-size="10">&lt;&lt;include&gt;&gt; Send Shipping Update Email</text>
+          </g>
+
+          <!-- Association Lines -->
+          <g stroke="#0E6B74" stroke-width="1.6" fill="none">
+            <path d="M170 100 L235 90"/>
+            <path d="M170 115 L235 160"/>
+            <path d="M170 130 L235 235"/>
+            <path d="M170 140 L235 315"/>
+            <path d="M170 365 L235 395"/>
+            <path d="M170 385 L235 475"/>
+            <path d="M170 355 L570 320"/>
+            <path d="M495 235 L570 105" stroke-dasharray="5 3"/>
+            <path d="M870 105 L940 110"/>
+            <path d="M870 415 L940 415"/>
+            <path d="M870 315 L940 265" stroke-dasharray="5 3"/>
+            <path d="M870 400 L940 275" stroke-dasharray="5 3"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Complete Stage-by-Stage Use Case Table -->
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lifecycle Stage</th>
+              <th>Primary Actors</th>
+              <th>Core Use Cases</th>
+              <th>Include / Extend Relationships</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Browsing</strong></td>
+              <td>Customer</td>
+              <td>Browse catalog (16 products), search products, filter &amp; sort (Category, Island Series, Size, Color, Price), view product details</td>
+              <td><code>Filter &amp; Sort</code> dynamically queries <code>PRODUCTS</code> &amp; <code>PRODUCT_VARIANTS</code></td>
+            </tr>
+            <tr>
+              <td><strong>2. Account</strong></td>
+              <td>Customer</td>
+              <td>Register account, log in (verify against hashed password), manage profile &amp; addresses, view order history</td>
+              <td><code>Log In</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Verify Hashed Password</code></td>
+            </tr>
+            <tr>
+              <td><strong>3. Buying</strong></td>
+              <td>Customer, Payment Gateway, Email Service</td>
+              <td>Add to cart, update cart, apply coupon, checkout, make payment</td>
+              <td><code>Checkout</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Validate Stock</code>, <code>Validate Address</code>, <code>Make Payment</code>; <code>Apply Coupon</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Checkout</code></td>
+            </tr>
+            <tr>
+              <td><strong>4. Order Processing</strong></td>
+              <td>Admin / Staff, Email Service</td>
+              <td>Receive new order, confirm order, update inventory, pack order, update status</td>
+              <td><code>Confirm Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Update Inventory</code> &amp; <code>Send Confirmation Email</code></td>
+            </tr>
+            <tr>
+              <td><strong>5. Delivery</strong></td>
+              <td>Admin, Delivery Personnel / Courier, Customer, Email Service</td>
+              <td>Assign courier, ship order, track order, confirm delivery</td>
+              <td><code>Ship Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Send Shipping Update Email</code></td>
+            </tr>
+            <tr>
+              <td><strong>6. Returns &amp; Refunds</strong></td>
+              <td>Customer, Admin, Payment Gateway, Email Service</td>
+              <td>Request cancellation, request return, approve or reject return, restock item, process refund</td>
+              <td><code>Request Return / Cancel</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>View Order History</code>; <code>Restock Item</code> &amp; <code>Process Refund</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Approve Return</code></td>
+            </tr>
+            <tr>
+              <td><strong>7. Admin Management</strong></td>
+              <td>Admin</td>
+              <td>Manage products &amp; categories (CRUD + image upload), manage stock &amp; low-stock alerts, manage customers &amp; RBAC roles</td>
+              <td>Restricted via Role-Based Access Control (<code>admin</code>, <code>staff</code>, <code>courier</code>)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. FourSys Cloud (Starter Cloud Tier) Backend Handover Guide -->
+    <section id="foursys-guide" aria-label="FourSys Cloud Deployment Guide">
+      <h2>4. FourSys Cloud (Starter Cloud Tier) Deployment &amp; Backend Integration Guide</h2>
+      <div class="surface-card">
+        <p style="margin-bottom:var(--space-4);">
+          Designed for direct upload to your <strong>FourSys Cloud Starter Cloud Tier</strong> (<code>public_html</code> + MySQL Database via phpMyAdmin):
+        </p>
+        <div class="form-row">
+          <div>
+            <h3>Step 1: Import MySQL Database</h3>
+            <p style="font-size:var(--text-xs);">
+              In FourSys Cloud Control Panel → <strong>MySQL Databases</strong>, create a database (e.g. <code>suotisla_db</code>), open <strong>phpMyAdmin</strong>, and import <a href="docs/schema.sql"><code>docs/schema.sql</code></a>.
+            </p>
+          </div>
+          <div>
+            <h3>Step 2: Connect Forms &amp; Endpoints</h3>
+            <p style="font-size:var(--text-xs);">
+              All forms already carry semantic <code>action="api/..."</code> and <code>name="..."</code> attributes: <code>checkout.html</code>, <code>auth.html</code>, <code>account.html</code>, and <code>admin.html</code> (with <code>enctype="multipart/form-data"</code> for image uploads).
+            </p>
+          </div>
+          <div>
+            <h3>Step 3: Upload to public_html &amp; Enable SSL</h3>
+            <p style="font-size:var(--text-xs);">
+              Upload all HTML, <code>assets/</code>, and PHP backend scripts into <code>public_html/</code> via File Manager or SFTP, and activate the included Let's Encrypt SSL certificate.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+</body>
+</html>

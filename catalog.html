@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Catalog (16 Products) — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container">
+    <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
+        <div>
+          <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Island Surf &amp; Beachwear Catalog</h1>
+          <p>Browse all 16 products across 4 Island Series and 4 Categories with dynamic multi-faceted filtering.</p>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;" id="series-quick-tabs">
+          <button type="button" class="btn btn-outline btn-sm" data-quick-series="all">All Islands (16)</button>
+          <button type="button" class="btn btn-outline btn-sm" data-quick-series="Siargao">Siargao (4)</button>
+          <button type="button" class="btn btn-outline btn-sm" data-quick-series="Boracay">Boracay (4)</button>
+          <button type="button" class="btn btn-outline btn-sm" data-quick-series="El Nido">El Nido (4)</button>
+          <button type="button" class="btn btn-outline btn-sm" data-quick-series="La Union">La Union (4)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="catalog-layout">
+      <!-- Dynamic Multi-Faceted Filter Sidebar -->
+      <aside class="filter-sidebar" aria-label="Product Catalog Filters">
+        <form id="catalog-filter-form" onsubmit="return false;">
+          <div class="filter-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
+              <h2 style="margin:0;">Search Catalog</h2>
+              <button type="button" class="btn btn-ghost btn-sm" id="reset-filters-btn" style="padding:2px 6px;">Reset All</button>
+            </div>
+            <input
+              type="search"
+              name="q"
+              id="filter-search"
+              class="form-input"
+              placeholder="Search boardshorts, linen, tote..."
+              aria-label="Search products"
+            />
+          </div>
+
+          <!-- Filter 1: Island Series -->
+          <div class="filter-group">
+            <h2>Island Series</h2>
+            <div class="filter-list" id="filter-series-list"></div>
+          </div>
+
+          <!-- Filter 2: Category -->
+          <div class="filter-group">
+            <h2>Category</h2>
+            <div class="filter-list" id="filter-category-list"></div>
+          </div>
+
+          <!-- Filter 3: Size / Volume -->
+          <div class="filter-group">
+            <h2>Size / Spec</h2>
+            <div class="size-chip-grid" id="filter-size-grid"></div>
+          </div>
+
+          <!-- Filter 4: Color Family -->
+          <div class="filter-group">
+            <h2>Colorway</h2>
+            <select name="color" id="filter-color" class="form-select" aria-label="Filter by Color">
+              <option value="all">All Island Colorways</option>
+            </select>
+          </div>
+
+          <!-- Filter 5: Max Price Range -->
+          <div class="filter-group">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2);">
+              <h2 style="margin:0;">Max Price</h2>
+              <strong class="price" id="price-range-label" style="font-size:var(--text-sm);color:var(--color-lagoon);">₱2,600</strong>
+            </div>
+            <input
+              type="range"
+              name="max_price"
+              id="filter-price"
+              min="750"
+              max="2600"
+              step="50"
+              value="2600"
+              style="width:100%;accent-color:var(--color-lagoon);"
+            />
+            <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
+              <span class="tabular">₱750</span>
+              <span class="tabular">₱1,600</span>
+              <span class="tabular">₱2,600</span>
+            </div>
+          </div>
+        </form>
+      </aside>
+
+      <!-- Catalog Results Column -->
+      <section aria-label="Filtered Products">
+        <div class="catalog-toolbar">
+          <div>
+            <strong id="catalog-count-label" class="tabular">Showing 16 of 16 products</strong>
+            <span id="catalog-series-tagline" style="font-size:var(--text-xs);color:var(--text-muted);display:block;">
+              All 4 Philippine Island Series • Live Variant Availability
+            </span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:var(--space-2);">
+            <label for="catalog-sort" style="font-size:var(--text-xs);font-weight:700;">Sort By:</label>
+            <select id="catalog-sort" name="sort" class="form-select" style="width:auto;min-width:190px;">
+              <option value="featured">Featured Island Order</option>
+              <option value="bestselling">Best Selling First</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="name-asc">Name: A to Z</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="active-filters-bar" id="active-filters-bar"></div>
+
+        <div class="product-grid" id="catalog-product-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/catalog.js"></script>
+</body>
+</html>

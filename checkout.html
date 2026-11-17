@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout &amp; Validation — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+</head>
+<body>
+  <div id="site-header-mount"></div>
+
+  <main class="container">
+    <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
+      <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Structured Island Checkout</h1>
+      <p>Includes live Stock Validation, Philippine Shipping Address Validation, and Mock Payment Gateway verification.</p>
+    </div>
+
+    <div class="split-checkout-grid" id="checkout-mount">
+      <!-- Structured Checkout Form (Backend-ready POST attributes) -->
+      <form id="checkout-form" action="api/checkout.php" method="POST" class="surface-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-4);">
+          <h2 style="margin:0;font-size:var(--text-xl);">1. Customer Billing Details</h2>
+          <span class="pill pill-delivery">✓ Stock &amp; Session Verified</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="chk-fullname">Full Name *</label>
+            <input type="text" id="chk-fullname" name="full_name" class="form-input" required value="Mateo Alonzo" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="chk-email">Confirmation Email Address *</label>
+            <input type="email" id="chk-email" name="email" class="form-input" required value="mateo.alonzo@student.pcu.edu.ph" />
+            <span class="form-hint">Order confirmation &amp; shipping emails will be sent here.</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="chk-phone">Mobile Number (Courier SMS) *</label>
+            <input type="tel" id="chk-phone" name="phone" class="form-input" required value="+63 917 842 1904" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="chk-preset-addr">Quick-Fill Saved Philippine Address</label>
+            <select id="chk-preset-addr" class="form-select">
+              <option value="cavite">PCU Dasmariñas Campus / Cavite Residence</option>
+              <option value="siargao">General Luna Surf Hostel, Siargao Island</option>
+              <option value="launion">Urbiztondo Beach Point, San Juan, La Union</option>
+            </select>
+          </div>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);margin-top:var(--space-6);margin-bottom:var(--space-3);">
+          2. Shipping Address &amp; Validation
+        </h2>
+
+        <div class="form-group">
+          <label class="form-label" for="chk-street">House / Unit No., Street Name *</label>
+          <input type="text" id="chk-street" name="street_address" class="form-input" required value="Blk 4 Lot 12 Emilio Aguinaldo Hwy" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="chk-barangay">Barangay *</label>
+            <input type="text" id="chk-barangay" name="barangay" class="form-input" required value="Sampaloc I" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="chk-city">City / Municipality *</label>
+            <input type="text" id="chk-city" name="city" class="form-input" required value="Dasmariñas City" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="chk-province">Province / Island Region *</label>
+            <input type="text" id="chk-province" name="province" class="form-input" required value="Cavite (CALABARZON)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="chk-postal">Postal / ZIP Code (4 Digits) *</label>
+            <input type="text" id="chk-postal" name="postal_code" class="form-input mono" pattern="[0-9]{4}" required value="4114" />
+          </div>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);margin-top:var(--space-6);margin-bottom:var(--space-3);">
+          3. Mock Payment Gateway Method
+        </h2>
+
+        <input type="hidden" name="payment_method" id="chk-payment-method" value="GCash" />
+
+        <div class="payment-method-grid" id="payment-options-grid">
+          <button type="button" class="payment-option active" data-pay-method="GCash">
+            <span class="pill pill-lagoon">GCash</span>
+            <span>GCash Express Wallet</span>
+          </button>
+          <button type="button" class="payment-option" data-pay-method="Maya">
+            <span class="pill pill-delivery">Maya</span>
+            <span>Maya Digital Bank</span>
+          </button>
+          <button type="button" class="payment-option" data-pay-method="Card">
+            <span class="pill pill-sand">Card</span>
+            <span>Visa / Mastercard</span>
+          </button>
+          <button type="button" class="payment-option" data-pay-method="COD">
+            <span class="pill pill-coral">COD</span>
+            <span>Cash on Delivery</span>
+          </button>
+        </div>
+
+        <div id="payment-details-box" style="background:var(--color-sand);padding:var(--space-4);border-radius:var(--radius-sm);margin-bottom:var(--space-6);">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="chk-pay-account">Mock Payment Account / Mobile Reference *</label>
+            <input type="text" id="chk-pay-account" name="payment_reference_input" class="form-input mono" required value="0917-842-1904 (GCash Verified)" />
+            <span class="form-hint">Simulates external Payment Gateway authorization from the Use Case Diagram.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-block">
+          Validate Stock &amp; Place Island Order
+        </button>
+      </form>
+
+      <!-- Order Summary & Use Case Validation Panel -->
+      <aside class="surface-card" id="checkout-summary-panel"></aside>
+    </div>
+  </main>
+
+  <div id="site-footer-mount"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const formEl = document.getElementById("checkout-form");
+      const summaryEl = document.getElementById("checkout-summary-panel");
+      const checkoutMount = document.getElementById("checkout-mount");
+      const presetSelect = document.getElementById("chk-preset-addr");
+      const payMethodInput = document.getElementById("chk-payment-method");
+      const payAccountInput = document.getElementById("chk-pay-account");
+
+      const presets = {
+        cavite: {
+          street: "Blk 4 Lot 12 Emilio Aguinaldo Hwy",
+          barangay: "Sampaloc I",
+          city: "Dasmariñas City",
+          province: "Cavite (CALABARZON)",
+          postal: "4114"
+        },
+        siargao: {
+          street: "Tourism Road, Cloud 9 Boardwalk",
+          barangay: "Catangnan",
+          city: "General Luna",
+          province: "Surigao del Norte",
+          postal: "8419"
+        },
+        launion: {
+          street: "MacArthur Highway Surf Strip",
+          barangay: "Urbiztondo",
+          city: "San Juan",
+          province: "La Union",
+          postal: "2514"
+        }
+      };
+
+      presetSelect.addEventListener("change", () => {
+        const p = presets[presetSelect.value];
+        if (p) {
+          document.getElementById("chk-street").value = p.street;
+          document.getElementById("chk-barangay").value = p.barangay;
+          document.getElementById("chk-city").value = p.city;
+          document.getElementById("chk-province").value = p.province;
+          document.getElementById("chk-postal").value = p.postal;
+        }
+      });
+
+      document.querySelectorAll("[data-pay-method]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-pay-method]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const method = btn.getAttribute("data-pay-method");
+          payMethodInput.value = method;
+          if (method === "GCash") payAccountInput.value = "0917-842-1904 (GCash Verified)";
+          if (method === "Maya") payAccountInput.value = "0917-842-1904 (Maya Verified)";
+          if (method === "Card") payAccountInput.value = "•••• •••• •••• 4242 (Visa Exp 08/29)";
+          if (method === "COD") payAccountInput.value = "Pay Cash Upon Courier Delivery";
+        });
+      });
+
+      function renderSummary() {
+        const cart = window.SuotStore.getCart();
+        const totals = window.SuotStore.getCartTotals();
+
+        summaryEl.innerHTML = `
+          <h2 style="margin-top:0;font-size:var(--text-xl);margin-bottom:var(--space-3);">Checkout Summary</h2>
+          <div style="margin-bottom:var(--space-4);">
+            ${cart
+              .map(
+                (item) => `
+                <div style="display:flex;justify-content:space-between;gap:var(--space-2);padding-block:8px;border-bottom:1px solid var(--border-subtle);font-size:var(--text-sm);">
+                  <div>
+                    <strong>${item.qty}× ${item.name}</strong>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);">${item.size} • ${item.color}</div>
+                  </div>
+                  <span class="price" style="font-weight:700;">${window.SuotStore.formatPrice(item.price * item.qty)}</span>
+                </div>
+              `
+              )
+              .join("")}
+          </div>
+
+          <div class="summary-row">
+            <span>Subtotal (${totals.itemCount} items)</span>
+            <strong class="price">${window.SuotStore.formatPrice(totals.subtotal)}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Island Courier Fee</span>
+            <strong class="price">${totals.deliveryFee === 0 ? "FREE" : window.SuotStore.formatPrice(totals.deliveryFee)}</strong>
+          </div>
+          ${
+            totals.discount > 0
+              ? `<div class="summary-row" style="color:var(--color-palm);">
+                  <span>Discount (${totals.coupon.code})</span>
+                  <strong class="price">−${window.SuotStore.formatPrice(totals.discount)}</strong>
+                </div>`
+              : ""
+          }
+          <div class="summary-row total">
+            <span>Total Due</span>
+            <span class="price">${window.SuotStore.formatPrice(totals.total)}</span>
+          </div>
+
+          <div style="margin-top:var(--space-5);background:var(--color-sand);padding:var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-xs);">
+            <strong style="display:block;margin-bottom:4px;color:var(--color-lagoon);">Included Use Case Checks:</strong>
+            <div>✓ <code>&lt;&lt;include&gt;&gt;</code> Validate Stock Availability</div>
+            <div>✓ <code>&lt;&lt;include&gt;&gt;</code> Validate Philippine Address</div>
+            <div>✓ <code>&lt;&lt;include&gt;&gt;</code> Payment Gateway Authorization</div>
+            <div>✓ <code>&lt;&lt;include&gt;&gt;</code> Dispatch Order Confirmation Email</div>
+          </div>
+        `;
+      }
+
+      formEl.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const res = window.SuotStore.placeOrder({
+          fullName: document.getElementById("chk-fullname").value,
+          email: document.getElementById("chk-email").value,
+          phone: document.getElementById("chk-phone").value,
+          street: document.getElementById("chk-street").value,
+          barangay: document.getElementById("chk-barangay").value,
+          city: document.getElementById("chk-city").value,
+          province: document.getElementById("chk-province").value,
+          postalCode: document.getElementById("chk-postal").value,
+          paymentMethod: payMethodInput.value
+        });
+
+        if (!res.ok) {
+          window.SuotUI.toast(res.message, "Checkout Error");
+          return;
+        }
+
+        window.SuotUI.toast(`Order #${res.order.orderNumber} confirmed! Confirmation email sent to ${res.order.customerEmail}.`, "Order Confirmed");
+
+        checkoutMount.innerHTML = `
+          <div class="surface-card" style="grid-column:1 / -1;padding:var(--space-10);text-align:center;">
+            <span class="pill pill-delivery" style="margin-bottom:var(--space-3);">Order Confirmed &amp; Email Dispatched</span>
+            <h2 style="margin-top:0;">Salamat, ${res.order.customerName}! Order #${res.order.orderNumber}</h2>
+            <p style="margin:var(--space-2) auto var(--space-6);">
+              Your payment via <strong>${res.order.paymentMethod}</strong> (${res.order.paymentRef}) is recorded and a confirmation email has been sent to <strong>${res.order.customerEmail}</strong>.
+            </p>
+
+            <div style="max-width:620px;margin:0 auto var(--space-6);text-align:left;background:var(--color-sand);padding:var(--space-5);border-radius:var(--radius-md);border:1px solid var(--border-subtle);">
+              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                <strong>Order Reference:</strong>
+                <span class="mono">${res.order.orderNumber}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                <strong>Tracking Number:</strong>
+                <span class="mono">${res.order.trackingNumber}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                <strong>Shipping Destination:</strong>
+                <span>${res.order.shippingAddress}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <strong>Total Paid / Due:</strong>
+                <strong class="price">${window.SuotStore.formatPrice(res.order.total)}</strong>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:var(--space-3);">
+              <button type="button" class="btn btn-coral btn-lg" id="view-conf-email-btn">
+                View Order Confirmation Email
+              </button>
+              <a href="account.html" class="btn btn-primary btn-lg">
+                Track Order &amp; Manage Returns
+              </a>
+              <a href="admin.html" class="btn btn-outline btn-lg">
+                Fulfill Order in Admin / Courier Portal
+              </a>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("view-conf-email-btn").addEventListener("click", () => {
+          window.SuotUI.openDrawer("email");
+        });
+      });
+
+      renderSummary();
+    });
+  </script>
+</body>
+</html>

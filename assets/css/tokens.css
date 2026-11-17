@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+:root {
+  /* Core Suot Isla Brand Palette */
+  --color-lagoon: #0E6B74;
+  --color-lagoon-hover: #0A535A;
+  --color-lagoon-active: #073F45;
+  --color-lagoon-subtle: #E1EFF0;
+  --color-lagoon-ink: #092C30;
+
+  --color-coral: #F27D63;
+  --color-coral-deep: #8C2B16;
+  --color-coral-surface: #FDECE8;
+
+  --color-sand: #F4EAD5;
+  --color-sand-light: #FAF6EE;
+  --color-sand-deep: #E8D9BC;
+  --color-sand-woven: #DBC9A6;
+
+  --color-palm: #2E5A44;
+  --color-palm-deep: #1B3B2B;
+  --color-seafoam: #A8D5BA;
+  --color-seafoam-surface: #E5F3EB;
+
+  /* Semantic Text & Surface Tokens (Tinted Coastal Neutrals — Zero Pure Gray) */
+  --bg-page: var(--color-sand);
+  --bg-surface: var(--color-sand-light);
+  --bg-elevated: #FDFBF7;
+  --bg-muted: var(--color-sand-deep);
+  --bg-inverse: var(--color-lagoon-ink);
+
+  --text-primary: #092C30;
+  --text-secondary: #24494E;
+  --text-muted: #426468;
+  --text-on-lagoon: #FAF6EE;
+  --text-on-coral: #092C30;
+
+  --border-subtle: #D8C8AA;
+  --border-strong: #B9A47E;
+  --border-lagoon: rgba(14, 107, 116, 0.28);
+
+  /* Semantic Status Tokens */
+  --status-success-bg: var(--color-seafoam);
+  --status-success-text: #163626;
+  --status-warning-bg: #F6DFB3;
+  --status-warning-text: #5C3D08;
+  --status-danger-bg: var(--color-coral-surface);
+  --status-danger-text: var(--color-coral-deep);
+  --status-info-bg: var(--color-lagoon-subtle);
+  --status-info-text: var(--color-lagoon-active);
+
+  /* Typography */
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Fluid Type Scale */
+  --text-xs: clamp(0.75rem, 0.72rem + 0.12vw, 0.8125rem);
+  --text-sm: clamp(0.84rem, 0.81rem + 0.15vw, 0.9125rem);
+  --text-base: clamp(0.95rem, 0.92rem + 0.18vw, 1.03rem);
+  --text-lg: clamp(1.1rem, 1.04rem + 0.28vw, 1.25rem);
+  --text-xl: clamp(1.28rem, 1.18rem + 0.48vw, 1.55rem);
+  --text-2xl: clamp(1.55rem, 1.38rem + 0.85vw, 2.05rem);
+  --text-3xl: clamp(1.95rem, 1.65rem + 1.4vw, 2.75rem);
+  --text-display: clamp(2.25rem, 1.85rem + 2vw, 3.5rem);
+
+  /* 4px / 8px Spatial Grid */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* Radii (Cards strictly 12px-16px; Pills for small controls) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Elevation (Used only on floating overlays without borders) */
+  --shadow-float: 0 14px 34px rgba(9, 44, 48, 0.14);
+  --shadow-modal: 0 24px 56px rgba(9, 44, 48, 0.22);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 240ms;
+}
