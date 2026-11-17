@@ -4,90 +4,105 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Suot Isla — Island-Born Surf &amp; Beachwear</title>
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=25" />
+  <link rel="stylesheet" href="assets/css/base.css?v=25" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=25" />
 </head>
 <body>
   <div id="site-header-mount"></div>
 
   <main>
-    <!-- Hero Editorial Section -->
-    <section class="hero-section">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <h1>Sun-Ready Apparel Born from Philippine Surf Towns.</h1>
-          <p class="hero-lead">
-            <strong>Suot Isla</strong> combines <em>Suot</em> (Tagalog for "wear" or "attire") and <em>Isla</em> ("island")—literally translating to <strong>"Island Wear."</strong> Breathable, durable coastal gear engineered for weekend beachgoers, reef-break surfers, and island travelers.
+    <!-- Full-Bleed Immersive Editorial Hero -->
+    <section class="hero-immersive">
+      <img
+        src="assets/images/hero-surf.jpg"
+        alt="Twin-fin surfboard resting on warm Philippine sand beside coastal palms and teal waves"
+        class="hero-bg-photo"
+        id="hero-editorial-img"
+      />
+      <div class="hero-scrim" aria-hidden="true"></div>
+      <canvas id="hero-ocean-canvas" class="hero-ocean-canvas" aria-hidden="true"></canvas>
+      <img
+        src="assets/images/logo-stamp.svg"
+        alt="Suot Isla Stamp"
+        class="hero-stamp-corner"
+      />
+
+      <div class="container hero-immersive-inner">
+        <div class="hero-immersive-copy">
+          <div class="hero-telemetry" id="hero-telemetry">
+            <span class="telemetry-dot"></span>
+            <span id="hero-photo-caption">9.8482° N, 126.0458° E • CLOUD 9 • 5–7FT SWELL</span>
+          </div>
+
+          <h1>Wear the Island.<br /><span class="hero-serif-accent">Catch the Swell.</span></h1>
+          <p class="hero-immersive-lead">
+            Salt-tested boardshorts, airy coastal linen, and reef-ready layers—crafted for dawn patrols and slow golden hours.
           </p>
-          <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:var(--space-6);">
-            <span class="pill pill-lagoon">16 Curated Pieces</span>
-            <span class="pill pill-delivery">4 Philippine Island Series</span>
-            <span class="pill pill-coral">UPF 50+ &amp; Native Craft</span>
+
+          <!-- Interactive Island Destination Segmented Dock -->
+          <div class="hero-island-switcher" role="tablist" aria-label="Preview Philippine Island Series">
+            <button type="button" class="hero-island-btn active" data-hero-island="Siargao"><span class="hero-island-num">01</span> Siargao</button>
+            <button type="button" class="hero-island-btn" data-hero-island="Boracay"><span class="hero-island-num">02</span> Boracay</button>
+            <button type="button" class="hero-island-btn" data-hero-island="El Nido"><span class="hero-island-num">03</span> El Nido</button>
+            <button type="button" class="hero-island-btn" data-hero-island="La Union"><span class="hero-island-num">04</span> La Union</button>
           </div>
 
           <div class="hero-actions">
-            <a href="catalog.html" class="btn btn-primary btn-lg">
-              <span>Explore the 16-Piece Catalog</span>
+            <a href="catalog.html" class="btn hero-cta-primary btn-lg btn-magnetic">
+              <span>Shop the Collection</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M5 12h14M13 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </a>
-            <a href="catalog.html?series=Siargao" class="btn btn-outline btn-lg">Shop Siargao Wave Gear</a>
-          </div>
-
-          <div class="brand-origin-strip">
-            <div class="origin-stat">
-              <strong>4 Island Collections</strong>
-              <span>Siargao • Boracay • El Nido • La Union</span>
-            </div>
-            <div class="origin-stat">
-              <strong>Reef-Tested Fabrics</strong>
-              <span>Recycled ocean poly, flax linen &amp; woven buri</span>
-            </div>
-            <div class="origin-stat">
-              <strong>Full Order Lifecycle</strong>
-              <span>Live cart, courier tracking &amp; easy returns</span>
-            </div>
+            <a href="catalog.html?series=Siargao" class="btn hero-btn-ghost btn-lg" id="hero-series-cta">
+              Explore Siargao
+            </a>
           </div>
         </div>
 
-        <!-- Stamp Badge & Island Series Quick Selector -->
-        <aside class="hero-showcase" aria-label="Suot Isla Brand Emblem and Island Series">
-          <div class="hero-showcase-top">
-            <span class="pill pill-delivery">Official Emblem &amp; Dispatch</span>
-            <span class="mono" style="color:var(--color-seafoam);">EST. PHL • 14.5995° N</span>
+        <!-- Floating Interactive Quick-Shop Capsule Card inside Hero -->
+        <aside class="hero-lookbook-card" id="hero-lookbook-card" aria-label="Featured Island Capsule Piece">
+          <div class="hero-lookbook-topbar">
+            <span class="hero-lookbook-meta" id="hero-cap-meta">SIARGAO CAPSULE • BEST SELLER</span>
+            <a href="product.html?id=siargao-cloud9-boardshorts" class="hero-lookbook-ext" id="hero-cap-details-link">Details ↗</a>
           </div>
 
-          <div class="hero-art-stage">
-            <img src="assets/images/logo-stamp.svg" alt="Suot Isla Circular Woven Stamp Badge" style="width:148px;height:148px;margin-bottom:var(--space-4);" />
-            <h2>SUOT ISLA — "ISLAND WEAR"</h2>
-            <p>
-              Minimalist circular stamp badge featuring a clean line-art rising sun, curling ocean wave, and subtle woven stitch border.
-            </p>
-          </div>
-
-          <div class="series-mini-pills">
-            <a href="catalog.html?series=Siargao" class="series-mini-link">
-              <span>Siargao Series</span>
-              <span class="mono">4 Items →</span>
+          <div class="hero-lookbook-main">
+            <a href="product.html?id=siargao-cloud9-boardshorts" class="hero-lookbook-thumb" id="hero-cap-link">
+              <img src="assets/images/products/siargao-cloud9-boardshorts.jpg" alt="Siargao Cloud 9 Boardshorts" id="hero-cap-img" />
             </a>
-            <a href="catalog.html?series=Boracay" class="series-mini-link">
-              <span>Boracay Series</span>
-              <span class="mono">4 Items →</span>
-            </a>
-            <a href="catalog.html?series=El+Nido" class="series-mini-link">
-              <span>El Nido Series</span>
-              <span class="mono">4 Items →</span>
-            </a>
-            <a href="catalog.html?series=La+Union" class="series-mini-link">
-              <span>La Union Series</span>
-              <span class="mono">4 Items →</span>
-            </a>
+            <div>
+              <div class="hero-lookbook-title" id="hero-cap-title">Siargao Cloud 9 Boardshorts</div>
+              <div class="hero-lookbook-price-row">
+                <span class="hero-lookbook-price" id="hero-cap-price">₱1,690</span>
+                <select class="hero-cap-size-select" id="hero-cap-size" aria-label="Select size"></select>
+              </div>
+              <div class="hero-cap-swatches" id="hero-cap-swatches"></div>
+              <button type="button" class="btn btn-primary btn-sm btn-block" id="hero-cap-add" data-hero-prod="siargao-cloud9-boardshorts">
+                Quick Add — ₱1,690
+              </button>
+            </div>
           </div>
         </aside>
       </div>
     </section>
+
+    <!-- Coastal Surf-Town Ticker Strip -->
+    <div class="coastal-ticker" aria-label="Philippine Surf Town Coordinates">
+      <div class="coastal-ticker-track">
+        <span class="ticker-item">SIARGAO • 9.8482° N, 126.0458° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">BORACAY • 11.9674° N, 121.9248° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">EL NIDO • 11.1956° N, 119.4180° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">LA UNION • 16.6631° N, 120.3208° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">SUOT ISLA • ISLAND WEAR <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">SIARGAO • 9.8482° N, 126.0458° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">BORACAY • 11.9674° N, 121.9248° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">EL NIDO • 11.1956° N, 119.4180° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">LA UNION • 16.6631° N, 120.3208° E <span class="ticker-dot">✦</span></span>
+        <span class="ticker-item">SUOT ISLA • ISLAND WEAR <span class="ticker-dot">✦</span></span>
+      </div>
+    </div>
 
     <!-- 4 Island Collections Section -->
     <section class="section-block">
@@ -95,12 +110,12 @@
         <div class="section-head">
           <div>
             <h2>Shop by Philippine Island Series</h2>
-            <p>Four coastal destinations, four distinct gear capsules—16 products structured evenly across 4 categories.</p>
+            <p>Four islands, four distinct moods—crafted for salt water, reef breaks, and slow afternoons.</p>
           </div>
-          <a href="catalog.html" class="btn btn-outline">Filter All 16 Products</a>
+          <a href="catalog.html" class="btn btn-outline">Explore Full Catalog</a>
         </div>
 
-        <div class="series-grid" id="home-series-grid"></div>
+        <div class="series-accordion" id="home-series-grid"></div>
       </div>
     </section>
 
@@ -110,13 +125,14 @@
         <div class="section-head">
           <div>
             <h2>Featured Island Gear &amp; Apparel</h2>
-            <p>Click any color swatch to preview variant tones or add directly to your persistent Island Bag.</p>
+            <p>Select a colorway to preview.</p>
           </div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <a href="catalog.html?category=Swim+%26+Surf" class="pill pill-lagoon" style="text-decoration:none;">Swim &amp; Surf (6)</a>
-            <a href="catalog.html?category=Resort+%26+Loungewear" class="pill pill-sand" style="text-decoration:none;">Resort &amp; Loungewear (5)</a>
-            <a href="catalog.html?category=Beach+Towels+%26+Ponchos" class="pill pill-sand" style="text-decoration:none;">Beach Towels &amp; Ponchos (3)</a>
-            <a href="catalog.html?category=Island+Accessories" class="pill pill-sand" style="text-decoration:none;">Island Accessories (3)</a>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;" id="home-category-tabs">
+            <button type="button" class="pill pill-lagoon" style="border:none;cursor:pointer;" data-home-cat="all">All Featured</button>
+            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Swim & Surf">Swim &amp; Surf</button>
+            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Resort & Loungewear">Resort &amp; Loungewear</button>
+            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Beach Towels & Ponchos">Beach Towels &amp; Ponchos</button>
+            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Island Accessories">Island Accessories</button>
           </div>
         </div>
 
@@ -124,127 +140,349 @@
       </div>
     </section>
 
-    <!-- Brand Identity & Transactional Flow Showcase -->
-    <section class="section-block">
+    <!-- Unified Editorial Lookbook & Coastal Craft Spread -->
+    <section class="craft-editorial-section">
       <div class="container">
-        <div class="surface-card" style="background-color:var(--color-lagoon-ink);color:var(--color-sand-light);padding:var(--space-10);">
-          <div class="hero-grid">
-            <div>
-              <h2 style="color:var(--color-sand-light);margin-top:0;">Complete E-Commerce Lifecycle Ready for Live Demonstration</h2>
-              <p style="color:rgba(244,234,213,0.85);margin-bottom:var(--space-6);">
-                Built to demonstrate every requirement of the Web System rubric: multi-faceted catalog filtering, persistent cart session, structured Philippine checkout, automatic email notifications, customer return/refund requests, and a role-based Admin, Staff, and Courier portal.
-              </p>
-              <div style="display:flex;flex-wrap:wrap;gap:var(--space-3);">
-                <a href="catalog.html" class="btn btn-coral">Test Dynamic Catalog</a>
-                <a href="account.html" class="btn btn-outline" style="background:transparent;color:var(--color-sand-light);border-color:rgba(244,234,213,0.35);">Customer Orders &amp; Returns</a>
-                <a href="admin.html" class="btn btn-outline" style="background:transparent;color:var(--color-sand-light);border-color:rgba(244,234,213,0.35);">Open Admin / Courier Portal</a>
-              </div>
-            </div>
+        <div class="journal-unified-grid">
+          <div class="journal-photo-frame">
+            <img
+              src="assets/images/series-boracay.jpg"
+              alt="Breezy sand-toned linen resortwear and woven buri tote on Boracay White Beach at golden hour"
+              loading="lazy"
+            />
+            <span class="journal-caption">FIELD JOURNAL 01 • WHITE BEACH, BORACAY</span>
+          </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
-              <div style="background:rgba(250,246,238,0.08);border:1px solid rgba(250,246,238,0.16);border-radius:var(--radius-md);padding:var(--space-4);">
-                <strong style="color:var(--color-seafoam);font-family:var(--font-display);display:block;margin-bottom:4px;">Deep Lagoon Teal</strong>
-                <span class="mono" style="color:var(--color-sand);">#0E6B74 • Primary Actions</span>
-              </div>
-              <div style="background:rgba(250,246,238,0.08);border:1px solid rgba(250,246,238,0.16);border-radius:var(--radius-md);padding:var(--space-4);">
-                <strong style="color:var(--color-sand-light);font-family:var(--font-display);display:block;margin-bottom:4px;">Sun-Bleached Coral</strong>
-                <span class="mono" style="color:var(--color-sand);">#F27D63 • Low-Stock &amp; Promos</span>
-              </div>
-              <div style="background:rgba(250,246,238,0.08);border:1px solid rgba(250,246,238,0.16);border-radius:var(--radius-md);padding:var(--space-4);">
-                <strong style="color:var(--color-sand);font-family:var(--font-display);display:block;margin-bottom:4px;">Warm Sand</strong>
-                <span class="mono" style="color:var(--color-sand);">#F4EAD5 • Coastal Canvas</span>
-              </div>
-              <div style="background:rgba(250,246,238,0.08);border:1px solid rgba(250,246,238,0.16);border-radius:var(--radius-md);padding:var(--space-4);">
-                <strong style="color:var(--color-seafoam);font-family:var(--font-display);display:block;margin-bottom:4px;">Palm &amp; Seafoam</strong>
-                <span class="mono" style="color:var(--color-sand);">#2E5A44 / #A8D5BA • Delivery Pills</span>
-              </div>
+          <div class="journal-copy">
+            <span class="journal-eyebrow">PHILIPPINE COASTAL CRAFT • 4 ISLAND CAPSULES</span>
+            <h2>Between Reef Breaks &amp; <span class="craft-serif">Slow Afternoons.</span></h2>
+            <p>
+              <strong>Suot Isla</strong> was born out of a simple packing ritual: one bag that moves effortlessly from a 6:00 AM paddle-out at Cloud 9 to barefoot sunset dinners along Station 1.
+            </p>
+            <p>
+              Every fabric in our four island capsules is chosen for Philippine heat, saltwater, and early-morning bangka crossings—quick-dry recycled ocean poly-stretch, airy European flax linen, and handwoven Aklan buri totes.
+            </p>
+            <div class="journal-actions">
+              <a href="catalog.html" class="btn btn-primary btn-pill">Browse All 16 Pieces →</a>
+              <a href="catalog.html?series=Boracay" class="btn btn-outline btn-pill">Explore Boracay Linen</a>
             </div>
           </div>
         </div>
+
+        <div class="craft-materials-row">
+          <a href="catalog.html?category=Swim+%26+Surf" class="craft-material-col">
+            <div class="craft-material-top">
+              <span class="craft-material-num">01 / FABRIC</span>
+              <span class="craft-swatch-dot" style="background-color:#0E6B74;"></span>
+            </div>
+            <h3>Recycled Surf Poly</h3>
+            <p>Quick-dry 4-way stretch with coconut-shell drawstring tips.</p>
+            <span class="craft-material-link">Shop Swim &amp; Surf →</span>
+          </a>
+
+          <a href="catalog.html?category=Resort+%26+Loungewear" class="craft-material-col">
+            <div class="craft-material-top">
+              <span class="craft-material-num">02 / WEAVE</span>
+              <span class="craft-swatch-dot" style="background-color:#E8D7B9;"></span>
+            </div>
+            <h3>Breathable Flax Linen</h3>
+            <p>Sun-washed resort shirts &amp; relaxed coastal trousers.</p>
+            <span class="craft-material-link">Shop Resortwear →</span>
+          </a>
+
+          <a href="catalog.html?category=Island+Accessories" class="craft-material-col">
+            <div class="craft-material-top">
+              <span class="craft-material-num">03 / CRAFT</span>
+              <span class="craft-swatch-dot" style="background-color:#D8BC8B;"></span>
+            </div>
+            <h3>Native Buri &amp; Pandan</h3>
+            <p>Handwoven Aklan totes finished with waterproof lining.</p>
+            <span class="craft-material-link">Shop Accessories →</span>
+          </a>
+
+          <a href="catalog.html?category=Beach+Towels+%26+Ponchos" class="craft-material-col">
+            <div class="craft-material-top">
+              <span class="craft-material-num">04 / PROTECT</span>
+              <span class="craft-swatch-dot" style="background-color:#A8D5BA;"></span>
+            </div>
+            <h3>UPF 50+ &amp; Micro-Cotton</h3>
+            <p>Flatlock-seam rash guards &amp; sand-repellent ponchos.</p>
+            <span class="craft-material-link">Shop Towels &amp; Ponchos →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dedicated Island Dispatch & Order Tracking Band -->
+    <section class="order-track-band" aria-label="Track Your Island Order">
+      <div class="container order-track-inner">
+        <div class="order-track-copy">
+          <h3>Already placed an island order?</h3>
+          <p>Check live courier dispatch status from Manila to Siargao, view order emails, or request a size exchange.</p>
+        </div>
+
+        <form class="order-track-form" action="account.html" method="GET">
+          <input
+            type="text"
+            name="order"
+            class="order-track-input"
+            placeholder="Order # (e.g. SI-2026-1048)"
+            aria-label="Order Number"
+          />
+          <button type="submit" class="btn btn-primary btn-pill">Track Your Order →</button>
+        </form>
       </div>
     </section>
   </main>
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/store.js"></script>
-  <script src="assets/js/components.js"></script>
+  <script src="assets/js/data.js?v=13"></script>
+  <script src="assets/js/store.js?v=13"></script>
+  <script src="assets/js/components.js?v=25"></script>
+  <script src="assets/js/ocean-overdrive.js?v=13"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const seriesGrid = document.getElementById("home-series-grid");
       const featuredGrid = document.getElementById("home-featured-grid");
 
-      // Render 4 Island Series Cards
-      seriesGrid.innerHTML = window.SUOT_ISLA_DATA.islandSeries
-        .map(
-          (s) => `
-          <a href="catalog.html?series=${encodeURIComponent(s.id)}" class="series-card">
-            <div>
-              <div class="series-card-header">
-                <span class="pill pill-lagoon">${s.swellTag}</span>
-                <span class="mono" style="color:var(--text-muted);">${s.coords.split(",")[0]}</span>
-              </div>
-              <h3>${s.name}</h3>
-              <div style="font-size:var(--text-xs);font-weight:700;color:var(--color-lagoon);margin-bottom:var(--space-2);">
-                ${s.subtitle}
-              </div>
-              <p>${s.description}</p>
-            </div>
-            <div class="series-card-footer">
-              <span>Explore 4 Series Items</span>
-              <span>→</span>
-            </div>
-          </a>
-        `
-        )
-        .join("");
+      // Interactive Hero Island Lookbook Switcher + Live Capsule Quick-Shop Card
+      const heroScenes = {
+        Siargao: {
+          img: "assets/images/hero-surf.jpg",
+          pos: "center 12%",
+          caption: "9.8482° N, 126.0458° E • CLOUD 9 • 5–7FT SWELL",
+          cta: "Explore Siargao",
+          href: "catalog.html?series=Siargao",
+          productId: "siargao-cloud9-boardshorts",
+          capMeta: "SIARGAO CAPSULE • BEST SELLER"
+        },
+        Boracay: {
+          img: "assets/images/hero-boracay.jpg",
+          pos: "center 50%",
+          caption: "11.9674° N, 121.9248° E • WHITE BEACH • GOLDEN HOUR",
+          cta: "Explore Boracay",
+          href: "catalog.html?series=Boracay",
+          productId: "boracay-golden-hour-linen-polo",
+          capMeta: "BORACAY CAPSULE • RESORT LINEN"
+        },
+        "El Nido": {
+          img: "assets/images/series-elnido.jpg",
+          pos: "center 42%",
+          caption: "11.1956° N, 119.4180° E • BIG LAGOON • GLASSY WATER",
+          cta: "Explore El Nido",
+          href: "catalog.html?series=El+Nido",
+          productId: "elnido-reef-safe-rash-guard",
+          capMeta: "EL NIDO CAPSULE • UPF 50+"
+        },
+        "La Union": {
+          img: "assets/images/series-launion.jpg",
+          pos: "center 28%",
+          caption: "16.6631° N, 120.3208° E • SAN JUAN • NORTH SWELL",
+          cta: "Explore La Union",
+          href: "catalog.html?series=La+Union",
+          productId: "boracay-woven-buri-pandan-tote",
+          capMeta: "ISLAND CARRY • HANDWOVEN"
+        }
+      };
 
-      // Render 8 Featured Products (2 from each series)
+      const heroImgEl = document.getElementById("hero-editorial-img");
+      const heroCapEl = document.getElementById("hero-photo-caption");
+      const heroSeriesCta = document.getElementById("hero-series-cta");
+      const capLinkEl = document.getElementById("hero-cap-link");
+      const capDetailsLinkEl = document.getElementById("hero-cap-details-link");
+      const capImgEl = document.getElementById("hero-cap-img");
+      const capMetaEl = document.getElementById("hero-cap-meta");
+      const capTitleEl = document.getElementById("hero-cap-title");
+      const capPriceEl = document.getElementById("hero-cap-price");
+      const capSizeEl = document.getElementById("hero-cap-size");
+      const capSwatchesEl = document.getElementById("hero-cap-swatches");
+      const capAddBtn = document.getElementById("hero-cap-add");
+
+      let heroCapColor = "Lagoon Teal";
+
+      function renderHeroCapsule(productId, metaText) {
+        const prod = window.SuotStore.getProductById(productId);
+        if (!prod) return;
+        if (!prod.colors.includes(heroCapColor)) heroCapColor = prod.colors[0];
+
+        const detailUrl = `product.html?id=${encodeURIComponent(prod.id)}`;
+        capLinkEl.href = detailUrl;
+        capDetailsLinkEl.href = detailUrl;
+        capImgEl.src = prod.image || "assets/images/products/siargao-cloud9-boardshorts.jpg";
+        capImgEl.alt = prod.name;
+        capMetaEl.textContent = metaText;
+        capTitleEl.textContent = prod.name;
+        capPriceEl.textContent = window.SuotStore.formatPrice(prod.price);
+        capAddBtn.textContent = `Quick Add — ${window.SuotStore.formatPrice(prod.price)}`;
+        capAddBtn.setAttribute("data-hero-prod", prod.id);
+
+        capSizeEl.innerHTML = prod.sizes.map((sz) => `<option value="${sz}">${sz}</option>`).join("");
+
+        capSwatchesEl.innerHTML = `
+          ${prod.colors
+            .map(
+              (c) => `
+              <button
+                type="button"
+                class="color-swatch ${c === heroCapColor ? "active" : ""}"
+                style="background-color:${window.SuotStore.getColorHex(c)};width:16px;height:16px;"
+                title="${c}"
+                data-hero-swatch="${c}"
+              ></button>
+            `
+            )
+            .join("")}
+          <span class="hero-cap-color-label">${heroCapColor}</span>
+        `;
+
+        capSwatchesEl.querySelectorAll("[data-hero-swatch]").forEach((sw) => {
+          sw.addEventListener("click", () => {
+            heroCapColor = sw.getAttribute("data-hero-swatch");
+            renderHeroCapsule(prod.id, metaText);
+          });
+        });
+      }
+
+      renderHeroCapsule("siargao-cloud9-boardshorts", "SIARGAO CAPSULE • BEST SELLER");
+
+      document.querySelectorAll("[data-hero-island]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-hero-island");
+          const scene = heroScenes[key];
+          if (!scene) return;
+          const prod = window.SuotStore.getProductById(scene.productId);
+          if (prod) heroCapColor = prod.colors[0];
+          window.suotTransition(() => {
+            document.querySelectorAll("[data-hero-island]").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            heroImgEl.src = scene.img;
+            heroImgEl.style.setProperty("--hero-obj-pos", scene.pos);
+            heroCapEl.textContent = scene.caption;
+            heroSeriesCta.textContent = scene.cta;
+            heroSeriesCta.href = scene.href;
+            renderHeroCapsule(scene.productId, scene.capMeta);
+          });
+        });
+      });
+
+      capAddBtn.addEventListener("click", () => {
+        const pid = capAddBtn.getAttribute("data-hero-prod");
+        const prod = window.SuotStore.getProductById(pid);
+        if (prod) {
+          const chosenSize = capSizeEl.value || prod.sizes[0];
+          window.SuotStore.addToCart(prod.id, chosenSize, heroCapColor || prod.colors[0], 1);
+          window.SuotUI.toast(
+            `Added ${prod.name} (${chosenSize}, ${heroCapColor || prod.colors[0]}) to your Island Bag!`,
+            "Added to Bag"
+          );
+        }
+      });
+
+      // Render Interactive Expanding Editorial Accordion for the 4 Island Series
       const allProducts = window.SuotStore.getProducts();
-      const featured = [
-        allProducts[0],
-        allProducts[1],
-        allProducts[4],
-        allProducts[7],
-        allProducts[8],
-        allProducts[10],
-        allProducts[12],
-        allProducts[15]
-      ].filter(Boolean);
+      seriesGrid.innerHTML = window.SUOT_ISLA_DATA.islandSeries
+        .map((s, idx) => {
+          const seriesItems = allProducts.filter((p) => p.series === s.id && p.image).slice(0, 2);
+          return `
+            <article class="series-panel ${idx === 0 ? "is-active" : ""}" data-series-panel="${s.id}">
+              <img src="${s.image}" alt="${s.name} — ${s.subtitle}" class="series-panel-img" loading="lazy" />
+              <div class="series-panel-scrim"></div>
 
-      function renderFeaturedCards() {
-        featuredGrid.innerHTML = featured
-          .map((p) => {
-            const activeColor = p._selectedColor || p.colors[0];
-            const isLowStock = p.stock <= 5;
-            return `
-              <article class="product-card" data-product-card="${p.id}">
-                <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-thumb-wrap">
-                  <div class="product-badges">
-                    <span class="pill pill-lagoon">${p.series}</span>
+              <div class="series-panel-top">
+                <span class="series-panel-index">0${idx + 1} / ${s.id.toUpperCase()}</span>
+                <span class="series-panel-coords">${s.coords}</span>
+              </div>
+
+              <div class="series-panel-body">
+                <h3>${s.name}</h3>
+                <p class="series-panel-subtitle">${s.subtitle}</p>
+
+                <div class="series-panel-details">
+                  <p class="series-panel-desc">${s.description}</p>
+                  <div class="series-panel-footer">
+                    <a href="catalog.html?series=${encodeURIComponent(s.id)}" class="btn btn-coral btn-sm">
+                      Explore ${s.id} →
+                    </a>
                     ${
-                      isLowStock
-                        ? `<span class="pill pill-coral">Low Stock (${p.stock} left)</span>`
-                        : p.badge
-                        ? `<span class="pill pill-delivery">${p.badge}</span>`
+                      seriesItems.length
+                        ? `<div class="series-mini-gear">
+                            ${seriesItems
+                              .map(
+                                (item) => `
+                                <a href="product.html?id=${encodeURIComponent(item.id)}" class="series-mini-item">
+                                  <img src="${item.image}" alt="${item.name}" />
+                                  <span>${window.SuotStore.formatPrice(item.price)}</span>
+                                </a>
+                              `
+                              )
+                              .join("")}
+                          </div>`
                         : ""
                     }
                   </div>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      seriesGrid.querySelectorAll("[data-series-panel]").forEach((panel) => {
+        const activate = () => {
+          seriesGrid.querySelectorAll("[data-series-panel]").forEach((p) => p.classList.remove("is-active"));
+          panel.classList.add("is-active");
+        };
+        panel.addEventListener("mouseenter", activate);
+        panel.addEventListener("click", (e) => {
+          if (e.target.closest("a")) return;
+          activate();
+        });
+      });
+
+      // Render Featured Products with Live In-Place Category Filtering
+      const defaultFeatured = [
+        allProducts[0],
+        allProducts[1],
+        allProducts[2],
+        allProducts[3],
+        allProducts[4],
+        allProducts[5],
+        allProducts[7],
+        allProducts[8]
+      ].filter(Boolean);
+
+      let activeHomeCategory = "all";
+
+      function renderFeaturedCards() {
+        const list =
+          activeHomeCategory === "all"
+            ? defaultFeatured
+            : allProducts.filter((p) => p.category === activeHomeCategory);
+
+        featuredGrid.innerHTML = list
+          .map((p) => {
+            const activeColor = p._selectedColor || p.colors[0];
+            const isLowStock = p.stock <= 5;
+            const minimalTag = isLowStock
+              ? `${p.series.toUpperCase()} • LOW STOCK (${p.stock} LEFT)`
+              : p.badge
+              ? `${p.series.toUpperCase()} • ${p.badge.toUpperCase()}`
+              : `${p.series.toUpperCase()} • ${p.category.toUpperCase()}`;
+
+            return `
+              <article class="product-card" data-product-card="${p.id}">
+                <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-thumb-wrap">
                   <div class="product-svg-stage" id="thumb-${p.id}">
                     ${window.SuotStore.renderProductVisual(p, activeColor)}
                   </div>
                 </a>
 
                 <div class="product-body">
-                  <div class="product-meta-row">
-                    <span>${p.category}</span>
-                    <span class="mono">${p.sku}</span>
-                  </div>
+                  <span class="product-minimal-tag ${isLowStock ? "is-low-stock" : ""}">${minimalTag}</span>
                   <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-title-link">
                     <h3>${p.name}</h3>
                   </a>
-                  <p class="product-desc">${p.description}</p>
 
                   <div class="swatch-row" aria-label="Color Variants">
                     ${p.colors
@@ -261,19 +499,18 @@
                       `
                       )
                       .join("")}
-                    <span style="font-size:var(--text-xs);color:var(--text-muted);margin-left:4px;">${activeColor}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);margin-left:2px;">${activeColor}</span>
                   </div>
 
-                  <div class="product-card-footer">
-                    <span class="product-price">${window.SuotStore.formatPrice(p.price)}</span>
-                    <button
-                      type="button"
-                      class="btn btn-primary btn-sm"
-                      data-quick-add="${p.id}"
-                    >
-                      Add (${p.sizes[0]})
-                    </button>
-                  </div>
+                  <div class="product-price">${window.SuotStore.formatPrice(p.price)}</div>
+
+                  <button
+                    type="button"
+                    class="btn-minimal-add"
+                    data-quick-add="${p.id}"
+                  >
+                    Add to Bag (${p.sizes[0]})
+                  </button>
                 </div>
               </article>
             `;
@@ -284,7 +521,7 @@
           btn.addEventListener("click", () => {
             const pid = btn.getAttribute("data-swatch-prod");
             const color = btn.getAttribute("data-swatch-color");
-            const prod = featured.find((item) => item.id === pid);
+            const prod = allProducts.find((item) => item.id === pid);
             if (prod) {
               prod._selectedColor = color;
               renderFeaturedCards();
@@ -295,7 +532,7 @@
         featuredGrid.querySelectorAll("[data-quick-add]").forEach((btn) => {
           btn.addEventListener("click", () => {
             const pid = btn.getAttribute("data-quick-add");
-            const prod = featured.find((item) => item.id === pid);
+            const prod = allProducts.find((item) => item.id === pid);
             if (prod) {
               const color = prod._selectedColor || prod.colors[0];
               const size = prod.sizes[0];
@@ -305,6 +542,18 @@
           });
         });
       }
+
+      document.querySelectorAll("[data-home-cat]").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          activeHomeCategory = tab.getAttribute("data-home-cat");
+          window.suotTransition(() => {
+            document.querySelectorAll("[data-home-cat]").forEach((t) => {
+              t.className = t === tab ? "pill pill-lagoon" : "pill pill-sand";
+            });
+            renderFeaturedCards();
+          });
+        });
+      });
 
       renderFeaturedCards();
     });

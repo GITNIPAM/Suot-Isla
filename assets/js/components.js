@@ -36,10 +36,8 @@
             <span class="pill pill-delivery">PHL Island Dispatch</span>
             <span>Free Philippine island delivery on orders ₱3,500+ • Code <strong class="mono">ISLA10</strong> for 10% off</span>
           </div>
-          <div style="display:flex;align-items:center;gap:1rem;">
-            <a href="diagrams.html">ERD &amp; Use Case Diagrams</a>
-            <span>•</span>
-            <a href="admin.html">Role Portal (${user.role.toUpperCase()})</a>
+          <div style="display:flex;align-items:center;gap:1rem;color:var(--color-seafoam);font-weight:600;">
+            <span>Nationwide Philippine Delivery • 14-Day Easy Returns</span>
           </div>
         </div>
       </div>
@@ -56,13 +54,12 @@
 
           <nav class="primary-nav" aria-label="Primary Navigation">
             <a href="index.html" class="nav-link ${activePage === "index.html" ? "active" : ""}">Home</a>
-            <a href="catalog.html" class="nav-link ${activePage === "catalog.html" ? "active" : ""}">Catalog (16)</a>
+            <a href="catalog.html" class="nav-link ${activePage === "catalog.html" ? "active" : ""}">Catalog</a>
             <a href="catalog.html?series=Siargao" class="nav-link">Siargao</a>
             <a href="catalog.html?series=Boracay" class="nav-link">Boracay</a>
             <a href="catalog.html?series=El+Nido" class="nav-link">El Nido</a>
             <a href="catalog.html?series=La+Union" class="nav-link">La Union</a>
-            <a href="account.html" class="nav-link ${activePage === "account.html" ? "active" : ""}">Orders &amp; Returns</a>
-            <a href="admin.html" class="nav-link ${activePage === "admin.html" ? "active" : ""}">Admin / Courier</a>
+            <a href="account.html" class="nav-link ${activePage === "account.html" ? "active" : ""}">Orders</a>
           </nav>
 
           <div class="header-actions">
@@ -147,18 +144,23 @@
             </div>
 
             <div class="footer-col">
-              <h4>System &amp; Rubric</h4>
+              <h4>Customer Care</h4>
               <ul class="footer-links">
-                <li><a href="admin.html">Admin / Staff / Courier Portal</a></li>
-                <li><a href="diagrams.html">ERD &amp; Use Case Diagrams</a></li>
-                <li><a href="diagrams.html#foursys-guide">FourSys Cloud Handover Guide</a></li>
+                <li><a href="account.html">Track Your Order</a></li>
+                <li><a href="account.html">Returns &amp; Exchanges</a></li>
+                <li><a href="cart.html">Island Shipping Rates</a></li>
+                <li><a href="mailto:ola@suotisla.ph">Contact: ola@suotisla.ph</a></li>
               </ul>
             </div>
           </div>
 
           <div class="footer-bottom">
-            <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear. Philippine Christian University • College of Informatics Web System Final Project.</span>
-            <span>Ready for FourSys Cloud (Starter Cloud Tier) Deployment</span>
+            <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear. All rights reserved.</span>
+            <div class="footer-bottom-meta">
+              <span>Handcrafted for Philippine Surf Towns</span>
+              <span aria-hidden="true">·</span>
+              <a href="admin.html" class="footer-portal-link">Admin &amp; Operations Portal →</a>
+            </div>
           </div>
         </div>
       </footer>

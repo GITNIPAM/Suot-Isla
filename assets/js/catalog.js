@@ -248,34 +248,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const activeColor = state.selectedColorPerProduct[p.id] || (state.color !== "all" && p.colors.includes(state.color) ? state.color : p.colors[0]);
         const activeSize = state.selectedSizePerProduct[p.id] || (state.size !== "all" && p.sizes.includes(state.size) ? state.size : p.sizes[0]);
         const isLowStock = p.stock <= 5;
+        const minimalTag = isLowStock
+          ? `${p.series.toUpperCase()} • LOW STOCK (${p.stock} LEFT)`
+          : p.badge
+          ? `${p.series.toUpperCase()} • ${p.badge.toUpperCase()}`
+          : `${p.series.toUpperCase()} • ${p.category.toUpperCase()}`;
 
         return `
           <article class="product-card">
             <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-thumb-wrap">
-              <div class="product-badges">
-                <span class="pill pill-lagoon">${p.series}</span>
-                ${
-                  isLowStock
-                    ? `<span class="pill pill-coral">Low Stock (${p.stock} left)</span>`
-                    : p.badge
-                    ? `<span class="pill pill-delivery">${p.badge}</span>`
-                    : ""
-                }
-              </div>
               <div class="product-svg-stage">
                 ${window.SuotStore.renderProductVisual(p, activeColor)}
               </div>
             </a>
 
             <div class="product-body">
-              <div class="product-meta-row">
-                <span>${p.category}</span>
-                <span class="mono">${p.sku}</span>
-              </div>
+              <span class="product-minimal-tag ${isLowStock ? "is-low-stock" : ""}">${minimalTag}</span>
               <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-title-link">
                 <h3>${p.name}</h3>
               </a>
-              <p class="product-desc">${p.description}</p>
 
               <!-- Color Swatch Selector -->
               <div class="swatch-row">
@@ -296,28 +287,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span style="font-size:var(--text-xs);color:var(--text-muted);">${activeColor}</span>
               </div>
 
-              <!-- Quick Size Selector -->
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:var(--space-3);flex-wrap:wrap;">
-                <span style="font-size:var(--text-xs);color:var(--text-muted);">Size:</span>
+              <!-- Quick Size & Price Row -->
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:0.65rem;">
+                <span class="product-price" style="margin-bottom:0;">${window.SuotStore.formatPrice(p.price)}</span>
                 <select
                   class="form-select"
-                  style="width:auto;padding:0.25rem 0.5rem;font-size:var(--text-xs);"
+                  style="width:auto;padding:0.22rem 0.5rem;font-size:var(--text-xs);"
                   data-card-size-prod="${p.id}"
                   aria-label="Select Size for ${p.name}"
                 >
                   ${p.sizes
-                    .map((sz) => `<option value="${sz}" ${sz === activeSize ? "selected" : ""}>${sz}</option>`)
+                    .map((sz) => `<option value="${sz}" ${sz === activeSize ? "selected" : ""}>Size: ${sz}</option>`)
                     .join("")}
                 </select>
-                <span class="mono" style="margin-left:auto;color:var(--text-muted);">${p.stock} in stock</span>
               </div>
 
-              <div class="product-card-footer">
-                <span class="product-price">${window.SuotStore.formatPrice(p.price)}</span>
-                <button type="button" class="btn btn-primary btn-sm" data-card-add="${p.id}">
-                  Add to Bag
-                </button>
-              </div>
+              <button type="button" class="btn-minimal-add" data-card-add="${p.id}">
+                Add to Bag
+              </button>
             </div>
           </article>
         `;

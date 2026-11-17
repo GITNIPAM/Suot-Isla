@@ -92,7 +92,16 @@
 
     // -------------------- Products & Inventory CRUD --------------------
     getProducts(includeArchived = false) {
-      const list = readJSON(KEYS.PRODUCTS, window.SUOT_ISLA_DATA.products);
+      const seedMap = {};
+      window.SUOT_ISLA_DATA.products.forEach((sp) => {
+        seedMap[sp.id] = sp;
+      });
+      const list = readJSON(KEYS.PRODUCTS, window.SUOT_ISLA_DATA.products).map((p) => {
+        if (!p.image && seedMap[p.id] && seedMap[p.id].image) {
+          return { ...p, image: seedMap[p.id].image };
+        }
+        return p;
+      });
       return includeArchived ? list : list.filter((p) => !p.archived);
     },
 
@@ -530,14 +539,26 @@
       return req;
     },
 
-    // -------------------- Technical Spec Visual Renderer --------------------
+    // -------------------- Studio Product Visual Renderer --------------------
     renderProductVisual(product, activeColor) {
-      if (product.customImageUrl) {
-        return `<img src="${product.customImageUrl}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />`;
-      }
-
       const colorName = activeColor || (product.colors && product.colors[0]) || "Lagoon Teal";
       const fillHex = this.getColorHex(colorName);
+      const photoSrc = product.customImageUrl || product.image;
+
+      if (photoSrc) {
+        const isPrimaryColor = product.colors && colorName === product.colors[0];
+        return `
+          <div class="studio-photo-wrap">
+            <img src="${photoSrc}" alt="${product.name} in ${colorName}" class="studio-product-img" loading="lazy" />
+            ${
+              !isPrimaryColor
+                ? `<span class="studio-color-tint" style="background-color:${fillHex};" aria-hidden="true"></span>`
+                : ""
+            }
+          </div>
+        `;
+      }
+
       const isLight = ["#F9F6EE", "#F7F5F0", "#EFE7D6", "#E8D7B9", "#E5D8C1", "#E2D5BE"].includes(fillHex);
       const strokeHex = isLight ? "#092C30" : "#FAF6EE";
 

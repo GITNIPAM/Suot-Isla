@@ -4,13 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin, Staff &amp; Courier Operations Portal — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
-  <link rel="stylesheet" href="assets/css/admin.css" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=4" />
+  <link rel="stylesheet" href="assets/css/base.css?v=4" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=4" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=4" />
 </head>
-<body>
-  <div id="site-header-mount"></div>
+<body class="admin-portal">
+  <!-- Dedicated Back-Office Operations Top Bar (Distinct from Customer Storefront) -->
+  <header class="admin-topbar">
+    <div class="admin-topbar-left">
+      <a href="admin.html" class="admin-brand">
+        <img src="assets/images/logo-stamp.svg" alt="Suot Isla Stamp" style="width:34px;height:34px;" />
+        <div>
+          <span class="admin-brand-name">SUOT ISLA</span>
+          <span class="admin-brand-env">OPERATIONS &amp; DISPATCH CONSOLE</span>
+        </div>
+      </a>
+      <span class="pill pill-delivery" id="topbar-role-badge">ROLE: ADMIN</span>
+    </div>
+
+    <div class="admin-topbar-actions">
+      <button type="button" class="admin-top-btn" id="admin-open-emails-btn">
+        <span>Email Outbox</span>
+        <span class="badge-count" id="admin-email-count">3</span>
+      </button>
+      <a href="diagrams.html" class="admin-top-btn">ERD &amp; Use Case</a>
+      <a href="auth.html" class="admin-top-btn">Switch Operator</a>
+      <a href="index.html" class="admin-top-btn admin-top-btn-accent">← Customer Storefront</a>
+    </div>
+  </header>
 
   <div class="admin-shell">
     <!-- Left Operations Sidebar with Live RBAC Switcher -->

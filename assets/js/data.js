@@ -9,7 +9,8 @@ window.SUOT_ISLA_DATA = {
       name: "Siargao Series",
       subtitle: "High-Performance Surf & Wave Gear",
       coords: "9.8482° N, 126.0458° E",
-      swellTag: "Cloud 9 Reef Break • UPF 50+",
+      swellTag: "Cloud 9 Reef Break",
+      image: "assets/images/series-siargao.jpg",
       description: "Engineered for heavy reef breaks, boat transfers, and dawn-to-dusk barrel sessions in General Luna.",
       accent: "#0E6B74"
     },
@@ -18,7 +19,8 @@ window.SUOT_ISLA_DATA = {
       name: "Boracay Series",
       subtitle: "Breezy Resortwear & Golden-Hour Linen",
       coords: "11.9674° N, 121.9248° E",
-      swellTag: "White Beach Sunset • Native Weave",
+      swellTag: "White Beach Sunset",
+      image: "assets/images/series-boracay.jpg",
       description: "Breathable linen-cotton blends, hand-dyed batik wraps, and native buri-pandan craft for golden hour.",
       accent: "#F27D63"
     },
@@ -27,7 +29,8 @@ window.SUOT_ISLA_DATA = {
       name: "El Nido Series",
       subtitle: "Lagoon Swimwear & Island-Hopping Essentials",
       coords: "11.1956° N, 119.4180° E",
-      swellTag: "Big Lagoon • Quick-Dry Travel",
+      swellTag: "Big Lagoon",
+      image: "assets/images/series-elnido.jpg",
       description: "Compact, fast-drying swim and deck essentials built for karst limestone lagoons, kayaks, and bangka hops.",
       accent: "#2E5A44"
     },
@@ -36,7 +39,8 @@ window.SUOT_ISLA_DATA = {
       name: "La Union Series",
       subtitle: "Laid-Back Coastal Streetwear & Weekend Casuals",
       coords: "16.6631° N, 120.3208° E",
-      swellTag: "San Juan Point • Salt-Washed",
+      swellTag: "San Juan Point",
+      image: "assets/images/series-launion.jpg",
       description: "Sun-faded heavyweight tees, camp-collar shirts, and skate-to-surf canvas shorts for north-swell weekends.",
       accent: "#0A535A"
     }
@@ -106,6 +110,7 @@ window.SUOT_ISLA_DATA = {
       stock: 18,
       soldCount: 64,
       badge: "Best Seller",
+      image: "assets/images/products/siargao-cloud9-boardshorts.jpg",
       silhouette: "shorts"
     },
     {
@@ -123,6 +128,7 @@ window.SUOT_ISLA_DATA = {
       stock: 4,
       soldCount: 49,
       badge: "Low Stock",
+      image: "assets/images/products/siargao-pacific-swell-surf-suit.jpg",
       silhouette: "surfsuit"
     },
     {
@@ -140,6 +146,7 @@ window.SUOT_ISLA_DATA = {
       stock: 14,
       soldCount: 38,
       badge: null,
+      image: "assets/images/products/siargao-barrel-ride-poncho.jpg",
       silhouette: "poncho"
     },
     {
@@ -157,6 +164,7 @@ window.SUOT_ISLA_DATA = {
       stock: 22,
       soldCount: 53,
       badge: "Island Essential",
+      image: "assets/images/products/siargao-reef-walker-dry-bag.jpg",
       silhouette: "drybag"
     },
 
@@ -176,6 +184,7 @@ window.SUOT_ISLA_DATA = {
       stock: 15,
       soldCount: 58,
       badge: "Best Seller",
+      image: "assets/images/products/boracay-golden-hour-linen-polo.jpg",
       silhouette: "shirt"
     },
     {
@@ -193,6 +202,7 @@ window.SUOT_ISLA_DATA = {
       stock: 11,
       soldCount: 41,
       badge: null,
+      image: "assets/images/products/boracay-white-beach-linen-trousers.jpg",
       silhouette: "trousers"
     },
     {
@@ -227,6 +237,7 @@ window.SUOT_ISLA_DATA = {
       stock: 9,
       soldCount: 36,
       badge: "Artisan Made",
+      image: "assets/images/products/boracay-woven-buri-pandan-tote.jpg",
       silhouette: "tote"
     },
 
@@ -246,6 +257,7 @@ window.SUOT_ISLA_DATA = {
       stock: 19,
       soldCount: 51,
       badge: "UPF 50+",
+      image: "assets/images/products/elnido-reef-safe-rash-guard.jpg",
       silhouette: "rashguard"
     },
     {

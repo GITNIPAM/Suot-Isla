@@ -82,44 +82,41 @@
         </form>
       </section>
 
-      <!-- Quick Demo Role Switcher for Rubric Presentation -->
-      <aside class="surface-card" aria-label="Presentation Demo Role Switcher">
-        <h2 style="margin-top:0;font-size:var(--text-xl);">1-Click Rubric Role Switcher</h2>
+      <!-- Customer Member Benefits Panel -->
+      <aside class="surface-card" aria-label="Suot Isla Member Perks">
+        <h2 style="margin-top:0;font-size:var(--text-xl);">Suot Isla Island Club</h2>
         <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
-          Instantly switch between the 4 authenticated system roles to demonstrate Customer flows, Admin inventory CRUD, Staff order processing, and Courier delivery updates.
+          Create an account or sign in to save your Philippine shipping addresses, track courier dispatches from Manila to Siargao, and manage returns or size exchanges.
         </p>
 
-        <div class="demo-role-grid">
-          <button type="button" class="btn btn-outline" data-demo-role="customer" style="justify-content:flex-start;text-align:left;">
-            <div>
-              <strong>Customer Account</strong>
-              <div style="font-size:var(--text-xs);color:var(--text-muted);">Mateo Alonzo • Orders &amp; Returns</div>
-            </div>
-          </button>
-
-          <button type="button" class="btn btn-outline" data-demo-role="admin" style="justify-content:flex-start;text-align:left;">
-            <div>
-              <strong>Store Admin (Full RBAC)</strong>
-              <div style="font-size:var(--text-xs);color:var(--text-muted);">Camille Reyes • CRUD &amp; Refunds</div>
-            </div>
-          </button>
-
-          <button type="button" class="btn btn-outline" data-demo-role="staff" style="justify-content:flex-start;text-align:left;">
-            <div>
-              <strong>Catalog &amp; Order Staff</strong>
-              <div style="font-size:var(--text-xs);color:var(--text-muted);">Liam Villanueva • Inventory &amp; Packing</div>
-            </div>
-          </button>
-
-          <button type="button" class="btn btn-outline" data-demo-role="courier" style="justify-content:flex-start;text-align:left;">
-            <div>
-              <strong>Delivery Courier</strong>
-              <div style="font-size:var(--text-xs);color:var(--text-muted);">Kuya Jomar • Fulfillment Status</div>
-            </div>
-          </button>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-6);">
+          <div style="padding:var(--space-3);background:var(--color-sand);border-radius:var(--radius-sm);font-size:var(--text-sm);">
+            <strong>Fast Island Checkout</strong>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);">Save home, campus, or surf hostel addresses for one-click dispatch.</div>
+          </div>
+          <div style="padding:var(--space-3);background:var(--color-sand);border-radius:var(--radius-sm);font-size:var(--text-sm);">
+            <strong>Live Order &amp; Courier Updates</strong>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);">Instant email notifications from packing through island delivery.</div>
+          </div>
+          <div style="padding:var(--space-3);background:var(--color-sand);border-radius:var(--radius-sm);font-size:var(--text-sm);">
+            <strong>14-Day Hassle-Free Returns</strong>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);">Request cancellations or size exchanges directly from your dashboard.</div>
+          </div>
         </div>
 
-        <div style="margin-top:var(--space-6);padding:var(--space-4);background:var(--color-sand);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);" id="active-session-box"></div>
+        <div style="padding:var(--space-4);background:var(--color-sand);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);" id="active-session-box"></div>
+
+        <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-subtle);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:var(--space-2);">
+            1-Click Role &amp; Portal Switcher
+          </div>
+          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" data-demo-role="customer" data-redirect="account.html">Customer Portal</button>
+            <button type="button" class="btn btn-primary btn-sm" data-demo-role="admin" data-redirect="admin.html">Admin Console →</button>
+            <button type="button" class="btn btn-outline btn-sm" data-demo-role="staff" data-redirect="admin.html">Staff Portal</button>
+            <button type="button" class="btn btn-outline btn-sm" data-demo-role="courier" data-redirect="admin.html">Courier Dispatch</button>
+          </div>
+        </div>
       </aside>
     </div>
   </main>
@@ -151,7 +148,7 @@
           <div class="mono" style="color:var(--text-muted);margin-top:2px;">Hash: ${u.passwordHash}</div>
           <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
             <a href="account.html" class="btn btn-primary btn-sm">Go to Customer Dashboard</a>
-            <a href="admin.html" class="btn btn-outline btn-sm">Go to Role Portal</a>
+            <a href="catalog.html" class="btn btn-outline btn-sm">Browse Catalog</a>
           </div>
         `;
       }
@@ -205,9 +202,15 @@
       document.querySelectorAll("[data-demo-role]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const role = btn.getAttribute("data-demo-role");
+          const target = btn.getAttribute("data-redirect");
           const u = window.SuotStore.loginAsRole(role);
           window.SuotUI.toast(`Switched active session to ${u.name} (${u.role.toUpperCase()})`, "Role Switched");
           renderSessionBox();
+          if (target) {
+            setTimeout(() => {
+              window.location.href = target;
+            }, 450);
+          }
         });
       });
 

@@ -30,6 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function syncRolePermissions() {
     roleDescEl.textContent = roleDescriptions[activeRole] || "";
+    const roleBadgeEl = document.getElementById("topbar-role-badge");
+    if (roleBadgeEl) roleBadgeEl.textContent = `ROLE: ${activeRole.toUpperCase()}`;
+
+    const adminEmailCountEl = document.getElementById("admin-email-count");
+    if (adminEmailCountEl) adminEmailCountEl.textContent = window.SuotStore.getEmails().length;
+
     document.querySelectorAll("[data-admin-tab]").forEach((btn) => {
       const allowed = (btn.getAttribute("data-roles") || "").split(",");
       const isAllowed = allowed.includes(activeRole);
@@ -766,6 +772,15 @@ document.addEventListener("DOMContentLoaded", () => {
       syncRolePermissions();
       renderActiveTab();
     });
+  });
+
+  const adminEmailsBtn = document.getElementById("admin-open-emails-btn");
+  if (adminEmailsBtn) {
+    adminEmailsBtn.addEventListener("click", () => window.SuotUI.openDrawer("email"));
+  }
+
+  window.addEventListener("suotisla:statechange", () => {
+    syncRolePermissions();
   });
 
   syncRolePermissions();
