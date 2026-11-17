@@ -3,106 +3,152 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Customer Dashboard, Order History &amp; Returns — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
-  <link rel="stylesheet" href="assets/css/admin.css" />
+  <title>Orders &amp; Island Club — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
+  <link rel="stylesheet" href="assets/css/base.css?v=46" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=46" />
 </head>
 <body>
   <div id="site-header-mount"></div>
 
-  <main class="container" style="padding-block:var(--space-8);">
-    <!-- Customer Profile Banner -->
-    <div class="surface-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);margin-bottom:var(--space-8);">
-      <div>
-        <h1 style="font-size:var(--text-2xl);margin:0 0 4px 0;" id="acct-user-name">Mateo Alonzo</h1>
-        <div style="font-size:var(--text-sm);color:var(--text-secondary);" id="acct-user-meta"></div>
-      </div>
-      <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
-        <button type="button" class="btn btn-outline btn-sm" id="acct-open-emails-btn">
-          View Order Emails
-        </button>
-        <a href="auth.html" class="btn btn-outline btn-sm">Switch Account / Role</a>
-        <a href="catalog.html" class="btn btn-primary btn-sm">+ New Island Order</a>
-      </div>
-    </div>
+  <main>
+    <!-- Coastal Atmospheric Orders & Member Club Hero -->
+    <section class="catalog-hero" aria-label="Suot Isla Island Club Orders Header">
+      <img
+        src="assets/images/hero-elnido.jpg"
+        alt="Crystal turquoise waters of El Nido lagoon at dawn"
+        class="catalog-hero-bg"
+      />
+      <div class="catalog-hero-scrim" aria-hidden="true"></div>
 
-    <!-- Section 1: Order History & 5-Stage Delivery Tracker -->
-    <section style="margin-bottom:var(--space-12);" aria-label="Order History">
-      <div class="section-head">
-        <div>
-          <h2>Order History &amp; Live Delivery Tracking</h2>
-          <p>View purchase dates, payment statuses, courier tracking numbers, and request cancellations or returns.</p>
+      <div class="container catalog-hero-content">
+        <div class="catalog-hero-top">
+          <div>
+            <span class="catalog-hero-eyebrow">
+              SUOT ISLA ISLAND CLUB • MEMBER DISPATCH PORTAL
+            </span>
+            <h1 class="catalog-hero-title">
+              Island Orders &amp; <em id="acct-hero-name">Dispatches.</em>
+            </h1>
+            <div class="account-hero-meta" id="acct-user-meta"></div>
+          </div>
+
+          <div class="account-hero-actions">
+            <button type="button" class="account-hero-btn" id="acct-open-emails-btn">
+              Order Emails
+            </button>
+            <a href="auth.html" class="account-hero-btn">Switch Account</a>
+            <a href="catalog.html" class="btn btn-coral btn-sm btn-pill">+ New Island Order</a>
+          </div>
         </div>
-        <button type="button" class="btn btn-coral btn-sm" id="open-return-modal-btn">
-          Request Return or Cancellation
-        </button>
-      </div>
 
-      <div id="orders-history-list" style="display:flex;flex-direction:column;gap:var(--space-4);"></div>
-    </section>
-
-    <!-- Section 2: Returns & Refunds Status Tracker -->
-    <section style="margin-bottom:var(--space-12);" aria-label="Returns and Refunds">
-      <div class="section-head">
-        <div>
-          <h2>Returns, Cancellations &amp; Refund Requests</h2>
-          <p>Track the review, restocking, and refund status of your submitted requests.</p>
+        <div class="catalog-hero-dock" id="account-workspace-tabs" role="tablist" aria-label="Customer Dashboard Sections">
+          <button type="button" class="catalog-dock-tab active" data-acct-tab="orders" role="tab" aria-selected="true">
+            <span class="catalog-dock-num">01</span>
+            <span>Orders &amp; Tracking</span>
+            <span class="catalog-dock-num" id="tab-count-orders">(4)</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-acct-tab="returns" role="tab" aria-selected="false">
+            <span class="catalog-dock-num">02</span>
+            <span>Returns &amp; Refunds</span>
+            <span class="catalog-dock-num" id="tab-count-returns">(1)</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-acct-tab="addresses" role="tab" aria-selected="false">
+            <span class="catalog-dock-num">03</span>
+            <span>Saved Addresses</span>
+            <span class="catalog-dock-num">(2)</span>
+          </button>
         </div>
-      </div>
-
-      <div class="data-table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Order #</th>
-              <th>Type</th>
-              <th>Item &amp; Reason</th>
-              <th>Refund Amount</th>
-              <th>Submitted Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="customer-returns-tbody"></tbody>
-        </table>
       </div>
     </section>
 
-    <!-- Section 3: Saved Shipping Addresses -->
-    <section aria-label="Saved Addresses">
-      <div class="section-head">
-        <div>
-          <h2>Saved Philippine Delivery Addresses</h2>
-          <p>Pre-validated addresses for fast checkout across Luzon, Visayas, and Mindanao.</p>
+    <!-- Tabbed Customer Workspace -->
+    <section class="container account-workspace">
+      <!-- PANEL 1: ORDER HISTORY & CONNECTED TIMELINE -->
+      <div id="acct-panel-orders">
+        <div class="orders-toolbar">
+          <div class="featured-filter-dock" id="orders-status-tabs" role="tablist" aria-label="Filter Orders by Status">
+            <button type="button" class="featured-filter-btn active" data-order-filter="all">
+              <span>All Orders</span>
+              <span class="featured-filter-count" id="ord-cnt-all">(4)</span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-order-filter="active">
+              <span>In Transit</span>
+              <span class="featured-filter-count" id="ord-cnt-active">(2)</span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-order-filter="delivered">
+              <span>Delivered</span>
+              <span class="featured-filter-count" id="ord-cnt-delivered">(1)</span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-order-filter="cancelled">
+              <span>Cancelled</span>
+              <span class="featured-filter-count" id="ord-cnt-cancelled">(1)</span>
+            </button>
+          </div>
+
+          <div class="orders-toolbar-right">
+            <input
+              type="search"
+              id="orders-search-input"
+              class="catalog-search-pill"
+              placeholder="Search order #, item, tracking..."
+              aria-label="Search orders"
+            />
+            <button type="button" class="btn btn-coral btn-sm btn-pill" id="open-return-modal-btn">
+              Request Return / Cancel
+            </button>
+          </div>
+        </div>
+
+        <div id="orders-history-list" style="display:flex;flex-direction:column;gap:var(--space-5);"></div>
+      </div>
+
+      <!-- PANEL 2: RETURNS & REFUNDS -->
+      <div id="acct-panel-returns" style="display:none;">
+        <div class="orders-toolbar">
+          <div>
+            <h2 style="margin:0 0 0.2rem 0;">Returns, Cancellations &amp; Refunds</h2>
+            <p style="margin:0;font-size:0.95rem;color:var(--text-secondary);">
+              Track restocking review and GCash / Maya / card refund status for your requests.
+            </p>
+          </div>
+          <button type="button" class="btn btn-coral btn-pill" id="open-return-modal-tab-btn">
+            + Submit New Request
+          </button>
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Order #</th>
+                <th>Type</th>
+                <th>Item &amp; Reason</th>
+                <th>Refund Amount</th>
+                <th>Submitted</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="customer-returns-tbody"></tbody>
+          </table>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="surface-card">
-          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-            <strong>Home / Campus Residence</strong>
-            <span class="pill pill-delivery">Default</span>
+      <!-- PANEL 3: SAVED PHILIPPINE ADDRESSES -->
+      <div id="acct-panel-addresses" style="display:none;">
+        <div class="orders-toolbar">
+          <div>
+            <h2 style="margin:0 0 0.2rem 0;">Saved Philippine Delivery Addresses</h2>
+            <p style="margin:0;font-size:0.95rem;color:var(--text-secondary);">
+              Pre-validated campus, residence, and island hostel drops ready for 1-click checkout.
+            </p>
           </div>
-          <p style="font-size:var(--text-sm);">
-            Mateo Alonzo (+63 917 842 1904)<br />
-            Blk 4 Lot 12 Emilio Aguinaldo Hwy, Brgy. Sampaloc I<br />
-            Dasmariñas City, Cavite 4114
-          </p>
+          <a href="checkout.html" class="btn btn-primary btn-pill">Proceed to Checkout →</a>
         </div>
 
-        <div class="surface-card">
-          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-            <strong>Island Surf Hostel</strong>
-            <span class="pill pill-lagoon">Siargao</span>
-          </div>
-          <p style="font-size:var(--text-sm);">
-            Mateo Alonzo (+63 917 842 1904)<br />
-            Tourism Road, Cloud 9 Boardwalk, Brgy. Catangnan<br />
-            General Luna, Surigao del Norte 8419
-          </p>
-        </div>
+        <div class="saved-addresses-grid" id="saved-addresses-grid"></div>
       </div>
     </section>
   </main>
@@ -142,12 +188,12 @@
 
         <div class="form-group">
           <label class="form-label" for="ret-notes">Additional Notes for Store Admin</label>
-          <textarea id="ret-notes" name="customer_notes" class="form-textarea" rows="3" placeholder="Describe the item condition or preferred refund method (GCash / Maya / Original Payment)..."></textarea>
+          <textarea id="ret-notes" name="customer_notes" class="form-textarea" rows="3" placeholder="Describe item condition or preferred refund method (GCash / Maya / Card)..."></textarea>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:var(--space-2);">
-          <button type="button" class="btn btn-outline" id="cancel-return-modal-btn">Cancel</button>
-          <button type="submit" class="btn btn-coral">Submit Request &amp; Send Email</button>
+          <button type="button" class="btn btn-outline btn-pill" id="cancel-return-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-coral btn-pill">Submit Request &amp; Send Email</button>
         </div>
       </form>
     </div>
@@ -155,12 +201,13 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/store.js"></script>
-  <script src="assets/js/components.js"></script>
+  <script src="assets/js/data.js?v=46"></script>
+  <script src="assets/js/store.js?v=46"></script>
+  <script src="assets/js/components.js?v=46"></script>
+  <script src="assets/js/ocean-overdrive.js?v=46"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const userNameEl = document.getElementById("acct-user-name");
+      const heroNameEl = document.getElementById("acct-hero-name");
       const userMetaEl = document.getElementById("acct-user-meta");
       const ordersListEl = document.getElementById("orders-history-list");
       const returnsTbodyEl = document.getElementById("customer-returns-tbody");
@@ -168,96 +215,284 @@
       const orderSelectEl = document.getElementById("ret-order-select");
       const typeSelectEl = document.getElementById("ret-type-select");
       const returnForm = document.getElementById("customer-return-form");
+      const searchInput = document.getElementById("orders-search-input");
+
+      const panelOrders = document.getElementById("acct-panel-orders");
+      const panelReturns = document.getElementById("acct-panel-returns");
+      const panelAddresses = document.getElementById("acct-panel-addresses");
+
+      let activeSection = "orders";
+      let activeOrderFilter = "all";
+      let orderSearch = "";
 
       const stages = ["Pending", "Confirmed", "Packed", "Out for Delivery", "Delivered"];
 
+      function setWorkspaceTab(tabKey) {
+        activeSection = tabKey;
+        document.querySelectorAll("[data-acct-tab]").forEach((btn) => {
+          const isMatch = btn.getAttribute("data-acct-tab") === tabKey;
+          btn.classList.toggle("active", isMatch);
+          btn.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+        panelOrders.style.display = tabKey === "orders" ? "block" : "none";
+        panelReturns.style.display = tabKey === "returns" ? "block" : "none";
+        panelAddresses.style.display = tabKey === "addresses" ? "block" : "none";
+      }
+
+      document.querySelectorAll("[data-acct-tab]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tabKey = btn.getAttribute("data-acct-tab");
+          if (window.suotTransition) {
+            window.suotTransition(() => setWorkspaceTab(tabKey));
+          } else {
+            setWorkspaceTab(tabKey);
+          }
+        });
+      });
+
+      function classifyOrder(o) {
+        if (o.status === "Delivered") return "delivered";
+        if (o.status === "Cancelled" || o.status === "Returned") return "cancelled";
+        return "active";
+      }
+
       function renderAccountPage() {
+        if (!document.body.contains(ordersListEl)) return;
         const user = window.SuotStore.getCurrentUser();
-        userNameEl.textContent = user.name;
-        userMetaEl.innerHTML = `${user.email} • ${user.phone} • Role: <span class="pill pill-lagoon">${user.role.toUpperCase()}</span>`;
+        const firstName = user.name.split(" ")[0];
+        if (heroNameEl) heroNameEl.textContent = `${firstName}.`;
+        if (userMetaEl) {
+          userMetaEl.innerHTML = `
+            <strong>${user.name}</strong>
+            <span aria-hidden="true">·</span>
+            <span>${user.email}</span>
+            <span aria-hidden="true">·</span>
+            <span class="mono">${user.phone}</span>
+            <span class="pill pill-delivery" style="font-size:0.68rem;">${user.role.toUpperCase()}</span>
+          `;
+        }
 
-        const orders = window.SuotStore.getOrders();
-        orderSelectEl.innerHTML = orders
-          .map((o) => `<option value="${o.orderNumber}">#${o.orderNumber} — ${window.SuotStore.formatPrice(o.total)} (${o.status})</option>`)
-          .join("");
+        const orders = window.SuotStore.getOrdersForCurrentUser();
+        const returnsList = window.SuotStore.getReturnsForCurrentUser();
 
-        ordersListEl.innerHTML = orders
-          .map((o) => {
-            const currentStageIdx = stages.indexOf(o.status);
-            const isCancelledOrReturned = o.status === "Cancelled" || o.status === "Returned";
+        const tabCountOrders = document.getElementById("tab-count-orders");
+        const tabCountReturns = document.getElementById("tab-count-returns");
+        if (tabCountOrders) tabCountOrders.textContent = `(${orders.length})`;
+        if (tabCountReturns) tabCountReturns.textContent = `(${returnsList.length})`;
 
-            return `
-              <article class="surface-card">
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
-                  <div>
-                    <div style="display:flex;align-items:center;gap:var(--space-2);">
-                      <strong class="mono" style="font-size:var(--text-base);">#${o.orderNumber}</strong>
-                      <span class="pill ${
-                        isCancelledOrReturned
-                          ? "pill-coral"
-                          : o.status === "Delivered"
-                          ? "pill-palm"
-                          : "pill-delivery"
-                      }">${o.status}</span>
-                      <span class="pill pill-sand">${o.paymentMethod}: ${o.paymentStatus}</span>
-                    </div>
-                    <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
-                      Purchased: <strong class="tabular">${o.placedAt}</strong> • Ship To: ${o.shippingAddress}
-                    </div>
-                  </div>
+        const counts = {
+          all: orders.length,
+          active: orders.filter((o) => classifyOrder(o) === "active").length,
+          delivered: orders.filter((o) => classifyOrder(o) === "delivered").length,
+          cancelled: orders.filter((o) => classifyOrder(o) === "cancelled").length
+        };
+        Object.keys(counts).forEach((k) => {
+          const el = document.getElementById(`ord-cnt-${k}`);
+          if (el) el.textContent = `(${counts[k]})`;
+        });
 
-                  <div style="text-align:right;">
-                    <div class="price" style="font-family:var(--font-display);font-size:var(--text-xl);font-weight:800;">
-                      ${window.SuotStore.formatPrice(o.total)}
-                    </div>
-                    <div class="mono" style="color:var(--text-muted);">
-                      Courier: ${o.courierName} (${o.trackingNumber})
-                    </div>
-                  </div>
-                </div>
+        orderSelectEl.innerHTML = orders.length
+          ? orders
+              .map((o) => `<option value="${o.orderNumber}">#${o.orderNumber} — ${window.SuotStore.formatPrice(o.total)} (${o.status})</option>`)
+              .join("")
+          : `<option value="">No personal orders available</option>`;
 
+        const q = orderSearch.trim().toLowerCase();
+        const visibleOrders = orders.filter((o) => {
+          if (activeOrderFilter !== "all" && classifyOrder(o) !== activeOrderFilter) return false;
+          if (q) {
+            const hay = `${o.orderNumber} ${o.trackingNumber} ${o.shippingAddress} ${o.items.map((i) => i.name).join(" ")}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+
+        if (!orders.length) {
+          const isOperator = ["admin", "staff", "courier"].includes(user.role);
+          ordersListEl.innerHTML = `
+            <div class="surface-card" style="text-align:center;padding:var(--space-12);">
+              <h3 style="margin-top:0;">No Personal Orders on ${user.name}'s Account</h3>
+              <p style="margin:var(--space-2) auto var(--space-5);max-width:52ch;">
                 ${
-                  !isCancelledOrReturned
-                    ? `<div class="lifecycle-stepper" aria-label="Order Lifecycle Progress">
-                        ${stages
-                          .map((st, idx) => {
-                            const cls = idx < currentStageIdx ? "completed" : idx === currentStageIdx ? "current" : "";
-                            return `<div class="lifecycle-step ${cls}">${idx + 1}. ${st}</div>`;
-                          })
-                          .join("")}
-                      </div>`
-                    : `<div style="margin-block:var(--space-3);padding:var(--space-3);background:var(--color-coral-surface);color:var(--color-coral-deep);border-radius:var(--radius-sm);font-size:var(--text-xs);font-weight:700;">
-                        Order status: ${o.status} (${o.paymentStatus})
-                      </div>`
+                  isOperator
+                    ? `For customer privacy, your personal Orders view only shows orders placed under <strong>${user.email}</strong>. To manage all shop customer orders and courier dispatches, open the Admin Operations Console.`
+                    : `Orders placed under <strong>${user.email}</strong> will appear here with live 5-stage Philippine dispatch tracking.`
                 }
+              </p>
+              <div style="display:flex;justify-content:center;gap:var(--space-3);flex-wrap:wrap;">
+                <a href="catalog.html" class="btn btn-primary btn-pill">Explore the 16-Piece Catalog →</a>
+                ${
+                  isOperator
+                    ? `<a href="admin.html" class="btn btn-outline btn-pill">Open Shop Orders in Admin Console →</a>`
+                    : `<a href="auth.html" class="btn btn-outline btn-pill">Switch Demo Customer Account</a>`
+                }
+              </div>
+            </div>
+          `;
+        } else if (!visibleOrders.length) {
+          ordersListEl.innerHTML = `
+            <div class="surface-card" style="text-align:center;padding:var(--space-10);">
+              <h3 style="margin-top:0;">No Matching Orders</h3>
+              <p style="margin:var(--space-2) auto var(--space-5);max-width:44ch;">
+                Try switching back to All Orders or clearing your search query.
+              </p>
+              <button type="button" class="btn btn-primary btn-pill" id="reset-orders-filter-btn">Show All Orders</button>
+            </div>
+          `;
+          const resetOrdBtn = document.getElementById("reset-orders-filter-btn");
+          if (resetOrdBtn) {
+            resetOrdBtn.addEventListener("click", () => {
+              activeOrderFilter = "all";
+              orderSearch = "";
+              if (searchInput) searchInput.value = "";
+              document.querySelectorAll("[data-order-filter]").forEach((t) => {
+                const isAll = t.getAttribute("data-order-filter") === "all";
+                t.classList.toggle("active", isAll);
+                t.setAttribute("aria-selected", isAll ? "true" : "false");
+              });
+              renderAccountPage();
+            });
+          }
+        } else {
+          ordersListEl.innerHTML = visibleOrders
+            .map((o) => {
+              const currentStageIdx = stages.indexOf(o.status);
+              const isCancelledOrReturned = o.status === "Cancelled" || o.status === "Returned";
 
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);padding-top:var(--space-3);">
-                  <div style="font-size:var(--text-sm);">
-                    <strong>Items:</strong>
-                    ${o.items.map((i) => `${i.qty}× ${i.name} (${i.size}, ${i.color})`).join(" • ")}
+              return `
+                <article class="order-showcase-card" data-order-card="${o.orderNumber}">
+                  <div class="order-card-head">
+                    <div>
+                      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                        <strong class="mono" style="font-size:var(--text-base);color:var(--color-lagoon-ink);">#${o.orderNumber}</strong>
+                        <span class="pill ${
+                          isCancelledOrReturned
+                            ? "pill-coral"
+                            : o.status === "Delivered"
+                            ? "pill-palm"
+                            : "pill-delivery"
+                        }">${o.status}</span>
+                        <span class="pill pill-sand">${o.paymentMethod}: ${o.paymentStatus}</span>
+                      </div>
+                      <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;">
+                        Placed <strong class="tabular">${o.placedAt}</strong> · Ship to: ${o.shippingAddress}
+                      </div>
+                    </div>
+
+                    <div class="order-head-summary">
+                      <div class="order-head-total">${window.SuotStore.formatPrice(o.total)}</div>
+                      <div class="order-head-courier">
+                        ${o.courierName} • <strong>${o.trackingNumber}</strong>
+                      </div>
+                    </div>
                   </div>
 
-                  <div style="display:flex;gap:var(--space-2);">
-                    ${
-                      o.status === "Pending" || o.status === "Confirmed"
-                        ? `<button type="button" class="btn btn-outline btn-sm" data-quick-req-order="${o.orderNumber}" data-quick-req-type="Cancellation" style="color:var(--color-coral-deep);">
-                            Request Cancellation
-                          </button>`
-                        : ""
-                    }
-                    ${
-                      o.status === "Delivered"
-                        ? `<button type="button" class="btn btn-outline btn-sm" data-quick-req-order="${o.orderNumber}" data-quick-req-type="Return & Refund">
-                            Request Return / Refund
-                          </button>`
-                        : ""
-                    }
+                  ${
+                    !isCancelledOrReturned
+                      ? `<div class="coastal-timeline" aria-label="5-Stage Island Delivery Progress">
+                          ${stages
+                            .map((st, idx) => {
+                              const cls = idx < currentStageIdx ? "completed" : idx === currentStageIdx ? "current" : "";
+                              const marker = idx < currentStageIdx ? "✓" : idx + 1;
+                              return `
+                                <div class="coastal-milestone ${cls}">
+                                  <span class="milestone-dot">${marker}</span>
+                                  <span class="milestone-label">${st}</span>
+                                </div>
+                              `;
+                            })
+                            .join("")}
+                        </div>`
+                      : `<div style="margin-block:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-coral-surface);color:var(--color-coral-deep);border-radius:var(--radius-sm);font-size:var(--text-xs);font-weight:700;">
+                          Order Status: ${o.status} (${o.paymentStatus}) — Check Customer Email Outbox for full notice.
+                        </div>`
+                  }
+
+                  <div class="order-items-strip">
+                    ${o.items
+                      .map((item) => {
+                        const prod = window.SuotStore.getProductById(item.productId);
+                        return `
+                          <div class="order-item-tile">
+                            <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" class="order-item-thumb">
+                              ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
+                            </a>
+                            <div class="order-item-info">
+                              <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" class="order-item-title">${item.name}</a>
+                              <div class="order-item-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                <span>${item.qty}× · Size <strong>${item.size}</strong> ·</span>
+                                <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(item.color)};"></span>
+                                <span>${item.color}</span>
+                              </div>
+                            </div>
+                            <div class="order-item-right">
+                              <strong class="tabular" style="font-size:0.82rem;">${window.SuotStore.formatPrice(item.price * item.qty)}</strong>
+                              <button
+                                type="button"
+                                class="card-size-pill"
+                                data-reorder-prod="${item.productId}"
+                                data-reorder-size="${item.size}"
+                                data-reorder-color="${item.color}"
+                              >
+                                Buy Again
+                              </button>
+                            </div>
+                          </div>
+                        `;
+                      })
+                      .join("")}
                   </div>
-                </div>
-              </article>
-            `;
-          })
-          .join("");
+
+                  <div class="order-card-foot">
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);">
+                      14-day easy island exchange · Notifications archived in Order Emails
+                    </span>
+
+                    <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
+                      ${
+                        o.status === "Pending" || o.status === "Confirmed"
+                          ? `<button type="button" class="btn btn-outline btn-sm btn-pill" data-quick-req-order="${o.orderNumber}" data-quick-req-type="Cancellation" style="color:var(--color-coral-deep);">
+                              Request Cancellation
+                            </button>`
+                          : ""
+                      }
+                      ${
+                        o.status === "Delivered"
+                          ? `<button type="button" class="btn btn-outline btn-sm btn-pill" data-quick-req-order="${o.orderNumber}" data-quick-req-type="Return & Refund">
+                              Request Return / Refund
+                            </button>`
+                          : ""
+                      }
+                    </div>
+                  </div>
+                </article>
+              `;
+            })
+            .join("");
+        }
+
+        ordersListEl.querySelectorAll("[data-reorder-prod]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const pid = btn.getAttribute("data-reorder-prod");
+            const sz = btn.getAttribute("data-reorder-size");
+            const clr = btn.getAttribute("data-reorder-color");
+            const orderCard = btn.closest("[data-order-card]");
+            const ordKey = orderCard ? orderCard.getAttribute("data-order-card") : "";
+            const prod = window.SuotStore.getProductById(pid);
+            window.SuotStore.addToCart(pid, sz, clr, 1);
+
+            const liveBtn = ordKey
+              ? ordersListEl.querySelector(
+                  `[data-order-card="${CSS.escape(ordKey)}"] [data-reorder-prod="${CSS.escape(pid)}"][data-reorder-size="${CSS.escape(sz)}"][data-reorder-color="${CSS.escape(clr)}"]`
+                )
+              : btn;
+            window.SuotUI.flashButtonAdded(liveBtn || btn, "✓ Added");
+            window.SuotUI.toast(
+              `Added ${prod ? prod.name : pid} (${sz}, ${clr}) back to your Island Bag!`,
+              "Reordered"
+            );
+          });
+        });
 
         ordersListEl.querySelectorAll("[data-quick-req-order]").forEach((btn) => {
           btn.addEventListener("click", () => {
@@ -267,21 +502,21 @@
           });
         });
 
-        // Render Returns Table
-        const returnsList = window.SuotStore.getReturns();
-        returnsTbodyEl.innerHTML = returnsList
-          .map(
-            (r) => `
+        // Render Returns Table scoped to signed-in account
+        returnsTbodyEl.innerHTML = returnsList.length
+          ? returnsList
+              .map(
+                (r) => `
             <tr>
-              <td class="mono"><strong>${r.returnId}</strong></td>
-              <td class="mono">#${r.orderNumber}</td>
+              <td class="mono" style="white-space:nowrap;"><strong>${r.returnId}</strong></td>
+              <td class="mono" style="white-space:nowrap;">#${r.orderNumber}</td>
               <td><span class="pill pill-sand">${r.type}</span></td>
               <td>
                 <strong>${r.itemSummary}</strong>
                 <div style="font-size:var(--text-xs);color:var(--text-muted);">Reason: ${r.reason}</div>
               </td>
               <td class="price"><strong>${window.SuotStore.formatPrice(r.amount)}</strong></td>
-              <td class="mono">${r.requestedAt}</td>
+              <td class="mono" style="white-space:nowrap;">${r.requestedAt}</td>
               <td>
                 <span class="pill ${
                   r.status.includes("Approved")
@@ -293,17 +528,113 @@
               </td>
             </tr>
           `
-          )
-          .join("");
+              )
+              .join("")
+          : `<tr><td colspan="7" style="text-align:center;padding:var(--space-8);color:var(--text-muted);">No return or cancellation requests submitted under ${user.email}.</td></tr>`;
+
+        // Render Saved Delivery Addresses scoped to signed-in account
+        const addrGrid = document.getElementById("saved-addresses-grid");
+        if (addrGrid) {
+          const userAddresses =
+            Number(user.id) === 5
+              ? [
+                  {
+                    label: "Makati City Condo",
+                    badge: "Default",
+                    badgeCls: "pill-delivery",
+                    line1: "148 Paseo de Roxas, Brgy. San Lorenzo",
+                    line2: "Makati City, Metro Manila 1223",
+                    cta: "Ship to Makati →"
+                  },
+                  {
+                    label: "Boracay Island Stay",
+                    badge: "Boracay • Station 2",
+                    badgeCls: "pill-lagoon",
+                    line1: "Station 2 White Beach Path, Brgy. Balabag",
+                    line2: "Malay, Aklan 5608",
+                    cta: "Ship to Boracay →"
+                  }
+                ]
+              : [
+                  {
+                    label: "Home / Campus Residence",
+                    badge: "Default",
+                    badgeCls: "pill-delivery",
+                    line1: "Blk 4 Lot 12 Emilio Aguinaldo Hwy, Brgy. Sampaloc I",
+                    line2: "Dasmariñas City, Cavite 4114",
+                    cta: "Ship to This Address →"
+                  },
+                  {
+                    label: "Island Surf Hostel",
+                    badge: "Siargao • Cloud 9",
+                    badgeCls: "pill-lagoon",
+                    line1: "Tourism Road, Cloud 9 Boardwalk, Brgy. Catangnan",
+                    line2: "General Luna, Surigao del Norte 8419",
+                    cta: "Ship to This Island →"
+                  }
+                ];
+
+          addrGrid.innerHTML = userAddresses
+            .map(
+              (a) => `
+              <article class="saved-address-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                  <strong style="font-family:var(--font-display);font-size:1.05rem;">${a.label}</strong>
+                  <span class="pill ${a.badgeCls}">${a.badge}</span>
+                </div>
+                <p style="margin:0;font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+                  ${user.name} • <span class="mono">${user.phone}</span><br />
+                  ${a.line1}<br />
+                  ${a.line2}
+                </p>
+                <div style="margin-top:auto;padding-top:var(--space-2);">
+                  <a href="checkout.html" class="btn btn-outline btn-sm btn-pill">${a.cta}</a>
+                </div>
+              </article>
+            `
+            )
+            .join("");
+        }
+      }
+
+      document.querySelectorAll("[data-order-filter]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          activeOrderFilter = btn.getAttribute("data-order-filter");
+          document.querySelectorAll("[data-order-filter]").forEach((t) => {
+            const isMatch = t === btn;
+            t.classList.toggle("active", isMatch);
+            t.setAttribute("aria-selected", isMatch ? "true" : "false");
+          });
+          if (window.suotTransition) {
+            window.suotTransition(renderAccountPage);
+          } else {
+            renderAccountPage();
+          }
+        });
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener("input", () => {
+          orderSearch = searchInput.value;
+          renderAccountPage();
+        });
       }
 
       document.getElementById("acct-open-emails-btn").addEventListener("click", () => {
         window.SuotUI.openDrawer("email");
       });
 
-      document.getElementById("open-return-modal-btn").addEventListener("click", () => {
+      const openModal = () => {
+        if (!window.SuotStore.getOrdersForCurrentUser().length) {
+          window.SuotUI.toast("Place a personal order before submitting a return or cancellation request.", "No Personal Orders");
+          return;
+        }
         modalBackdrop.classList.add("open");
-      });
+      };
+      document.getElementById("open-return-modal-btn").addEventListener("click", openModal);
+      const tabModalBtn = document.getElementById("open-return-modal-tab-btn");
+      if (tabModalBtn) tabModalBtn.addEventListener("click", openModal);
+
       document.getElementById("close-return-modal-btn").addEventListener("click", () => {
         modalBackdrop.classList.remove("open");
       });
@@ -327,6 +658,26 @@
 
       window.addEventListener("suotisla:statechange", renderAccountPage);
       renderAccountPage();
+
+      // Deep-link highlight when navigated from homepage Track Your Order form (?order=...)
+      const trackedOrder = (new URLSearchParams(window.location.search).get("order") || "").trim().replace(/^#/, "");
+      if (trackedOrder) {
+        setWorkspaceTab("orders");
+        const curr = window.SuotStore.getCurrentUser();
+        const targetCard = ordersListEl.querySelector(`[data-order-card="${CSS.escape(trackedOrder)}"]`);
+        if (targetCard) {
+          setTimeout(() => {
+            targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            targetCard.classList.add("order-highlight-pulse");
+          }, 120);
+          window.SuotUI.toast(`Showing live dispatch status for Order #${trackedOrder}.`, "Order Found");
+        } else {
+          window.SuotUI.toast(
+            `Order #${trackedOrder} was not found under ${curr.name}'s account (${curr.email}).`,
+            "Access Restricted"
+          );
+        }
+      }
     });
   </script>
 </body>

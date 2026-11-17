@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout &amp; Validation — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
+  <link rel="stylesheet" href="assets/css/base.css?v=46" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -116,7 +116,7 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-lg btn-block">
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="checkout-submit-btn">
           Validate Stock &amp; Place Island Order
         </button>
       </form>
@@ -128,9 +128,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/store.js"></script>
-  <script src="assets/js/components.js"></script>
+  <script src="assets/js/data.js?v=46"></script>
+  <script src="assets/js/store.js?v=46"></script>
+  <script src="assets/js/components.js?v=46"></script>
+  <script src="assets/js/ocean-overdrive.js?v=46"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const formEl = document.getElementById("checkout-form");
@@ -139,6 +140,13 @@
       const presetSelect = document.getElementById("chk-preset-addr");
       const payMethodInput = document.getElementById("chk-payment-method");
       const payAccountInput = document.getElementById("chk-pay-account");
+
+      const currUser = window.SuotStore.getCurrentUser();
+      if (currUser) {
+        document.getElementById("chk-fullname").value = currUser.name || "";
+        document.getElementById("chk-email").value = currUser.email || "";
+        document.getElementById("chk-phone").value = currUser.phone || "";
+      }
 
       const presets = {
         cavite: {
@@ -196,17 +204,27 @@
           <h2 style="margin-top:0;font-size:var(--text-xl);margin-bottom:var(--space-3);">Checkout Summary</h2>
           <div style="margin-bottom:var(--space-4);">
             ${cart
-              .map(
-                (item) => `
-                <div style="display:flex;justify-content:space-between;gap:var(--space-2);padding-block:8px;border-bottom:1px solid var(--border-subtle);font-size:var(--text-sm);">
-                  <div>
-                    <strong>${item.qty}× ${item.name}</strong>
-                    <div style="font-size:var(--text-xs);color:var(--text-muted);">${item.size} • ${item.color}</div>
+              .map((item) => {
+                const prod = window.SuotStore.getProductById(item.productId);
+                return `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding-block:8px;border-bottom:1px solid var(--border-subtle);font-size:var(--text-sm);">
+                  <div style="display:flex;align-items:center;gap:var(--space-2);min-width:0;">
+                    <div style="width:44px;height:55px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-subtle);background:var(--color-sand);flex-shrink:0;">
+                      ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
+                    </div>
+                    <div style="min-width:0;">
+                      <strong>${item.qty}× ${item.name}</strong>
+                      <div style="font-size:var(--text-xs);color:var(--text-muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                        <span>${item.size} ·</span>
+                        <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(item.color)};"></span>
+                        <span>${item.color}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span class="price" style="font-weight:700;">${window.SuotStore.formatPrice(item.price * item.qty)}</span>
+                  <span class="price" style="font-weight:700;flex-shrink:0;">${window.SuotStore.formatPrice(item.price * item.qty)}</span>
                 </div>
-              `
-              )
+              `;
+              })
               .join("")}
           </div>
 
@@ -241,71 +259,124 @@
         `;
       }
 
+      const submitBtn = document.getElementById("checkout-submit-btn");
+      formEl.noValidate = true;
+
+      function triggerInvalidField(inputEl, message) {
+        if (!inputEl) return;
+        inputEl.classList.remove("is-invalid-field");
+        void inputEl.offsetWidth;
+        inputEl.classList.add("is-invalid-field");
+        inputEl.focus();
+        inputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.SuotUI.toast(message, "Check Input");
+      }
+
+      formEl.querySelectorAll("input").forEach((inp) => {
+        inp.addEventListener("input", () => inp.classList.remove("is-invalid-field"));
+      });
+
       formEl.addEventListener("submit", (e) => {
         e.preventDefault();
-        const res = window.SuotStore.placeOrder({
-          fullName: document.getElementById("chk-fullname").value,
-          email: document.getElementById("chk-email").value,
-          phone: document.getElementById("chk-phone").value,
-          street: document.getElementById("chk-street").value,
-          barangay: document.getElementById("chk-barangay").value,
-          city: document.getElementById("chk-city").value,
-          province: document.getElementById("chk-province").value,
-          postalCode: document.getElementById("chk-postal").value,
-          paymentMethod: payMethodInput.value
-        });
 
-        if (!res.ok) {
-          window.SuotUI.toast(res.message, "Checkout Error");
-          return;
+        const requiredIds = [
+          { id: "chk-fullname", msg: "Please enter recipient full name." },
+          { id: "chk-email", msg: "Please enter a valid confirmation email address." },
+          { id: "chk-phone", msg: "Please enter a valid Philippine mobile number." },
+          { id: "chk-street", msg: "Please enter house / unit number and street name." },
+          { id: "chk-barangay", msg: "Please enter barangay." },
+          { id: "chk-city", msg: "Please enter city or municipality." },
+          { id: "chk-province", msg: "Please enter province or island region." },
+          { id: "chk-postal", msg: "Postal / ZIP code must be 4 digits (e.g. 4114)." }
+        ];
+
+        for (const field of requiredIds) {
+          const el = document.getElementById(field.id);
+          if (!el || !el.checkValidity()) {
+            triggerInvalidField(el, field.msg);
+            return;
+          }
         }
 
-        window.SuotUI.toast(`Order #${res.order.orderNumber} confirmed! Confirmation email sent to ${res.order.customerEmail}.`, "Order Confirmed");
+        if (submitBtn) {
+          submitBtn.classList.add("is-busy");
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span><span>Validating Stock &amp; Authorizing Payment...</span>`;
+        }
 
-        checkoutMount.innerHTML = `
-          <div class="surface-card" style="grid-column:1 / -1;padding:var(--space-10);text-align:center;">
-            <span class="pill pill-delivery" style="margin-bottom:var(--space-3);">Order Confirmed &amp; Email Dispatched</span>
-            <h2 style="margin-top:0;">Salamat, ${res.order.customerName}! Order #${res.order.orderNumber}</h2>
-            <p style="margin:var(--space-2) auto var(--space-6);">
-              Your payment via <strong>${res.order.paymentMethod}</strong> (${res.order.paymentRef}) is recorded and a confirmation email has been sent to <strong>${res.order.customerEmail}</strong>.
-            </p>
+        setTimeout(() => {
+          const res = window.SuotStore.placeOrder({
+            fullName: document.getElementById("chk-fullname").value,
+            email: document.getElementById("chk-email").value,
+            phone: document.getElementById("chk-phone").value,
+            street: document.getElementById("chk-street").value,
+            barangay: document.getElementById("chk-barangay").value,
+            city: document.getElementById("chk-city").value,
+            province: document.getElementById("chk-province").value,
+            postalCode: document.getElementById("chk-postal").value,
+            paymentMethod: payMethodInput.value
+          });
 
-            <div style="max-width:620px;margin:0 auto var(--space-6);text-align:left;background:var(--color-sand);padding:var(--space-5);border-radius:var(--radius-md);border:1px solid var(--border-subtle);">
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                <strong>Order Reference:</strong>
-                <span class="mono">${res.order.orderNumber}</span>
+          if (!res.ok) {
+            if (submitBtn) {
+              submitBtn.classList.remove("is-busy");
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Validate Stock & Place Island Order";
+            }
+            window.SuotUI.toast(res.message, "Checkout Error");
+            return;
+          }
+
+          window.SuotUI.toast(
+            `Order #${res.order.orderNumber} confirmed! Confirmation email sent to ${res.order.customerEmail}.`,
+            "Order Confirmed"
+          );
+
+          checkoutMount.innerHTML = `
+            <div class="surface-card is-revealed" data-reveal style="grid-column:1 / -1;padding:var(--space-10);text-align:center;">
+              <span class="pill pill-delivery" style="margin-bottom:var(--space-3);">✓ Order Confirmed &amp; Email Dispatched</span>
+              <h2 style="margin-top:0;">Salamat, ${res.order.customerName}! Order #${res.order.orderNumber}</h2>
+              <p style="margin:var(--space-2) auto var(--space-6);">
+                Your payment via <strong>${res.order.paymentMethod}</strong> (${res.order.paymentRef}) is recorded and a confirmation email has been sent to <strong>${res.order.customerEmail}</strong>.
+              </p>
+
+              <div style="max-width:620px;margin:0 auto var(--space-6);text-align:left;background:var(--color-sand);padding:var(--space-5);border-radius:var(--radius-md);border:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                  <strong>Order Reference:</strong>
+                  <span class="mono">${res.order.orderNumber}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                  <strong>Tracking Number:</strong>
+                  <span class="mono">${res.order.trackingNumber}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+                  <strong>Shipping Destination:</strong>
+                  <span>${res.order.shippingAddress}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <strong>Total Paid / Due:</strong>
+                  <strong class="price">${window.SuotStore.formatPrice(res.order.total)}</strong>
+                </div>
               </div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                <strong>Tracking Number:</strong>
-                <span class="mono">${res.order.trackingNumber}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                <strong>Shipping Destination:</strong>
-                <span>${res.order.shippingAddress}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;">
-                <strong>Total Paid / Due:</strong>
-                <strong class="price">${window.SuotStore.formatPrice(res.order.total)}</strong>
+
+              <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:var(--space-3);">
+                <button type="button" class="btn btn-coral btn-lg" id="view-conf-email-btn">
+                  View Order Confirmation Email
+                </button>
+                <a href="account.html" class="btn btn-primary btn-lg">
+                  Track Order &amp; Manage Returns
+                </a>
+                <a href="catalog.html" class="btn btn-outline btn-lg">
+                  Continue Shopping
+                </a>
               </div>
             </div>
+          `;
 
-            <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:var(--space-3);">
-              <button type="button" class="btn btn-coral btn-lg" id="view-conf-email-btn">
-                View Order Confirmation Email
-              </button>
-              <a href="account.html" class="btn btn-primary btn-lg">
-                Track Order &amp; Manage Returns
-              </a>
-              <a href="catalog.html" class="btn btn-outline btn-lg">
-                Continue Shopping
-              </a>
-            </div>
-          </div>
-        `;
-
-        document.getElementById("view-conf-email-btn").addEventListener("click", () => {
-          window.SuotUI.openDrawer("email");
-        });
+          document.getElementById("view-conf-email-btn").addEventListener("click", () => {
+            window.SuotUI.openDrawer("email");
+          });
+        }, 520);
       });
 
       renderSummary();

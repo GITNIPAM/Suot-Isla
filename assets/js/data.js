@@ -111,6 +111,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 64,
       badge: "Best Seller",
       image: "assets/images/products/siargao-cloud9-boardshorts.jpg",
+      colorImages: {
+        "Lagoon Teal": "assets/images/products/siargao-cloud9-boardshorts.jpg",
+        "Sunset Coral": "assets/images/products/siargao-cloud9-boardshorts--sunset-coral.jpg",
+        "Palm Print": "assets/images/products/siargao-cloud9-boardshorts--palm-print.jpg"
+      },
       silhouette: "shorts"
     },
     {
@@ -129,6 +134,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 49,
       badge: "Low Stock",
       image: "assets/images/products/siargao-pacific-swell-surf-suit.jpg",
+      colorImages: {
+        "Deep Teal": "assets/images/products/siargao-pacific-swell-surf-suit.jpg",
+        "Terracotta": "assets/images/products/siargao-pacific-swell-surf-suit--terracotta.jpg",
+        "Navy": "assets/images/products/siargao-pacific-swell-surf-suit--navy.jpg"
+      },
       silhouette: "surfsuit"
     },
     {
@@ -147,6 +157,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 38,
       badge: null,
       image: "assets/images/products/siargao-barrel-ride-poncho.jpg",
+      colorImages: {
+        "Sandstone": "assets/images/products/siargao-barrel-ride-poncho.jpg",
+        "Teal Wave": "assets/images/products/siargao-barrel-ride-poncho--teal-wave.jpg",
+        "Charcoal": "assets/images/products/siargao-barrel-ride-poncho--charcoal.jpg"
+      },
       silhouette: "poncho"
     },
     {
@@ -165,6 +180,10 @@ window.SUOT_ISLA_DATA = {
       soldCount: 53,
       badge: "Island Essential",
       image: "assets/images/products/siargao-reef-walker-dry-bag.jpg",
+      colorImages: {
+        "Sunset Coral": "assets/images/products/siargao-reef-walker-dry-bag.jpg",
+        "Lagoon Teal": "assets/images/products/siargao-reef-walker-dry-bag--lagoon-teal.jpg"
+      },
       silhouette: "drybag"
     },
 
@@ -185,6 +204,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 58,
       badge: "Best Seller",
       image: "assets/images/products/boracay-golden-hour-linen-polo.jpg",
+      colorImages: {
+        "Warm Sand": "assets/images/products/boracay-golden-hour-linen-polo.jpg",
+        "Coconut White": "assets/images/products/boracay-golden-hour-linen-polo--coconut-white.jpg",
+        "Olive": "assets/images/products/boracay-golden-hour-linen-polo--olive.jpg"
+      },
       silhouette: "shirt"
     },
     {
@@ -203,6 +227,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 41,
       badge: null,
       image: "assets/images/products/boracay-white-beach-linen-trousers.jpg",
+      colorImages: {
+        "Oatmeal": "assets/images/products/boracay-white-beach-linen-trousers.jpg",
+        "White": "assets/images/products/boracay-white-beach-linen-trousers--white.jpg",
+        "Sage": "assets/images/products/boracay-white-beach-linen-trousers--sage.jpg"
+      },
       silhouette: "trousers"
     },
     {
@@ -220,6 +249,11 @@ window.SUOT_ISLA_DATA = {
       stock: 3,
       soldCount: 45,
       badge: "Low Stock",
+      image: "assets/images/products/boracay-sunset-batik-sarong.jpg",
+      colorImages: {
+        "Mango Sunset": "assets/images/products/boracay-sunset-batik-sarong.jpg",
+        "Tropical Indigo": "assets/images/products/boracay-sunset-batik-sarong--tropical-indigo.jpg"
+      },
       silhouette: "sarong"
     },
     {
@@ -238,6 +272,10 @@ window.SUOT_ISLA_DATA = {
       soldCount: 36,
       badge: "Artisan Made",
       image: "assets/images/products/boracay-woven-buri-pandan-tote.jpg",
+      colorImages: {
+        "Natural Straw": "assets/images/products/boracay-woven-buri-pandan-tote.jpg",
+        "Terracotta Trim": "assets/images/products/boracay-woven-buri-pandan-tote--terracotta-trim.jpg"
+      },
       silhouette: "tote"
     },
 
@@ -258,6 +296,11 @@ window.SUOT_ISLA_DATA = {
       soldCount: 51,
       badge: "UPF 50+",
       image: "assets/images/products/elnido-reef-safe-rash-guard.jpg",
+      colorImages: {
+        "Seafoam Mist": "assets/images/products/elnido-reef-safe-rash-guard.jpg",
+        "White": "assets/images/products/elnido-reef-safe-rash-guard--white.jpg",
+        "Deep Navy": "assets/images/products/elnido-reef-safe-rash-guard--deep-navy.jpg"
+      },
       silhouette: "rashguard"
     },
     {
@@ -275,6 +318,12 @@ window.SUOT_ISLA_DATA = {
       stock: 16,
       soldCount: 44,
       badge: null,
+      image: "assets/images/products/elnido-big-lagoon-hybrid-shorts.jpg",
+      colorImages: {
+        "Olive Green": "assets/images/products/elnido-big-lagoon-hybrid-shorts.jpg",
+        "Slate Blue": "assets/images/products/elnido-big-lagoon-hybrid-shorts--slate-blue.jpg",
+        "Sand": "assets/images/products/elnido-big-lagoon-hybrid-shorts--sand.jpg"
+      },
       silhouette: "shorts"
     },
     {
@@ -292,6 +341,11 @@ window.SUOT_ISLA_DATA = {
       stock: 4,
       soldCount: 33,
       badge: "Low Stock",
+      image: "assets/images/products/elnido-nacpan-round-beach-throw.jpg",
+      colorImages: {
+        "Tropicana Stripe": "assets/images/products/elnido-nacpan-round-beach-throw.jpg",
+        "Coastal Beige": "assets/images/products/elnido-nacpan-round-beach-throw--coastal-beige.jpg"
+      },
       silhouette: "throw"
     },
     {
@@ -309,6 +363,12 @@ window.SUOT_ISLA_DATA = {
       stock: 27,
       soldCount: 62,
       badge: "Packable",
+      image: "assets/images/products/elnido-waffle-weave-travel-towel.jpg",
+      colorImages: {
+        "Coral": "assets/images/products/elnido-waffle-weave-travel-towel.jpg",
+        "Seafoam": "assets/images/products/elnido-waffle-weave-travel-towel--seafoam.jpg",
+        "Navy": "assets/images/products/elnido-waffle-weave-travel-towel--navy.jpg"
+      },
       silhouette: "towel"
     },
 
@@ -328,6 +388,12 @@ window.SUOT_ISLA_DATA = {
       stock: 21,
       soldCount: 73,
       badge: "Best Seller",
+      image: "assets/images/products/launion-salt-washed-oversized-tee.jpg",
+      colorImages: {
+        "Washed Charcoal": "assets/images/products/launion-salt-washed-oversized-tee.jpg",
+        "Sun-Bleached Coral": "assets/images/products/launion-salt-washed-oversized-tee--sun-bleached-coral.jpg",
+        "Sky Blue": "assets/images/products/launion-salt-washed-oversized-tee--sky-blue.jpg"
+      },
       silhouette: "tee"
     },
     {
@@ -345,6 +411,11 @@ window.SUOT_ISLA_DATA = {
       stock: 12,
       soldCount: 47,
       badge: null,
+      image: "assets/images/products/launion-sanjuan-camp-collar-shirt.jpg",
+      colorImages: {
+        "Cream Print": "assets/images/products/launion-sanjuan-camp-collar-shirt.jpg",
+        "Teal Print": "assets/images/products/launion-sanjuan-camp-collar-shirt--teal-print.jpg"
+      },
       silhouette: "shirt"
     },
     {
@@ -362,6 +433,12 @@ window.SUOT_ISLA_DATA = {
       stock: 13,
       soldCount: 39,
       badge: null,
+      image: "assets/images/products/launion-dawn-patrol-boardshorts.jpg",
+      colorImages: {
+        "Mustard": "assets/images/products/launion-dawn-patrol-boardshorts.jpg",
+        "Washed Teal": "assets/images/products/launion-dawn-patrol-boardshorts--washed-teal.jpg",
+        "Brick Red": "assets/images/products/launion-dawn-patrol-boardshorts--brick-red.jpg"
+      },
       silhouette: "shorts"
     },
     {
@@ -379,6 +456,12 @@ window.SUOT_ISLA_DATA = {
       stock: 5,
       soldCount: 55,
       badge: "Low Stock",
+      image: "assets/images/products/launion-corduroy-surf-cap.jpg",
+      colorImages: {
+        "Washed Teal": "assets/images/products/launion-corduroy-surf-cap.jpg",
+        "Sand": "assets/images/products/launion-corduroy-surf-cap--sand.jpg",
+        "Burnt Orange": "assets/images/products/launion-corduroy-surf-cap--burnt-orange.jpg"
+      },
       silhouette: "cap"
     }
   ],
@@ -425,6 +508,15 @@ window.SUOT_ISLA_DATA = {
       role: "courier",
       passwordHash: "$2y$10$CourierRoleHashedKey003",
       joinedAt: "2026-08-20"
+    },
+    {
+      id: 5,
+      name: "Bianca Dela Cruz",
+      email: "bianca.delacruz@student.pcu.edu.ph",
+      phone: "+63 917 615 3390",
+      role: "customer",
+      passwordHash: "$2y$10$BiancaCustomerHashKey005",
+      joinedAt: "2026-10-04"
     }
   ],
 
@@ -539,12 +631,79 @@ window.SUOT_ISLA_DATA = {
           qty: 1
         }
       ]
+    },
+    {
+      orderNumber: "SI-2026-1061",
+      userId: 5,
+      customerName: "Bianca Dela Cruz",
+      customerEmail: "bianca.delacruz@student.pcu.edu.ph",
+      customerPhone: "+63 917 615 3390",
+      shippingAddress: "148 Paseo de Roxas, Brgy. San Lorenzo, Makati City, Metro Manila 1223",
+      paymentMethod: "GCash",
+      paymentRef: "GC-772310845",
+      paymentStatus: "Paid",
+      status: "Packed",
+      courierName: "Kuya Jomar Santos (Island Express)",
+      trackingNumber: "ISLA-TRK-91204",
+      placedAt: "2026-11-16 10:15",
+      subtotal: 2440,
+      deliveryFee: 150,
+      discount: 0,
+      total: 2590,
+      items: [
+        {
+          productId: "boracay-sunset-batik-sarong",
+          name: "Boracay Sunset Hand-Dyed Batik Sarong",
+          size: "Free Size",
+          color: "Mango Sunset",
+          price: 990,
+          qty: 1
+        },
+        {
+          productId: "boracay-woven-buri-pandan-tote",
+          name: "Boracay Woven Buri & Pandan Tote",
+          size: "Large",
+          color: "Natural Straw",
+          price: 1450,
+          qty: 1
+        }
+      ]
+    },
+    {
+      orderNumber: "SI-2026-1064",
+      userId: 5,
+      customerName: "Bianca Dela Cruz",
+      customerEmail: "bianca.delacruz@student.pcu.edu.ph",
+      customerPhone: "+63 917 615 3390",
+      shippingAddress: "Station 2 White Beach Path, Brgy. Balabag, Malay, Aklan 5608",
+      paymentMethod: "Maya",
+      paymentRef: "MY-551902311",
+      paymentStatus: "Paid",
+      status: "Delivered",
+      courierName: "Kuya Jomar Santos (Island Express)",
+      trackingNumber: "ISLA-TRK-89744",
+      placedAt: "2026-11-08 17:45",
+      subtotal: 790,
+      deliveryFee: 150,
+      discount: 0,
+      total: 940,
+      items: [
+        {
+          productId: "launion-corduroy-surf-cap",
+          name: "La Union 5-Panel Corduroy Surf Cap",
+          size: "One Size",
+          color: "Washed Teal",
+          price: 790,
+          qty: 1
+        }
+      ]
     }
   ],
 
   initialReturns: [
     {
       returnId: "RET-2026-019",
+      userId: 1,
       orderNumber: "SI-2026-1041",
       customerName: "Mateo Alonzo",
       customerEmail: "mateo.alonzo@student.pcu.edu.ph",
@@ -563,6 +722,24 @@ window.SUOT_ISLA_DATA = {
   ],
 
   initialEmails: [
+    {
+      id: "EM-105",
+      to: "bianca.delacruz@student.pcu.edu.ph",
+      type: "Shipping Update",
+      orderNumber: "SI-2026-1061",
+      subject: "[Suot Isla] Order #SI-2026-1061 Packed & Ready for Courier Pickup",
+      sentAt: "2026-11-16 14:10",
+      body: "Mabuhay Bianca! Your Boracay Sunset Batik Sarong and Woven Buri Tote (#SI-2026-1061) are packed and queued for Makati dispatch (Tracking: ISLA-TRK-91204)."
+    },
+    {
+      id: "EM-104",
+      to: "bianca.delacruz@student.pcu.edu.ph",
+      type: "Order Confirmation",
+      orderNumber: "SI-2026-1064",
+      subject: "[Suot Isla] Order Delivered #SI-2026-1064 — Enjoy the Breeze!",
+      sentAt: "2026-11-11 11:20",
+      body: "Your order #SI-2026-1064 (La Union 5-Panel Corduroy Surf Cap) has been delivered to Station 2, Boracay."
+    },
     {
       id: "EM-103",
       to: "mateo.alonzo@student.pcu.edu.ph",

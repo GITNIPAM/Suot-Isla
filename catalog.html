@@ -3,81 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Customer Catalog (16 Products) — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
+  <title>Collection &amp; Catalog — Suot Isla</title>
+  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
+  <link rel="stylesheet" href="assets/css/base.css?v=46" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
 </head>
 <body>
   <div id="site-header-mount"></div>
 
-  <main class="container">
-    <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
-        <div>
-          <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Island Surf &amp; Beachwear Catalog</h1>
-          <p>Browse all 16 products across 4 Island Series and 4 Categories with dynamic multi-faceted filtering.</p>
+  <main>
+    <!-- Atmospheric Coastal Lookbook Hero + Frosted Island Filter Dock -->
+    <section class="catalog-hero" aria-label="Suot Isla Collection Header">
+      <img
+        src="assets/images/hero-surf.jpg"
+        alt="Suot Isla coastal surf &amp; resort apparel capsule"
+        class="catalog-hero-bg"
+        id="catalog-hero-img"
+      />
+      <div class="catalog-hero-scrim" aria-hidden="true"></div>
+
+      <div class="container catalog-hero-content">
+        <div class="catalog-hero-top">
+          <div>
+            <span class="catalog-hero-eyebrow" id="catalog-hero-eyebrow">
+              ISLAND ARCHIVE • 4 CAPSULES • 16 PIECES
+            </span>
+            <h1 class="catalog-hero-title" id="catalog-hero-title">
+              Island Apparel. <em>Built for Salt Water.</em>
+            </h1>
+            <p class="catalog-hero-desc" id="catalog-hero-desc">
+              Salt-tested boardshorts, golden-hour Boracay linen, and reef-safe essentials crafted for Philippine waters.
+            </p>
+          </div>
         </div>
-        <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;" id="series-quick-tabs">
-          <button type="button" class="btn btn-outline btn-sm" data-quick-series="all">All Islands (16)</button>
-          <button type="button" class="btn btn-outline btn-sm" data-quick-series="Siargao">Siargao (4)</button>
-          <button type="button" class="btn btn-outline btn-sm" data-quick-series="Boracay">Boracay (4)</button>
-          <button type="button" class="btn btn-outline btn-sm" data-quick-series="El Nido">El Nido (4)</button>
-          <button type="button" class="btn btn-outline btn-sm" data-quick-series="La Union">La Union (4)</button>
+
+        <div class="catalog-hero-dock" id="series-quick-tabs" role="tablist" aria-label="Filter by Philippine Island Series">
+          <button type="button" class="catalog-dock-tab active" data-quick-series="all" role="tab">
+            <span>All Islands</span>
+            <span class="catalog-dock-num">(16)</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-quick-series="Siargao" role="tab">
+            <span class="catalog-dock-num">01</span>
+            <span>Siargao</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-quick-series="Boracay" role="tab">
+            <span class="catalog-dock-num">02</span>
+            <span>Boracay</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-quick-series="El Nido" role="tab">
+            <span class="catalog-dock-num">03</span>
+            <span>El Nido</span>
+          </button>
+          <button type="button" class="catalog-dock-tab" data-quick-series="La Union" role="tab">
+            <span class="catalog-dock-num">04</span>
+            <span>La Union</span>
+          </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="catalog-layout">
-      <!-- Dynamic Multi-Faceted Filter Sidebar -->
-      <aside class="filter-sidebar" aria-label="Product Catalog Filters">
-        <form id="catalog-filter-form" onsubmit="return false;">
-          <div class="filter-group">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
-              <h2 style="margin:0;">Search Catalog</h2>
-              <button type="button" class="btn btn-ghost btn-sm" id="reset-filters-btn" style="padding:2px 6px;">Reset All</button>
+    <!-- Full-Width Editorial Filter Dock + Balanced 4-Column Showcase Grid -->
+    <section class="container catalog-showcase-main" aria-label="Product Catalog Showcase">
+      <div class="catalog-control-bar">
+        <div class="featured-filter-dock" id="catalog-category-dock" role="tablist" aria-label="Filter by Category"></div>
+
+        <div class="catalog-control-right">
+          <input
+            type="search"
+            name="q"
+            id="filter-search"
+            class="catalog-search-pill"
+            placeholder="Search boardshorts, linen, dry bag..."
+            aria-label="Search products"
+          />
+
+          <button
+            type="button"
+            class="catalog-refine-btn"
+            id="toggle-refine-tray"
+            aria-expanded="false"
+            aria-controls="catalog-refine-tray"
+          >
+            <span>Refine: Size · Color · Price</span>
+            <span class="badge-count" id="refine-active-badge" style="display:none;min-width:18px;height:18px;">0</span>
+          </button>
+
+          <select id="catalog-sort" name="sort" class="catalog-sort-pill" aria-label="Sort products">
+            <option value="featured">Featured Island Order</option>
+            <option value="bestselling">Best Selling First</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name-asc">Name: A to Z</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Expandable Warm Sand Filter Tray -->
+      <div class="catalog-refine-tray" id="catalog-refine-tray">
+        <div class="catalog-refine-grid">
+          <div>
+            <div class="refine-col-head">
+              <span class="refine-col-title">Size / Spec</span>
             </div>
-            <input
-              type="search"
-              name="q"
-              id="filter-search"
-              class="form-input"
-              placeholder="Search boardshorts, linen, tote..."
-              aria-label="Search products"
-            />
-          </div>
-
-          <!-- Filter 1: Island Series -->
-          <div class="filter-group">
-            <h2>Island Series</h2>
-            <div class="filter-list" id="filter-series-list"></div>
-          </div>
-
-          <!-- Filter 2: Category -->
-          <div class="filter-group">
-            <h2>Category</h2>
-            <div class="filter-list" id="filter-category-list"></div>
-          </div>
-
-          <!-- Filter 3: Size / Volume -->
-          <div class="filter-group">
-            <h2>Size / Spec</h2>
             <div class="size-chip-grid" id="filter-size-grid"></div>
           </div>
 
-          <!-- Filter 4: Color Family -->
-          <div class="filter-group">
-            <h2>Colorway</h2>
-            <select name="color" id="filter-color" class="form-select" aria-label="Filter by Color">
-              <option value="all">All Island Colorways</option>
-            </select>
+          <div>
+            <div class="refine-col-head">
+              <span class="refine-col-title">Colorway</span>
+              <span class="mono" id="color-filter-label" style="font-size:0.75rem;color:var(--text-secondary);">All Colorways</span>
+            </div>
+            <div class="color-filter-swatches" id="filter-color-swatches"></div>
           </div>
 
-          <!-- Filter 5: Max Price Range -->
-          <div class="filter-group">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2);">
-              <h2 style="margin:0;">Max Price</h2>
-              <strong class="price" id="price-range-label" style="font-size:var(--text-sm);color:var(--color-lagoon);">₱2,600</strong>
+          <div>
+            <div class="refine-col-head">
+              <span class="refine-col-title">Max Price</span>
+              <strong class="tabular" id="price-range-label" style="font-size:0.85rem;color:var(--color-lagoon-ink);">₱2,600</strong>
             </div>
             <input
               type="range"
@@ -89,49 +131,37 @@
               value="2600"
               style="width:100%;accent-color:var(--color-lagoon);"
             />
-            <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
-              <span class="tabular">₱750</span>
-              <span class="tabular">₱1,600</span>
-              <span class="tabular">₱2,600</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+              <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">₱750 – ₱2,600</span>
+              <button type="button" class="btn btn-outline btn-sm btn-pill" id="reset-filters-btn">Reset All</button>
             </div>
           </div>
-        </form>
-      </aside>
+        </div>
+      </div>
 
-      <!-- Catalog Results Column -->
-      <section aria-label="Filtered Products">
-        <div class="catalog-toolbar">
-          <div>
-            <strong id="catalog-count-label" class="tabular">Showing 16 of 16 products</strong>
-            <span id="catalog-series-tagline" style="font-size:var(--text-xs);color:var(--text-muted);display:block;">
-              All 4 Philippine Island Series • Live Variant Availability
-            </span>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:var(--space-2);">
-            <label for="catalog-sort" style="font-size:var(--text-xs);font-weight:700;">Sort By:</label>
-            <select id="catalog-sort" name="sort" class="form-select" style="width:auto;min-width:190px;">
-              <option value="featured">Featured Island Order</option>
-              <option value="bestselling">Best Selling First</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="name-asc">Name: A to Z</option>
-            </select>
-          </div>
+      <!-- Live Count + Removable Active Filter Chips -->
+      <div class="catalog-results-meta">
+        <div>
+          <strong id="catalog-count-label" class="tabular" style="font-size:0.95rem;">Showing 16 of 16 pieces</strong>
+          <span id="catalog-series-tagline" style="font-size:0.82rem;color:var(--text-muted);margin-left:0.65rem;">
+            4 Island Series · Salt-Tested Materials
+          </span>
         </div>
 
         <div class="active-filters-bar" id="active-filters-bar"></div>
+      </div>
 
-        <div class="product-grid" id="catalog-product-grid"></div>
-      </section>
-    </div>
+      <!-- Full-Width 4x4 Porcelain Showcase Grid -->
+      <div class="product-grid" id="catalog-product-grid"></div>
+    </section>
   </main>
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/store.js"></script>
-  <script src="assets/js/components.js"></script>
-  <script src="assets/js/catalog.js"></script>
+  <script src="assets/js/data.js?v=46"></script>
+  <script src="assets/js/store.js?v=46"></script>
+  <script src="assets/js/components.js?v=46"></script>
+  <script src="assets/js/ocean-overdrive.js?v=46"></script>
+  <script src="assets/js/catalog.js?v=46"></script>
 </body>
 </html>

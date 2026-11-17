@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Suot Isla — Island-Born Surf &amp; Beachwear</title>
-  <link rel="stylesheet" href="assets/css/tokens.css?v=25" />
-  <link rel="stylesheet" href="assets/css/base.css?v=25" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=25" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
+  <link rel="stylesheet" href="assets/css/base.css?v=46" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -122,28 +122,48 @@
     <!-- Featured Gear across All 4 Series -->
     <section class="section-block-alt">
       <div class="container">
-        <div class="section-head">
+        <div class="featured-head">
           <div>
             <h2>Featured Island Gear &amp; Apparel</h2>
-            <p>Select a colorway to preview.</p>
+            <p>Preview island colorways, pick your exact size, and add straight to your bag.</p>
           </div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;" id="home-category-tabs">
-            <button type="button" class="pill pill-lagoon" style="border:none;cursor:pointer;" data-home-cat="all">All Featured</button>
-            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Swim & Surf">Swim &amp; Surf</button>
-            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Resort & Loungewear">Resort &amp; Loungewear</button>
-            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Beach Towels & Ponchos">Beach Towels &amp; Ponchos</button>
-            <button type="button" class="pill pill-sand" style="border:none;cursor:pointer;" data-home-cat="Island Accessories">Island Accessories</button>
+          <div class="featured-filter-dock" id="home-category-tabs" role="tablist" aria-label="Filter Featured Categories">
+            <button type="button" class="featured-filter-btn active" data-home-cat="all" role="tab" aria-selected="true">
+              <span>All Featured</span>
+              <span class="featured-filter-count" data-cat-count="all">8</span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-home-cat="Swim & Surf" role="tab" aria-selected="false">
+              <span>Swim &amp; Surf</span>
+              <span class="featured-filter-count" data-cat-count="Swim & Surf"></span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-home-cat="Resort & Loungewear" role="tab" aria-selected="false">
+              <span>Resort &amp; Linen</span>
+              <span class="featured-filter-count" data-cat-count="Resort & Loungewear"></span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-home-cat="Beach Towels & Ponchos" role="tab" aria-selected="false">
+              <span>Towels &amp; Ponchos</span>
+              <span class="featured-filter-count" data-cat-count="Beach Towels & Ponchos"></span>
+            </button>
+            <button type="button" class="featured-filter-btn" data-home-cat="Island Accessories" role="tab" aria-selected="false">
+              <span>Accessories</span>
+              <span class="featured-filter-count" data-cat-count="Island Accessories"></span>
+            </button>
           </div>
         </div>
 
         <div class="product-grid" id="home-featured-grid"></div>
+
+        <div class="featured-footer-cta">
+          <p id="featured-showing-note">Showing 8 curated island essentials across Siargao, Boracay, and El Nido.</p>
+          <a href="catalog.html" class="btn btn-outline btn-pill">Browse Full 16-Piece Catalog →</a>
+        </div>
       </div>
     </section>
 
     <!-- Unified Editorial Lookbook & Coastal Craft Spread -->
     <section class="craft-editorial-section">
       <div class="container">
-        <div class="journal-unified-grid">
+        <div class="journal-unified-grid" data-reveal>
           <div class="journal-photo-frame">
             <img
               src="assets/images/series-boracay.jpg"
@@ -170,7 +190,7 @@
         </div>
 
         <div class="craft-materials-row">
-          <a href="catalog.html?category=Swim+%26+Surf" class="craft-material-col">
+          <a href="catalog.html?category=Swim+%26+Surf" class="craft-material-col" data-reveal data-reveal-delay="0">
             <div class="craft-material-top">
               <span class="craft-material-num">01 / FABRIC</span>
               <span class="craft-swatch-dot" style="background-color:#0E6B74;"></span>
@@ -180,7 +200,7 @@
             <span class="craft-material-link">Shop Swim &amp; Surf →</span>
           </a>
 
-          <a href="catalog.html?category=Resort+%26+Loungewear" class="craft-material-col">
+          <a href="catalog.html?category=Resort+%26+Loungewear" class="craft-material-col" data-reveal data-reveal-delay="60">
             <div class="craft-material-top">
               <span class="craft-material-num">02 / WEAVE</span>
               <span class="craft-swatch-dot" style="background-color:#E8D7B9;"></span>
@@ -190,7 +210,7 @@
             <span class="craft-material-link">Shop Resortwear →</span>
           </a>
 
-          <a href="catalog.html?category=Island+Accessories" class="craft-material-col">
+          <a href="catalog.html?category=Island+Accessories" class="craft-material-col" data-reveal data-reveal-delay="120">
             <div class="craft-material-top">
               <span class="craft-material-num">03 / CRAFT</span>
               <span class="craft-swatch-dot" style="background-color:#D8BC8B;"></span>
@@ -200,7 +220,7 @@
             <span class="craft-material-link">Shop Accessories →</span>
           </a>
 
-          <a href="catalog.html?category=Beach+Towels+%26+Ponchos" class="craft-material-col">
+          <a href="catalog.html?category=Beach+Towels+%26+Ponchos" class="craft-material-col" data-reveal data-reveal-delay="180">
             <div class="craft-material-top">
               <span class="craft-material-num">04 / PROTECT</span>
               <span class="craft-swatch-dot" style="background-color:#A8D5BA;"></span>
@@ -215,7 +235,7 @@
 
     <!-- Dedicated Island Dispatch & Order Tracking Band -->
     <section class="order-track-band" aria-label="Track Your Island Order">
-      <div class="container order-track-inner">
+      <div class="container order-track-inner" data-reveal>
         <div class="order-track-copy">
           <h3>Already placed an island order?</h3>
           <p>Check live courier dispatch status from Manila to Siargao, view order emails, or request a size exchange.</p>
@@ -237,10 +257,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=13"></script>
-  <script src="assets/js/store.js?v=13"></script>
-  <script src="assets/js/components.js?v=25"></script>
-  <script src="assets/js/ocean-overdrive.js?v=13"></script>
+  <script src="assets/js/data.js?v=46"></script>
+  <script src="assets/js/store.js?v=46"></script>
+  <script src="assets/js/components.js?v=46"></script>
+  <script src="assets/js/ocean-overdrive.js?v=46"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const seriesGrid = document.getElementById("home-series-grid");
@@ -267,8 +287,8 @@
           capMeta: "BORACAY CAPSULE • RESORT LINEN"
         },
         "El Nido": {
-          img: "assets/images/series-elnido.jpg",
-          pos: "center 42%",
+          img: "assets/images/hero-elnido.jpg",
+          pos: "center 52%",
           caption: "11.1956° N, 119.4180° E • BIG LAGOON • GLASSY WATER",
           cta: "Explore El Nido",
           href: "catalog.html?series=El+Nido",
@@ -276,13 +296,13 @@
           capMeta: "EL NIDO CAPSULE • UPF 50+"
         },
         "La Union": {
-          img: "assets/images/series-launion.jpg",
-          pos: "center 28%",
+          img: "assets/images/hero-launion.jpg",
+          pos: "center 54%",
           caption: "16.6631° N, 120.3208° E • SAN JUAN • NORTH SWELL",
           cta: "Explore La Union",
           href: "catalog.html?series=La+Union",
-          productId: "boracay-woven-buri-pandan-tote",
-          capMeta: "ISLAND CARRY • HANDWOVEN"
+          productId: "launion-salt-washed-oversized-tee",
+          capMeta: "LA UNION CAPSULE • BEST SELLER"
         }
       };
 
@@ -306,11 +326,14 @@
         if (!prod) return;
         if (!prod.colors.includes(heroCapColor)) heroCapColor = prod.colors[0];
 
-        const detailUrl = `product.html?id=${encodeURIComponent(prod.id)}`;
+        const detailUrl = `product.html?id=${encodeURIComponent(prod.id)}&color=${encodeURIComponent(heroCapColor)}`;
         capLinkEl.href = detailUrl;
         capDetailsLinkEl.href = detailUrl;
-        capImgEl.src = prod.image || "assets/images/products/siargao-cloud9-boardshorts.jpg";
-        capImgEl.alt = prod.name;
+        capImgEl.src =
+          window.SuotStore.getProductImageForColor(prod, heroCapColor) ||
+          prod.image ||
+          "assets/images/products/siargao-cloud9-boardshorts.jpg";
+        capImgEl.alt = `${prod.name} in ${heroCapColor}`;
         capMetaEl.textContent = metaText;
         capTitleEl.textContent = prod.name;
         capPriceEl.textContent = window.SuotStore.formatPrice(prod.price);
@@ -372,6 +395,7 @@
         if (prod) {
           const chosenSize = capSizeEl.value || prod.sizes[0];
           window.SuotStore.addToCart(prod.id, chosenSize, heroCapColor || prod.colors[0], 1);
+          window.SuotUI.flashButtonAdded(capAddBtn, "✓ Added to Bag");
           window.SuotUI.toast(
             `Added ${prod.name} (${chosenSize}, ${heroCapColor || prod.colors[0]}) to your Island Bag!`,
             "Added to Bag"
@@ -454,35 +478,57 @@
 
       let activeHomeCategory = "all";
 
+      document.querySelectorAll("[data-cat-count]").forEach((badge) => {
+        const cat = badge.getAttribute("data-cat-count");
+        const count = cat === "all" ? defaultFeatured.length : allProducts.filter((p) => p.category === cat).length;
+        badge.textContent = `(${count})`;
+      });
+
       function renderFeaturedCards() {
         const list =
           activeHomeCategory === "all"
             ? defaultFeatured
             : allProducts.filter((p) => p.category === activeHomeCategory);
 
+        const showingNote = document.getElementById("featured-showing-note");
+        if (showingNote) {
+          showingNote.textContent =
+            activeHomeCategory === "all"
+              ? `Showing ${list.length} featured island essentials across Siargao, Boracay, and El Nido.`
+              : `Showing ${list.length} pieces in ${activeHomeCategory} across all 4 islands.`;
+        }
+
         featuredGrid.innerHTML = list
           .map((p) => {
             const activeColor = p._selectedColor || p.colors[0];
+            const activeSize = p._selectedSize || p.sizes[0];
             const isLowStock = p.stock <= 5;
-            const minimalTag = isLowStock
-              ? `${p.series.toUpperCase()} • LOW STOCK (${p.stock} LEFT)`
-              : p.badge
-              ? `${p.series.toUpperCase()} • ${p.badge.toUpperCase()}`
-              : `${p.series.toUpperCase()} • ${p.category.toUpperCase()}`;
+            const statusText = isLowStock ? `Only ${p.stock} left` : p.badge || "";
 
             return `
               <article class="product-card" data-product-card="${p.id}">
-                <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-thumb-wrap">
+                <a href="product.html?id=${encodeURIComponent(p.id)}&color=${encodeURIComponent(activeColor)}" class="product-thumb-wrap">
+                  <div class="product-thumb-badges">
+                    <span class="thumb-series-pill">${p.series}</span>
+                    ${
+                      statusText
+                        ? `<span class="thumb-status-pill ${isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
+                        : ""
+                    }
+                  </div>
                   <div class="product-svg-stage" id="thumb-${p.id}">
                     ${window.SuotStore.renderProductVisual(p, activeColor)}
                   </div>
+                  <span class="thumb-quickview-pill">View Details →</span>
                 </a>
 
                 <div class="product-body">
-                  <span class="product-minimal-tag ${isLowStock ? "is-low-stock" : ""}">${minimalTag}</span>
-                  <a href="product.html?id=${encodeURIComponent(p.id)}" class="product-title-link">
-                    <h3>${p.name}</h3>
-                  </a>
+                  <div class="product-meta-header">
+                    <a href="product.html?id=${encodeURIComponent(p.id)}&color=${encodeURIComponent(activeColor)}" class="product-title-link">
+                      <h3>${p.name}</h3>
+                    </a>
+                    <div class="product-price">${window.SuotStore.formatPrice(p.price)}</div>
+                  </div>
 
                   <div class="swatch-row" aria-label="Color Variants">
                     ${p.colors
@@ -502,14 +548,27 @@
                     <span style="font-size:var(--text-xs);color:var(--text-muted);margin-left:2px;">${activeColor}</span>
                   </div>
 
-                  <div class="product-price">${window.SuotStore.formatPrice(p.price)}</div>
+                  <div class="card-size-row" aria-label="Quick Size Selection">
+                    ${p.sizes
+                      .map(
+                        (sz) => `
+                        <button
+                          type="button"
+                          class="card-size-pill ${sz === activeSize ? "active" : ""}"
+                          data-size-prod="${p.id}"
+                          data-size-val="${sz}"
+                        >${sz}</button>
+                      `
+                      )
+                      .join("")}
+                  </div>
 
                   <button
                     type="button"
                     class="btn-minimal-add"
                     data-quick-add="${p.id}"
                   >
-                    Add to Bag (${p.sizes[0]})
+                    Add to Bag · ${activeSize}
                   </button>
                 </div>
               </article>
@@ -529,14 +588,27 @@
           });
         });
 
+        featuredGrid.querySelectorAll("[data-size-prod]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const pid = btn.getAttribute("data-size-prod");
+            const sz = btn.getAttribute("data-size-val");
+            const prod = allProducts.find((item) => item.id === pid);
+            if (prod) {
+              prod._selectedSize = sz;
+              renderFeaturedCards();
+            }
+          });
+        });
+
         featuredGrid.querySelectorAll("[data-quick-add]").forEach((btn) => {
           btn.addEventListener("click", () => {
             const pid = btn.getAttribute("data-quick-add");
             const prod = allProducts.find((item) => item.id === pid);
             if (prod) {
               const color = prod._selectedColor || prod.colors[0];
-              const size = prod.sizes[0];
+              const size = prod._selectedSize || prod.sizes[0];
               window.SuotStore.addToCart(prod.id, size, color, 1);
+              window.SuotUI.flashButtonAdded(btn, `✓ Added · ${size}`);
               window.SuotUI.toast(`Added ${prod.name} (${size}, ${color}) to your Island Bag!`, "Added to Bag");
             }
           });
@@ -548,7 +620,9 @@
           activeHomeCategory = tab.getAttribute("data-home-cat");
           window.suotTransition(() => {
             document.querySelectorAll("[data-home-cat]").forEach((t) => {
-              t.className = t === tab ? "pill pill-lagoon" : "pill pill-sand";
+              const isSelected = t === tab;
+              t.classList.toggle("active", isSelected);
+              t.setAttribute("aria-selected", isSelected ? "true" : "false");
             });
             renderFeaturedCards();
           });

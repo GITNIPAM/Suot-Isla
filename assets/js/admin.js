@@ -7,6 +7,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   let activeTab = "analytics";
   let uploadedImageDataUrl = null;
+  const selectedAdminColor = {};
 
   const roleSelectEl = document.getElementById("rbac-role-select");
   const roleDescEl = document.getElementById("rbac-role-desc");
@@ -27,6 +28,18 @@ document.addEventListener("DOMContentLoaded", () => {
     staff: "Staff access: Catalog & Inventory CRUD, Order Processing, and Returns (Employee RBAC restricted).",
     courier: "Fulfillment / Courier only: Assigned dispatches and delivery status updates only."
   };
+
+  function flashAdminRow(rowKey) {
+    if (!rowKey) return;
+    requestAnimationFrame(() => {
+      const row = workspaceEl.querySelector(`[data-row-key="${CSS.escape(rowKey)}"]`);
+      if (row) {
+        row.classList.remove("admin-row-flash");
+        void row.offsetWidth;
+        row.classList.add("admin-row-flash");
+      }
+    });
+  }
 
   function syncRolePermissions() {
     roleDescEl.textContent = roleDescriptions[activeRole] || "";
@@ -250,11 +263,15 @@ document.addEventListener("DOMContentLoaded", () => {
             ${products
               .map((p) => {
                 const isLow = p.stock <= 5;
+                const activeColor =
+                  selectedAdminColor[p.id] && p.colors.includes(selectedAdminColor[p.id])
+                    ? selectedAdminColor[p.id]
+                    : p.colors[0];
                 return `
-                  <tr style="${p.archived ? "opacity:0.55;" : ""}">
+                  <tr data-row-key="${p.id}" style="${p.archived ? "opacity:0.55;" : ""}">
                     <td>
-                      <div style="width:52px;height:46px;background:var(--color-sand);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:4px;display:flex;align-items:center;justify-content:center;">
-                        ${window.SuotStore.renderProductVisual(p, p.colors[0])}
+                      <div style="width:52px;height:64px;background:var(--color-sand);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);overflow:hidden;">
+                        ${window.SuotStore.renderProductVisual(p, activeColor)}
                       </div>
                     </td>
                     <td>
@@ -268,7 +285,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     </td>
                     <td style="font-size:var(--text-xs);">
                       <div><strong>Sizes:</strong> ${(p.sizes || []).join(", ")}</div>
-                      <div style="color:var(--text-muted);"><strong>Colors:</strong> ${(p.colors || []).join(", ")}</div>
+                      <div class="admin-swatch-strip" aria-label="Preview color variants for ${p.name}">
+                        ${(p.colors || [])
+                          .map(
+                            (c) => `
+                            <button
+                              type="button"
+                              class="admin-swatch-btn ${c === activeColor ? "active" : ""}"
+                              data-admin-color-prod="${p.id}"
+                              data-admin-color-val="${c}"
+                              title="Preview ${c}"
+                            >
+                              <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(c)};"></span>
+                              <span>${c}</span>
+                            </button>
+                          `
+                          )
+                          .join("")}
+                      </div>
                     </td>
                     <td class="price"><strong>${window.SuotStore.formatPrice(p.price)}</strong></td>
                     <td>
@@ -302,6 +336,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("open-new-product-btn").addEventListener("click", () => openProductModal(null));
 
+    workspaceEl.querySelectorAll("[data-admin-color-prod]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pid = btn.getAttribute("data-admin-color-prod");
+        const clr = btn.getAttribute("data-admin-color-val");
+        selectedAdminColor[pid] = clr;
+        renderInventoryTab();
+      });
+    });
+
     workspaceEl.querySelectorAll("[data-stock-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const pid = btn.getAttribute("data-stock-id");
@@ -309,6 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const item = window.SuotStore.adjustStock(pid, delta, false);
         window.SuotUI.toast(`${item.name} stock updated to ${item.stock} units.`, "Inventory Updated");
         renderInventoryTab();
+        flashAdminRow(pid);
       });
     });
 
@@ -321,9 +365,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     workspaceEl.querySelectorAll("[data-archive-prod]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const item = window.SuotStore.toggleArchiveProduct(btn.getAttribute("data-archive-prod"));
+        const pid = btn.getAttribute("data-archive-prod");
+        const item = window.SuotStore.toggleArchiveProduct(pid);
         window.SuotUI.toast(`${item.name} ${item.archived ? "archived from storefront" : "restored to storefront"}.`, "Catalog Updated");
         renderInventoryTab();
+        flashAdminRow(pid);
       });
     });
 
@@ -445,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${orders
               .map(
                 (o) => `
-                <tr>
+                <tr data-row-key="${o.orderNumber}">
                   <td>
                     <strong class="mono">#${o.orderNumber}</strong>
                     <div class="mono" style="color:var(--text-muted);">${o.placedAt}</div>
@@ -456,7 +502,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div style="font-size:var(--text-xs);margin-top:2px;">${o.shippingAddress}</div>
                   </td>
                   <td style="font-size:var(--text-xs);">
-                    ${o.items.map((i) => `<div>• ${i.qty}× ${i.name} (${i.size}, ${i.color})</div>`).join("")}
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      ${o.items
+                        .map((i) => {
+                          const prod = window.SuotStore.getProductById(i.productId);
+                          return `
+                            <div style="display:flex;align-items:center;gap:8px;">
+                              <div style="width:36px;height:45px;border-radius:6px;overflow:hidden;border:1px solid var(--border-subtle);background:var(--color-sand);flex-shrink:0;">
+                                ${prod ? window.SuotStore.renderProductVisual(prod, i.color) : ""}
+                              </div>
+                              <div>
+                                <div><strong>${i.qty}× ${i.name}</strong></div>
+                                <div style="color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                  <span>${i.size} ·</span>
+                                  <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(i.color)};"></span>
+                                  <span>${i.color}</span>
+                                </div>
+                              </div>
+                            </div>
+                          `;
+                        })
+                        .join("")}
+                    </div>
                   </td>
                   <td>
                     <strong class="price">${window.SuotStore.formatPrice(o.total)}</strong>
@@ -515,6 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.SuotStore.updateOrderStatus(ordNum, newStatus, courier, trk);
         window.SuotUI.toast(`Order #${ordNum} updated to "${newStatus}" & email sent to customer!`, "Status & Email Sent");
         renderOrdersTab();
+        flashAdminRow(ordNum);
       });
     });
   }
@@ -545,6 +613,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div style="font-weight:700;">Recipient: ${o.customerName} (${o.customerPhone})</div>
                 <div style="font-size:var(--text-sm);color:var(--text-secondary);">Drop-off Address: ${o.shippingAddress}</div>
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                  ${o.items
+                    .map((i) => {
+                      const prod = window.SuotStore.getProductById(i.productId);
+                      return `
+                        <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--bg-surface);font-size:var(--text-xs);">
+                          <div style="width:28px;height:35px;border-radius:4px;overflow:hidden;flex-shrink:0;">
+                            ${prod ? window.SuotStore.renderProductVisual(prod, i.color) : ""}
+                          </div>
+                          <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(i.color)};"></span>
+                          <span><strong>${i.qty}× ${i.name}</strong> (${i.size}, ${i.color})</span>
+                        </div>
+                      `;
+                    })
+                    .join("")}
+                </div>
                 <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
                   Payment Collection: <strong>${o.paymentMethod === "COD" ? "Collect " + window.SuotStore.formatPrice(o.total) + " Cash" : "Pre-Paid (" + o.paymentMethod + ")"}</strong>
                 </div>
@@ -608,7 +692,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${returnsList
               .map(
                 (r) => `
-                <tr>
+                <tr data-row-key="${r.returnId}">
                   <td class="mono"><strong>${r.returnId}</strong><div style="color:var(--text-muted);">${r.requestedAt}</div></td>
                   <td>
                     <strong class="mono">#${r.orderNumber}</strong>
@@ -672,6 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         syncRolePermissions();
         renderReturnsTab();
+        flashAdminRow(retId);
       });
     });
   }

@@ -39,15 +39,45 @@
     }
     if (!localStorage.getItem(KEYS.ORDERS)) {
       writeJSON(KEYS.ORDERS, window.SUOT_ISLA_DATA.initialOrders);
+    } else {
+      const existingOrders = readJSON(KEYS.ORDERS, []);
+      let changedOrders = false;
+      window.SUOT_ISLA_DATA.initialOrders.forEach((seedOrd) => {
+        if (!existingOrders.some((o) => o.orderNumber === seedOrd.orderNumber)) {
+          existingOrders.push(seedOrd);
+          changedOrders = true;
+        }
+      });
+      if (changedOrders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(existingOrders));
     }
     if (!localStorage.getItem(KEYS.RETURNS)) {
       writeJSON(KEYS.RETURNS, window.SUOT_ISLA_DATA.initialReturns);
     }
     if (!localStorage.getItem(KEYS.EMAILS)) {
       writeJSON(KEYS.EMAILS, window.SUOT_ISLA_DATA.initialEmails);
+    } else {
+      const existingEmails = readJSON(KEYS.EMAILS, []);
+      let changedEmails = false;
+      window.SUOT_ISLA_DATA.initialEmails.forEach((seedEm) => {
+        if (!existingEmails.some((e) => e.id === seedEm.id)) {
+          existingEmails.push(seedEm);
+          changedEmails = true;
+        }
+      });
+      if (changedEmails) localStorage.setItem(KEYS.EMAILS, JSON.stringify(existingEmails));
     }
     if (!localStorage.getItem(KEYS.USERS)) {
       writeJSON(KEYS.USERS, window.SUOT_ISLA_DATA.users);
+    } else {
+      const existingUsers = readJSON(KEYS.USERS, []);
+      let changedUsers = false;
+      window.SUOT_ISLA_DATA.users.forEach((seedUsr) => {
+        if (!existingUsers.some((u) => Number(u.id) === Number(seedUsr.id))) {
+          existingUsers.push(seedUsr);
+          changedUsers = true;
+        }
+      });
+      if (changedUsers) localStorage.setItem(KEYS.USERS, JSON.stringify(existingUsers));
     }
     if (!localStorage.getItem(KEYS.CURRENT_USER)) {
       writeJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
@@ -90,6 +120,24 @@
       return window.SUOT_ISLA_DATA.colorHexMap[colorName] || "#0E6B74";
     },
 
+    withAssetVersion(src) {
+      if (!src || typeof src !== "string") return src || "";
+      if (src.startsWith("assets/images/") && !src.includes("?")) {
+        return `${src}?v=46`;
+      }
+      return src;
+    },
+
+    getProductImageForColor(product, activeColor) {
+      if (!product) return "";
+      const colorName = activeColor || (product.colors && product.colors[0]) || "";
+      if (product.customImageUrl) return product.customImageUrl;
+      if (product.colorImages && colorName && product.colorImages[colorName]) {
+        return this.withAssetVersion(product.colorImages[colorName]);
+      }
+      return this.withAssetVersion(product.image || "");
+    },
+
     // -------------------- Products & Inventory CRUD --------------------
     getProducts(includeArchived = false) {
       const seedMap = {};
@@ -97,10 +145,13 @@
         seedMap[sp.id] = sp;
       });
       const list = readJSON(KEYS.PRODUCTS, window.SUOT_ISLA_DATA.products).map((p) => {
-        if (!p.image && seedMap[p.id] && seedMap[p.id].image) {
-          return { ...p, image: seedMap[p.id].image };
-        }
-        return p;
+        const seed = seedMap[p.id];
+        if (!seed) return p;
+        return {
+          ...p,
+          image: p.image || seed.image,
+          colorImages: p.colorImages || seed.colorImages
+        };
       });
       return includeArchived ? list : list.filter((p) => !p.archived);
     },
@@ -287,6 +338,13 @@
       return matched;
     },
 
+    loginAsUserId(userId) {
+      const users = this.getUsers();
+      const matched = users.find((u) => Number(u.id) === Number(userId)) || users[0];
+      writeJSON(KEYS.CURRENT_USER, matched);
+      return matched;
+    },
+
     loginWithCredentials(email, password) {
       const users = this.getUsers();
       const found = users.find((u) => u.email.toLowerCase() === String(email).trim().toLowerCase());
@@ -340,13 +398,33 @@
       return users;
     },
 
+    belongsToUser(record, user) {
+      if (!record || !user) return false;
+      if (record.userId !== undefined && record.userId !== null && user.id !== undefined) {
+        if (Number(record.userId) === Number(user.id)) return true;
+      }
+      const recEmail = String(record.customerEmail || record.to || "").trim().toLowerCase();
+      const usrEmail = String(user.email || "").trim().toLowerCase();
+      return Boolean(recEmail && usrEmail && recEmail === usrEmail);
+    },
+
     // -------------------- Orders, Fulfillment & Email Notifications --------------------
     getOrders() {
       return readJSON(KEYS.ORDERS, window.SUOT_ISLA_DATA.initialOrders);
     },
 
+    getOrdersForCurrentUser() {
+      const curr = this.getCurrentUser();
+      return this.getOrders().filter((o) => this.belongsToUser(o, curr));
+    },
+
     getEmails() {
       return readJSON(KEYS.EMAILS, window.SUOT_ISLA_DATA.initialEmails);
+    },
+
+    getEmailsForCurrentUser() {
+      const curr = this.getCurrentUser();
+      return this.getEmails().filter((e) => this.belongsToUser(e, curr));
     },
 
     logEmail({ to, type, orderNumber, subject, body }) {
@@ -457,17 +535,24 @@
       return readJSON(KEYS.RETURNS, window.SUOT_ISLA_DATA.initialReturns);
     },
 
+    getReturnsForCurrentUser() {
+      const curr = this.getCurrentUser();
+      return this.getReturns().filter((r) => this.belongsToUser(r, curr));
+    },
+
     submitReturnRequest(payload) {
       const returnsList = this.getReturns();
       const orders = this.getOrders();
+      const curr = this.getCurrentUser();
       const order = orders.find((o) => o.orderNumber === payload.orderNumber) || orders[0];
       const firstItem = order && order.items && order.items[0] ? order.items[0] : null;
 
       const newReq = {
         returnId: "RET-2026-" + Math.floor(100 + Math.random() * 899),
+        userId: order ? order.userId : curr.id,
         orderNumber: payload.orderNumber,
-        customerName: order ? order.customerName : this.getCurrentUser().name,
-        customerEmail: order ? order.customerEmail : this.getCurrentUser().email,
+        customerName: order ? order.customerName : curr.name,
+        customerEmail: order ? order.customerEmail : curr.email,
         type: payload.type || "Return & Refund",
         itemSummary:
           payload.itemSummary ||
@@ -543,15 +628,17 @@
     renderProductVisual(product, activeColor) {
       const colorName = activeColor || (product.colors && product.colors[0]) || "Lagoon Teal";
       const fillHex = this.getColorHex(colorName);
-      const photoSrc = product.customImageUrl || product.image;
+      const mappedColorPhoto = !product.customImageUrl && product.colorImages && product.colorImages[colorName];
+      const photoSrc = this.withAssetVersion(product.customImageUrl || mappedColorPhoto || product.image);
 
       if (photoSrc) {
         const isPrimaryColor = product.colors && colorName === product.colors[0];
+        const needsFallbackTint = !mappedColorPhoto && !isPrimaryColor;
         return `
           <div class="studio-photo-wrap">
             <img src="${photoSrc}" alt="${product.name} in ${colorName}" class="studio-product-img" loading="lazy" />
             ${
-              !isPrimaryColor
+              needsFallbackTint
                 ? `<span class="studio-color-tint" style="background-color:${fillHex};" aria-hidden="true"></span>`
                 : ""
             }

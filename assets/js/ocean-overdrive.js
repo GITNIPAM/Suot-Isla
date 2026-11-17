@@ -1,6 +1,6 @@
 /* ==========================================================================
    Suot Isla — Overdrive Coastal Shader & Interactive Motion Layer
-   WebGL2 / Canvas2D Sunlit Ocean Caustics + View Transitions + Magnetic CTA
+   WebGL2 / Canvas2D Sunlit Ocean Caustics + Scroll Reveals + Magnetic CTA
    ========================================================================== */
 
 (function () {
@@ -72,7 +72,6 @@
           float h = wave(p + vec2(ripple * 0.4), uTime * 0.9);
           float caustic = pow(smoothstep(0.32, 0.96, h * 0.5 + 0.5 + ripple), 2.4);
 
-          // Sun-glint & seafoam ocean-caustic shimmer across the Hero
           vec3 glintColor = mix(vec3(0.055, 0.420, 0.455), vec3(0.957, 0.918, 0.835), caustic);
           float alpha = caustic * 0.34 + exp(-dist * 4.5) * 0.14;
           fragColor = vec4(glintColor * alpha, alpha);
@@ -116,6 +115,7 @@
 
       const start = performance.now();
       function frame(now) {
+        if (!canvas.isConnected) return;
         requestAnimationFrame(frame);
         if (!isVisible) return;
         resizeGL();
@@ -130,11 +130,12 @@
       return;
     }
 
-    // Canvas 2D Fallback
+    // Canvas 2D Fallback for Hero Shimmer
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const start2d = performance.now();
     function frame2d(now) {
+      if (!canvas.isConnected) return;
       requestAnimationFrame(frame2d);
       if (!isVisible) return;
       const w = (canvas.width = canvas.clientWidth || 1280);
@@ -172,16 +173,72 @@
     });
   }
 
+  function initScrollReveals(rootEl) {
+    const scope = rootEl || document;
+    const targets = scope.querySelectorAll("[data-reveal]:not(.is-revealed)");
+    if (!targets.length) return;
+
+    if (prefersReduced || !("IntersectionObserver" in window)) {
+      targets.forEach((el) => el.classList.add("is-revealed"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let batchIdx = 0;
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          const customDelay = el.getAttribute("data-reveal-delay");
+          const delayMs = customDelay ? Number(customDelay) : Math.min(batchIdx * 45, 220);
+          batchIdx++;
+          el.style.transitionDelay = `${delayMs}ms`;
+          el.classList.add("is-revealed");
+          observer.unobserve(el);
+        });
+      },
+      { threshold: 0.01, rootMargin: "0px 0px 40px 0px" }
+    );
+
+    targets.forEach((el) => observer.observe(el));
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 40) {
+          document.querySelectorAll("[data-reveal]:not(.is-revealed)").forEach((el) => {
+            el.classList.add("is-revealed");
+            observer.unobserve(el);
+          });
+        }
+      },
+      { passive: true }
+    );
+  }
+
+  function initPageEffects() {
+    initOceanCanvas();
+    initMagnetic();
+    initScrollReveals();
+  }
+
+  window.SuotMotion = {
+    initReveals: initScrollReveals,
+    initPage: initPageEffects
+  };
+
   window.suotTransition = function (updateFn) {
     if (typeof document.startViewTransition === "function" && !prefersReduced) {
-      return document.startViewTransition(updateFn);
+      try {
+        const vt = document.startViewTransition(updateFn);
+        if (vt && vt.finished) vt.finished.catch(() => {});
+        if (vt && vt.ready) vt.ready.catch(() => {});
+        return vt;
+      } catch (_) {}
     }
     updateFn();
     return null;
   };
 
-  document.addEventListener("DOMContentLoaded", () => {
-    initOceanCanvas();
-    initMagnetic();
-  });
+  document.addEventListener("DOMContentLoaded", initPageEffects);
 })();
