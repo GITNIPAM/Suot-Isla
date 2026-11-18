@@ -216,14 +216,141 @@
     );
   }
 
+  const dockLastBox = new WeakMap();
+  let dockFontsHooked = false;
+  let tidePulseTimer = null;
+
+  function pulseTide() {
+    if (prefersReduced) return;
+    const tideEl = document.getElementById("suot-tide-transition");
+    if (!tideEl) return;
+    if (tidePulseTimer) clearTimeout(tidePulseTimer);
+    tideEl.classList.remove("is-exiting", "is-entering");
+    void tideEl.offsetWidth;
+    tideEl.classList.add("is-exiting");
+    tidePulseTimer = setTimeout(() => {
+      tideEl.classList.remove("is-exiting");
+      tideEl.classList.add("is-entering");
+      tidePulseTimer = setTimeout(() => {
+        tideEl.classList.remove("is-entering");
+      }, 320);
+    }, 105);
+  }
+
+  function positionDockGlidePill(dock, immediate) {
+    if (!dock || !dock.isConnected) return;
+    const activeBtn = dock.querySelector(
+      ".catalog-dock-tab.active, .hero-island-btn.active, .featured-filter-btn.active"
+    );
+    let pill = dock.querySelector(":scope > .dock-glide-pill");
+
+    if (!activeBtn) {
+      if (pill) pill.style.opacity = "0";
+      return;
+    }
+
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "dock-glide-pill";
+      pill.setAttribute("aria-hidden", "true");
+      dock.insertBefore(pill, dock.firstChild);
+
+      const prev = dockLastBox.get(dock);
+      if (prev && !immediate && !prefersReduced) {
+        pill.style.transition = "none";
+        pill.style.width = `${prev.width}px`;
+        pill.style.height = `${prev.height}px`;
+        pill.style.transform = `translate3d(${prev.left}px, ${prev.top}px, 0)`;
+        pill.style.opacity = "1";
+        void pill.offsetWidth;
+      } else {
+        immediate = true;
+      }
+    }
+
+    const left = activeBtn.offsetLeft;
+    const top = activeBtn.offsetTop;
+    const width = activeBtn.offsetWidth;
+    const height = activeBtn.offsetHeight;
+    if (!width || !height) return;
+
+    dockLastBox.set(dock, { left, top, width, height });
+
+    if (immediate || prefersReduced) {
+      pill.style.transition = "none";
+      pill.style.width = `${width}px`;
+      pill.style.height = `${height}px`;
+      pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      pill.style.opacity = "1";
+      void pill.offsetWidth;
+      pill.style.transition = "";
+      return;
+    }
+
+    pill.style.transition = "";
+    pill.style.width = `${width}px`;
+    pill.style.height = `${height}px`;
+    pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+    pill.style.opacity = "1";
+  }
+
+  function initDockGliders(rootEl) {
+    const scope = rootEl || document;
+    const docks = scope.querySelectorAll(".catalog-hero-dock, .hero-island-switcher, .featured-filter-dock");
+    docks.forEach((dock) => {
+      dock.classList.add("has-dock-glider");
+      positionDockGlidePill(dock, !dock.dataset.dockGlideBound);
+
+      if (dock.dataset.dockGlideBound) return;
+      dock.dataset.dockGlideBound = "1";
+
+      const mutObs = new MutationObserver((mutations) => {
+        const relevant = mutations.some((m) => {
+          if (m.type === "childList") {
+            const nodes = [...m.addedNodes, ...m.removedNodes];
+            return !nodes.every((n) => n.nodeType === 1 && n.classList.contains("dock-glide-pill"));
+          }
+          return m.type === "attributes" && m.target !== dock && !m.target.classList.contains("dock-glide-pill");
+        });
+        if (!relevant) return;
+        requestAnimationFrame(() => positionDockGlidePill(dock, false));
+      });
+      mutObs.observe(dock, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class"]
+      });
+
+      if ("ResizeObserver" in window) {
+        const ro = new ResizeObserver(() => {
+          requestAnimationFrame(() => positionDockGlidePill(dock, true));
+        });
+        ro.observe(dock);
+      }
+    });
+
+    if (!dockFontsHooked && document.fonts && document.fonts.ready) {
+      dockFontsHooked = true;
+      document.fonts.ready.then(() => {
+        document
+          .querySelectorAll(".catalog-hero-dock, .hero-island-switcher, .featured-filter-dock")
+          .forEach((dock) => positionDockGlidePill(dock, true));
+      });
+    }
+  }
+
   function initPageEffects() {
     initOceanCanvas();
     initMagnetic();
+    initDockGliders();
     initScrollReveals();
   }
 
   window.SuotMotion = {
     initReveals: initScrollReveals,
+    initDocks: initDockGliders,
+    pulseTide,
     initPage: initPageEffects
   };
 

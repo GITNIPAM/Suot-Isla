@@ -3,16 +3,60 @@
    ========================================================================== */
 
 (function () {
-  const STAMP_SVG = `
-    <svg class="brand-stamp" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="80" cy="80" r="74" fill="#F4EAD5" stroke="#FAF6EE" stroke-width="3"/>
-      <circle cx="80" cy="80" r="65" stroke="#0E6B74" stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round"/>
-      <circle cx="80" cy="80" r="50" fill="#FAF6EE" stroke="#0E6B74" stroke-width="2"/>
-      <path d="M54 84 A26 26 0 0 1 106 84" fill="#F27D63" fill-opacity="0.28" stroke="#F27D63" stroke-width="3" stroke-linecap="round"/>
-      <path d="M34 88 C48 80, 64 80, 76 88 C86 94, 102 92, 112 82 C106 73, 93 73, 88 80" stroke="#0E6B74" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M38 99 C54 91, 70 93, 86 100 C98 105, 112 102, 122 94" stroke="#2E5A44" stroke-width="2.8" stroke-linecap="round"/>
-    </svg>
-  `;
+  function renderStampSvg(uid, extraClass) {
+    const cls = extraClass ? `brand-stamp ${extraClass}` : "brand-stamp";
+    return `
+      <svg class="${cls}" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <clipPath id="si-lens-${uid}">
+            <circle cx="80" cy="80" r="56.5" />
+          </clipPath>
+          <linearGradient id="si-sky-${uid}" x1="80" y1="22" x2="80" y2="96" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#062428" />
+            <stop offset="100%" stop-color="#0E5A63" />
+          </linearGradient>
+          <linearGradient id="si-sun-${uid}" x1="80" y1="54" x2="80" y2="92" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFD4BF" />
+            <stop offset="55%" stop-color="#F27D63" />
+            <stop offset="100%" stop-color="#DA583B" />
+          </linearGradient>
+        </defs>
+        <circle cx="80" cy="80" r="76" fill="#FAF6EE" stroke="#092C30" stroke-width="2.5" />
+        <circle cx="80" cy="80" r="68" stroke="#0E6B74" stroke-width="2" stroke-dasharray="5.4 6.468" stroke-linecap="round" />
+        <line x1="80" y1="7" x2="80" y2="14" stroke="#0E6B74" stroke-width="2.4" stroke-linecap="round" />
+        <line x1="80" y1="146" x2="80" y2="153" stroke="#0E6B74" stroke-width="2.4" stroke-linecap="round" />
+        <polygon points="12,75 16.5,80 12,85 7.5,80" fill="#F27D63" />
+        <polygon points="148,75 152.5,80 148,85 143.5,80" fill="#F27D63" />
+        <circle cx="80" cy="80" r="58.5" fill="#072D32" stroke="#0E6B74" stroke-width="2.4" />
+        <g clip-path="url(#si-lens-${uid})">
+          <rect x="20" y="20" width="120" height="120" fill="url(#si-sky-${uid})" />
+          <circle cx="80" cy="84" r="41" stroke="#FAF6EE" stroke-opacity="0.14" stroke-width="1.4" />
+          <circle cx="80" cy="84" r="31" stroke="#FAF6EE" stroke-opacity="0.18" stroke-width="1.4" />
+          <circle cx="80" cy="81" r="21" fill="url(#si-sun-${uid})" />
+          <path d="M18 93 C42 80, 62 82, 79 92 C95 102, 114 96, 142 79 L142 142 L18 142 Z" fill="#0E6B74" />
+          <path d="M18 112 C48 102, 78 104, 104 115 C120 121, 134 117, 142 109 L142 142 L18 142 Z" fill="#062226" />
+          <path d="M19 92 C43 79, 63 80, 79 89 C94 98, 111 93, 117 79 C121 70, 115 59, 103 59 C92 59, 85 67, 87 74 C88 79, 93 80, 96 77" stroke="#FAF6EE" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M19 105 C49 95, 76 97, 102 107 C118 113, 132 108, 142 100" stroke="#A8D5BA" stroke-width="2.8" stroke-linecap="round" />
+        </g>
+      </svg>
+    `;
+  }
+
+  function renderBrandLockup(uid, subtitleText) {
+    return `
+      ${renderStampSvg(uid)}
+      <div class="brand-wordmark">
+        <div class="brand-title-row">
+          <span class="brand-title-strong">SUOT</span>
+          <span class="brand-title-serif">Isla</span>
+          <span class="brand-sun-dot" aria-hidden="true"></span>
+        </div>
+        <div class="brand-sub-row">
+          <span class="brand-subtitle">${subtitleText}</span>
+        </div>
+      </div>
+    `;
+  }
 
   function getActivePage() {
     const path = window.location.pathname;
@@ -51,11 +95,7 @@
       <header class="site-header ${window.scrollY > 18 ? "is-scrolled" : ""}" id="suot-site-header">
         <div class="container header-inner">
           <a href="index.html" class="brand-link" aria-label="Suot Isla Home">
-            ${STAMP_SVG}
-            <div class="brand-wordmark">
-              <span class="brand-title">SUOT ISLA</span>
-              <span class="brand-subtitle">ISLAND-BORN SURF &amp; BEACHWEAR</span>
-            </div>
+            ${renderBrandLockup("hdr", "ISLAND-BORN SURF &amp; BEACHWEAR")}
           </a>
 
           <nav class="primary-nav" aria-label="Primary Navigation">
@@ -199,59 +239,79 @@
     const mount = document.getElementById("site-footer-mount");
     if (!mount) return;
 
+    const ver = (p) => (window.SuotStore && window.SuotStore.withAssetVersion ? window.SuotStore.withAssetVersion(p) : p);
+    const footerSeries = [
+      { id: "Siargao", num: "01", coord: "9.85° N, 126.05° E", tag: "Wave Gear", img: ver("assets/images/footer-siargao.jpg") },
+      { id: "Boracay", num: "02", coord: "11.97° N, 121.92° E", tag: "Resort Linen", img: ver("assets/images/footer-boracay.jpg") },
+      { id: "El Nido", num: "03", coord: "11.20° N, 119.42° E", tag: "Lagoon Swim", img: ver("assets/images/footer-elnido.jpg") },
+      { id: "La Union", num: "04", coord: "16.66° N, 120.32° E", tag: "Coastal Street", img: ver("assets/images/footer-launion.jpg") }
+    ];
+
     mount.innerHTML = `
       <footer class="site-footer">
-        <div class="container">
-          <div class="footer-grid">
+        <div class="footer-container">
+          <div class="footer-top-band">
             <div class="footer-brand">
-              <div style="display:flex;align-items:center;gap:0.75rem;">
-                ${STAMP_SVG}
-                <div>
-                  <strong style="font-family:var(--font-display);font-size:1.25rem;color:var(--color-sand-light);">SUOT ISLA</strong>
-                  <div style="font-size:0.75rem;color:var(--color-seafoam);">"Suot" (Wear) + "Isla" (Island)</div>
-                </div>
-              </div>
+              <a href="index.html" class="brand-link brand-link-footer" aria-label="Suot Isla Home">
+                ${renderBrandLockup("ftr", "ISLAND-BORN SURF &amp; BEACHWEAR")}
+              </a>
               <p>
-                Breathable, durable, and sun-ready apparel inspired by Philippine surf towns—built for weekend beachgoers, surfers, and island travelers.
+                Designed in Manila, cut in small island drops. Packed at our Manila Hub for Luzon, Visayas, and Mindanao ports.
               </p>
+              <div class="footer-origin-stamp">
+                <span class="footer-origin-dot" aria-hidden="true"></span>
+                <span>MANILA HUB · 14.55° N, 121.02° E · DAILY DISPATCH</span>
+              </div>
             </div>
 
-            <div class="footer-col">
-              <h4>4 Island Collections</h4>
-              <ul class="footer-links">
-                <li><a href="catalog.html?series=Siargao">Siargao Series (Wave Gear)</a></li>
-                <li><a href="catalog.html?series=Boracay">Boracay Series (Resort Linen)</a></li>
-                <li><a href="catalog.html?series=El+Nido">El Nido Series (Lagoon Swim)</a></li>
-                <li><a href="catalog.html?series=La+Union">La Union Series (Coastal Street)</a></li>
-              </ul>
-            </div>
+            <div class="footer-right-cluster">
+              <nav class="footer-nav-row" aria-label="Storefront &amp; Support Links">
+                <a href="catalog.html">Full 16-Piece Catalog</a>
+                <a href="cart.html">Shopping Bag &amp; Vouchers</a>
+                <a href="account.html">Orders, Tracking &amp; Returns</a>
+                <a href="auth.html">Sign In / Switch Account</a>
+                <a href="mailto:ola@suotisla.ph">ola@suotisla.ph</a>
+              </nav>
 
-            <div class="footer-col">
-              <h4>Customer Flow</h4>
-              <ul class="footer-links">
-                <li><a href="catalog.html">All 16 Products &amp; Filters</a></li>
-                <li><a href="cart.html">Shopping Bag &amp; Coupons</a></li>
-                <li><a href="checkout.html">Checkout &amp; Payment</a></li>
-                <li><a href="account.html">Order History &amp; Returns</a></li>
-                <li><a href="auth.html">Login / Register</a></li>
-              </ul>
+              <div class="footer-meta-pills" aria-label="Accepted Payments &amp; Dispatch">
+                <span class="footer-meta-pill">GCash &amp; Cash on Delivery</span>
+                <span class="footer-meta-pill footer-meta-pill-accent">Free Express ₱3,500+</span>
+                <span class="footer-meta-pill">14-Day Easy Returns</span>
+              </div>
             </div>
+          </div>
 
-            <div class="footer-col">
-              <h4>Customer Care</h4>
-              <ul class="footer-links">
-                <li><a href="account.html">Track Your Order</a></li>
-                <li><a href="account.html">Returns &amp; Exchanges</a></li>
-                <li><a href="cart.html">Island Shipping Rates</a></li>
-                <li><a href="mailto:ola@suotisla.ph">Contact: ola@suotisla.ph</a></li>
-              </ul>
+          <div class="footer-archipelago-wrap">
+            <div class="footer-archipelago-head">
+              <h4>Philippine Archipelago</h4>
+              <span class="mono" style="color:rgba(244,234,213,0.72);">4 Island Capsules · Direct Port Dispatch</span>
+            </div>
+            <div class="footer-series-mosaic" aria-label="4 Island Series Collections">
+              ${footerSeries
+                .map(
+                  (s) => `
+                  <a href="catalog.html?series=${encodeURIComponent(s.id)}" class="footer-island-card">
+                    <img src="${s.img}" alt="${s.id} Series" class="footer-island-img" loading="lazy" />
+                    <span class="footer-island-scrim" aria-hidden="true"></span>
+                    <span class="footer-island-top">
+                      <span class="footer-island-coord">${s.num} · ${s.coord}</span>
+                      <span class="footer-island-arrow" aria-hidden="true">Explore →</span>
+                    </span>
+                    <span class="footer-island-body">
+                      <strong class="footer-island-name">${s.id} Series</strong>
+                      <span class="footer-island-tag">${s.tag}</span>
+                    </span>
+                  </a>
+                `
+                )
+                .join("")}
             </div>
           </div>
 
           <div class="footer-bottom">
-            <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear. All rights reserved.</span>
+            <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear</span>
             <div class="footer-bottom-meta">
-              <span>Handcrafted for Philippine Surf Towns</span>
+              <button type="button" class="footer-top-btn" id="footer-scroll-top" aria-label="Scroll back to top">↑ Back to Top</button>
               <span aria-hidden="true">·</span>
               <a href="admin.html" class="footer-portal-link">Admin &amp; Operations Portal →</a>
             </div>
@@ -259,6 +319,13 @@
         </div>
       </footer>
     `;
+
+    const topBtn = document.getElementById("footer-scroll-top");
+    if (topBtn) {
+      topBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
   }
 
   function ensureDrawersMounted() {
@@ -778,28 +845,84 @@
     }
 
     bodyEl.innerHTML = emails
-      .map(
-        (em) => `
-        <article class="email-card">
-          <div class="email-meta">
-            <span class="pill ${
-              em.type.includes("Cancel")
-                ? "pill-coral-soft"
-                : em.type.includes("Ship")
-                ? "pill-delivery"
-                : "pill-lagoon"
-            }">${em.type}</span>
-            <span class="mono">${em.sentAt}</span>
-          </div>
-          <div class="email-subject">${em.subject}</div>
-          <div style="font-size:var(--text-xs);color:var(--text-muted);">
-            From: <strong>ola@suotisla.ph</strong> • To: <strong>${em.to}</strong>
-          </div>
-          <div class="email-body-preview">${em.body}</div>
-        </article>
-      `
-      )
+      .map((em) => {
+        const cleanOrder = String(em.orderNumber || "").trim().replace(/^#/, "");
+        const hasOrder = Boolean(cleanOrder);
+        const goLabel = isStorefront ? `Track #${cleanOrder} →` : `Inspect #${cleanOrder} →`;
+        return `
+          <article class="email-card ${hasOrder ? "is-clickable" : ""}" ${hasOrder ? `data-email-order="${cleanOrder}"` : ""}>
+            <div class="email-meta">
+              <span class="pill ${
+                em.type.includes("Cancel")
+                  ? "pill-coral-soft"
+                  : em.type.includes("Ship")
+                  ? "pill-delivery"
+                  : "pill-lagoon"
+              }">${em.type}</span>
+              <span class="mono">${em.sentAt}</span>
+            </div>
+            <div class="email-subject">${em.subject}</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);">
+              From: <strong>ola@suotisla.ph</strong> • To: <strong>${em.to}</strong>
+            </div>
+            <div class="email-body-preview">${em.body}</div>
+            ${
+              hasOrder
+                ? `<div class="email-card-actions">
+                    <button type="button" class="btn btn-primary btn-sm btn-pill" data-email-goto="${cleanOrder}">
+                      ${goLabel}
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm btn-pill" data-email-receipt="${cleanOrder}">
+                      E-Receipt
+                    </button>
+                  </div>`
+                : ""
+            }
+          </article>
+        `;
+      })
       .join("");
+
+    function navigateToOrderFromEmail(orderNum) {
+      if (!orderNum) return;
+      SuotUI.closeDrawers();
+      if (!isStorefront) {
+        window.dispatchEvent(new CustomEvent("suotisla:adminfocusorder", { detail: { orderNumber: orderNum } }));
+        return;
+      }
+      const onAccountPage = window.location.pathname.toLowerCase().endsWith("account.html");
+      if (onAccountPage) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("order", orderNum);
+        window.history.replaceState({}, "", url.toString());
+        window.dispatchEvent(new CustomEvent("suotisla:focusorder", { detail: { orderNumber: orderNum } }));
+      } else {
+        SuotUI.navigateTo(`account.html?order=${encodeURIComponent(orderNum)}`);
+      }
+    }
+
+    bodyEl.querySelectorAll("[data-email-order]").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("button, a")) return;
+        navigateToOrderFromEmail(card.getAttribute("data-email-order"));
+      });
+    });
+
+    bodyEl.querySelectorAll("[data-email-goto]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateToOrderFromEmail(btn.getAttribute("data-email-goto"));
+      });
+    });
+
+    bodyEl.querySelectorAll("[data-email-receipt]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const ord = btn.getAttribute("data-email-receipt");
+        SuotUI.closeDrawers();
+        SuotUI.openReceiptModal(ord);
+      });
+    });
   }
 
   let lastCartCount = null;
@@ -938,6 +1061,309 @@
       const backdrop = document.getElementById("suot-drawer-backdrop");
       if (backdrop) backdrop.classList.remove("open");
       document.querySelectorAll(".slide-drawer").forEach((d) => d.classList.remove("open"));
+    },
+
+    _resolveOrder(orderOrNumber) {
+      if (orderOrNumber && typeof orderOrNumber === "object") return orderOrNumber;
+      const key = String(orderOrNumber || "").replace(/^#/, "");
+      return window.SuotStore.getOrders().find((o) => o.orderNumber === key) || null;
+    },
+
+    _computeReceiptFinancials(order) {
+      const items = order.items || [];
+      const itemsSum = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
+      const subtotal = order.subtotal != null ? Number(order.subtotal) : itemsSum;
+      const discount = Number(order.discount || 0);
+      const deliveryFee = order.deliveryFee != null ? Number(order.deliveryFee) : 0;
+      const total = order.total != null ? Number(order.total) : Math.max(0, subtotal - discount + deliveryFee);
+      const vatableSales = Math.round(total / 1.12);
+      const vatAmount = Math.max(0, total - vatableSales);
+      return { subtotal, discount, deliveryFee, total, vatableSales, vatAmount };
+    },
+
+    _renderBarcodeSvg(seedText) {
+      const str = String(seedText || "SI-2026");
+      let x = 4;
+      const bars = [];
+      for (let i = 0; i < 42; i++) {
+        const code = str.charCodeAt(i % str.length);
+        const w = ((code + i * 7) % 3) + 1.4;
+        const gap = ((code * 3 + i) % 2) + 1.8;
+        if (x + w < 216) {
+          bars.push(`<rect x="${x.toFixed(1)}" y="2" width="${w.toFixed(1)}" height="30" rx="0.5" fill="#0B3338"/>`);
+        }
+        x += w + gap;
+        if (x >= 216) break;
+      }
+      return `<svg class="receipt-barcode-svg" viewBox="0 0 220 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Order verification barcode">${bars.join("")}</svg>`;
+    },
+
+    _renderReceiptMarkup(order, options = {}) {
+      const fin = this._computeReceiptFinancials(order);
+      const phone = window.SuotStore.normalizePhMobile(order.customerPhone) || order.customerPhone || "";
+      const isPaid = order.paymentStatus === "Paid" || order.status === "Delivered";
+      const badgeClass = isPaid ? "pill-delivery" : "pill-sand";
+      const badgeLabel = isPaid ? "PAID" : order.paymentMethod === "COD" ? "COD UPON DELIVERY" : "PENDING";
+
+      const itemRows = (order.items || [])
+        .map((item) => {
+          const prod = window.SuotStore.getProductById(item.productId);
+          const thumbHtml = options.forDownload
+            ? ""
+            : `<div class="receipt-item-thumb">${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}</div>`;
+          const dotColor = window.SuotStore.getColorHex(item.color);
+          return `
+            <div class="receipt-item-row">
+              ${thumbHtml}
+              <div style="min-width:0;">
+                <div class="receipt-item-name">${item.qty}× ${item.name}</div>
+                <div class="receipt-item-spec">
+                  <span>${item.size} ·</span>
+                  <span class="inline-color-dot" style="background-color:${dotColor};"></span>
+                  <span>${item.color}</span>
+                  <span>· ${window.SuotStore.formatPrice(item.price)} ea</span>
+                </div>
+              </div>
+              <strong class="price" style="font-size:0.84rem;white-space:nowrap;">${window.SuotStore.formatPrice(Number(item.price) * Number(item.qty || 1))}</strong>
+            </div>
+          `;
+        })
+        .join("");
+
+      return `
+        <article class="receipt-sheet" data-receipt-order="${order.orderNumber}" aria-label="Official Order Receipt ${order.orderNumber}">
+          <div class="receipt-head">
+            <div class="receipt-brand-row">
+              ${renderStampSvg(options.forDownload ? "rcp-dl" : options.embedded ? "rcp-emb" : "rcp-mod", 38)}
+              <div class="receipt-title-stack">
+                <strong>SUOT Isla · Official E-Receipt</strong>
+                <span>Manila Hub · 14.55° N, 121.02° E</span>
+              </div>
+            </div>
+            <div class="receipt-status-col">
+              <span class="pill ${badgeClass}">${badgeLabel}</span>
+              <span class="mono" style="font-size:0.6875rem;color:var(--text-muted);">${order.placedAt || ""}</span>
+            </div>
+          </div>
+
+          <div class="receipt-meta-grid">
+            <div>
+              <span class="receipt-meta-label">Receipt / Order #</span>
+              <div class="receipt-meta-val mono">#${order.orderNumber}</div>
+            </div>
+            <div>
+              <span class="receipt-meta-label">Tracking Reference</span>
+              <div class="receipt-meta-val mono">${order.trackingNumber || "ISLA-TRK-PENDING"}</div>
+            </div>
+            <div>
+              <span class="receipt-meta-label">Billed Customer</span>
+              <div class="receipt-meta-val">${order.customerName}</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);">${order.customerEmail}${phone ? ` · ${phone}` : ""}</div>
+            </div>
+            <div>
+              <span class="receipt-meta-label">Payment Method</span>
+              <div class="receipt-meta-val">${order.paymentMethod || "GCash"}</div>
+              <div class="mono" style="font-size:0.7rem;color:var(--text-muted);">${order.paymentRef || ""}</div>
+            </div>
+            <div style="grid-column:1 / -1;">
+              <span class="receipt-meta-label">Shipping Destination</span>
+              <div class="receipt-meta-val">${order.shippingAddress || ""}</div>
+            </div>
+          </div>
+
+          <div class="receipt-items-list">
+            ${itemRows}
+          </div>
+
+          <div class="receipt-totals">
+            <div class="receipt-total-row">
+              <span>Merchandise Subtotal</span>
+              <span class="price">${window.SuotStore.formatPrice(fin.subtotal)}</span>
+            </div>
+            ${
+              fin.discount > 0
+                ? `<div class="receipt-total-row" style="color:var(--color-palm);">
+                    <span>Island Promo Discount</span>
+                    <span class="price">−${window.SuotStore.formatPrice(fin.discount)}</span>
+                  </div>`
+                : ""
+            }
+            <div class="receipt-total-row">
+              <span>Island Express Shipping</span>
+              <span class="price">${fin.deliveryFee === 0 ? "FREE" : window.SuotStore.formatPrice(fin.deliveryFee)}</span>
+            </div>
+            <div class="receipt-total-row is-subtle">
+              <span>VATable Sales (PH 12% Included)</span>
+              <span class="price">${window.SuotStore.formatPrice(fin.vatableSales)}</span>
+            </div>
+            <div class="receipt-total-row is-subtle">
+              <span>12% VAT Amount</span>
+              <span class="price">${window.SuotStore.formatPrice(fin.vatAmount)}</span>
+            </div>
+            <div class="receipt-total-row is-grand">
+              <span>${order.paymentMethod === "COD" && !isPaid ? "Total Due on Delivery" : "Total Paid"}</span>
+              <span class="price">${window.SuotStore.formatPrice(fin.total)}</span>
+            </div>
+          </div>
+
+          <div class="receipt-barcode-wrap">
+            ${this._renderBarcodeSvg(order.orderNumber + (order.trackingNumber || ""))}
+            <div class="receipt-barcode-caption">${order.orderNumber} · ${order.trackingNumber || "SUOT-ISLA"} · VAT-INCLUSIVE</div>
+          </div>
+
+          ${
+            options.forDownload
+              ? `<div class="receipt-actions no-print" style="justify-content:center;">
+                  <button type="button" onclick="window.print()" style="padding:0.55rem 1.2rem;border-radius:999px;border:none;background:#0E6B74;color:#FAF6EE;font-weight:700;cursor:pointer;">Print / Save as PDF</button>
+                </div>`
+              : `<div class="receipt-actions no-print">
+                  <button type="button" class="btn btn-primary btn-sm" data-receipt-print="${order.orderNumber}">
+                    Print / Save PDF
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" data-receipt-download="${order.orderNumber}">
+                    Download E-Receipt (.html)
+                  </button>
+                  ${
+                    options.embedded
+                      ? ""
+                      : `<button type="button" class="btn btn-outline btn-sm" style="margin-left:auto;" data-receipt-close>Close</button>`
+                  }
+                </div>`
+          }
+        </article>
+      `;
+    },
+
+    _bindReceiptActions(scopeEl) {
+      if (!scopeEl) return;
+      scopeEl.querySelectorAll("[data-receipt-print]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          this.printOrderReceipt(btn.getAttribute("data-receipt-print"));
+        });
+      });
+      scopeEl.querySelectorAll("[data-receipt-download]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          this.downloadOrderReceipt(btn.getAttribute("data-receipt-download"));
+        });
+      });
+      scopeEl.querySelectorAll("[data-receipt-close]").forEach((btn) => {
+        btn.addEventListener("click", () => this.closeReceiptModal());
+      });
+    },
+
+    renderReceiptSheet(orderOrNumber, mountEl) {
+      const order = this._resolveOrder(orderOrNumber);
+      if (!order || !mountEl) return;
+      mountEl.innerHTML = this._renderReceiptMarkup(order, { embedded: true });
+      this._bindReceiptActions(mountEl);
+    },
+
+    _ensureReceiptModal() {
+      let backdrop = document.getElementById("suot-receipt-modal-backdrop");
+      if (backdrop) return backdrop;
+      backdrop = document.createElement("div");
+      backdrop.id = "suot-receipt-modal-backdrop";
+      backdrop.className = "receipt-modal-backdrop";
+      backdrop.setAttribute("role", "dialog");
+      backdrop.setAttribute("aria-modal", "true");
+      backdrop.setAttribute("aria-label", "Official Order E-Receipt");
+      backdrop.innerHTML = `<div class="receipt-modal-dialog" id="suot-receipt-modal-body"></div>`;
+      document.body.appendChild(backdrop);
+
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) this.closeReceiptModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && backdrop.classList.contains("open")) {
+          this.closeReceiptModal();
+        }
+      });
+      return backdrop;
+    },
+
+    openReceiptModal(orderOrNumber) {
+      const order = this._resolveOrder(orderOrNumber);
+      if (!order) {
+        this.toast("Order receipt record not found.", "Receipt Unavailable");
+        return;
+      }
+      const backdrop = this._ensureReceiptModal();
+      const body = document.getElementById("suot-receipt-modal-body");
+      body.innerHTML = this._renderReceiptMarkup(order, { embedded: false });
+      this._bindReceiptActions(body);
+      backdrop.classList.add("open");
+    },
+
+    closeReceiptModal() {
+      const backdrop = document.getElementById("suot-receipt-modal-backdrop");
+      if (backdrop) backdrop.classList.remove("open");
+    },
+
+    printOrderReceipt(orderOrNumber) {
+      const order = this._resolveOrder(orderOrNumber);
+      if (!order) return;
+      this.openReceiptModal(order);
+      document.body.classList.add("is-printing-receipt");
+      const cleanup = () => document.body.classList.remove("is-printing-receipt");
+      window.addEventListener("afterprint", cleanup, { once: true });
+      setTimeout(() => {
+        window.print();
+        setTimeout(cleanup, 1200);
+      }, 60);
+    },
+
+    downloadOrderReceipt(orderOrNumber) {
+      const order = this._resolveOrder(orderOrNumber);
+      if (!order) return;
+      const bodyMarkup = this._renderReceiptMarkup(order, { forDownload: true });
+      const htmlDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Suot Isla Receipt — #${order.orderNumber}</title>
+<style>
+  body { margin: 0; padding: 32px 16px; background: #F4EAD5; font-family: system-ui, -apple-system, sans-serif; color: #0B3338; }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .receipt-sheet { position: relative; background: #FFFDF8; border: 1px solid rgba(11,51,56,0.18); border-radius: 16px; padding: 26px; box-shadow: 0 20px 45px rgba(7,34,38,0.12); overflow: hidden; }
+  .receipt-sheet::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #072226 0%, #0E6B74 55%, #F27D63 100%); }
+  .receipt-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 16px; border-bottom: 1px dashed rgba(11,51,56,0.22); }
+  .receipt-brand-row { display: flex; align-items: center; gap: 10px; }
+  .receipt-title-stack strong { display: block; font-size: 16px; color: #072226; }
+  .receipt-title-stack span, .mono { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #4A6A6E; }
+  .receipt-status-col { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #D7EFE3; color: #0E6B74; }
+  .receipt-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px 0; border-bottom: 1px dashed rgba(11,51,56,0.22); font-size: 13px; }
+  .receipt-meta-label { display: block; font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #4A6A6E; margin-bottom: 2px; }
+  .receipt-meta-val { font-weight: 600; }
+  .receipt-items-list { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-bottom: 1px dashed rgba(11,51,56,0.22); }
+  .receipt-item-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .receipt-item-name { font-size: 13px; font-weight: 700; }
+  .receipt-item-spec { font-size: 11px; color: #4A6A6E; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .inline-color-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.2); }
+  .receipt-totals { padding: 16px 0; border-bottom: 1px dashed rgba(11,51,56,0.22); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .receipt-total-row { display: flex; justify-content: space-between; }
+  .receipt-total-row.is-subtle { font-size: 12px; color: #4A6A6E; }
+  .receipt-total-row.is-grand { margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(11,51,56,0.16); font-size: 17px; font-weight: 800; color: #072226; }
+  .price { font-variant-numeric: tabular-nums; }
+  .receipt-barcode-wrap { padding-top: 16px; text-align: center; }
+  .receipt-barcode-svg { width: 100%; max-width: 240px; height: 36px; display: block; margin: 0 auto 6px; }
+  .receipt-barcode-caption { font-family: ui-monospace, monospace; font-size: 11px; color: #4A6A6E; letter-spacing: 0.06em; }
+  @media print { body { background: #FFFFFF; padding: 0; } .receipt-sheet { box-shadow: none; } .no-print { display: none !important; } }
+</style>
+</head>
+<body><div class="wrap">${bodyMarkup}</div></body>
+</html>`;
+      const blob = new Blob([htmlDoc], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Suot-Isla-Receipt-${order.orderNumber}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      this.toast(`Downloaded official receipt Suot-Isla-Receipt-${order.orderNumber}.html`, "E-Receipt Saved");
     },
 
     toast(message, badgeText = "Suot Isla", options = {}) {

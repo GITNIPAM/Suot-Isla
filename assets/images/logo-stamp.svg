@@ -1,21 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none" role="img" aria-label="Suot Isla Stamp Logo">
-  <!-- Outer Solid Ring -->
-  <circle cx="80" cy="80" r="74" fill="#F4EAD5" stroke="#0E6B74" stroke-width="3"/>
-  <!-- Subtle Woven Stitch Border -->
-  <circle cx="80" cy="80" r="66" stroke="#0E6B74" stroke-width="1.75" stroke-dasharray="6 4" stroke-linecap="round"/>
-  <!-- Inner Horizon Circle -->
-  <circle cx="80" cy="80" r="52" fill="#FAF6EE" stroke="#0E6B74" stroke-width="1.75"/>
-  
-  <!-- Clean Line-Art Rising Sun Disc (Smooth Horizon Arc) -->
-  <path d="M54 84 A26 26 0 0 1 106 84" fill="#F27D63" fill-opacity="0.22" stroke="#F27D63" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M62 84 A18 18 0 0 1 98 84" stroke="#F27D63" stroke-width="1.75" stroke-linecap="round"/>
+  <defs>
+    <clipPath id="suot-stamp-lens">
+      <circle cx="80" cy="80" r="56.5" />
+    </clipPath>
+    <linearGradient id="suot-sky-grad" x1="80" y1="22" x2="80" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#062428" />
+      <stop offset="100%" stop-color="#0E5A63" />
+    </linearGradient>
+    <linearGradient id="suot-sun-grad" x1="80" y1="54" x2="80" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD4BF" />
+      <stop offset="55%" stop-color="#F27D63" />
+      <stop offset="100%" stop-color="#DA583B" />
+    </linearGradient>
+  </defs>
 
-  <!-- Curling Ocean Wave -->
-  <path d="M32 88 C46 80, 62 80, 76 88 C86 94, 102 92, 112 82 C106 73, 93 73, 88 80 C85 84, 89 88, 94 86" stroke="#0E6B74" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M36 99 C52 91, 70 93, 86 100 C98 105, 112 102, 124 94" stroke="#0E6B74" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M46 110 C62 105, 82 106, 98 111 C106 113, 112 111, 116 108" stroke="#2E5A44" stroke-width="2" stroke-linecap="round"/>
+  <!-- Outer Bleached Linen Medallion & Deep Lagoon Bezel -->
+  <circle cx="80" cy="80" r="76" fill="#FAF6EE" stroke="#092C30" stroke-width="2.5" />
 
-  <!-- Stamp Badge Text Markers -->
-  <circle cx="24" cy="80" r="2.5" fill="#F27D63"/>
-  <circle cx="136" cy="80" r="2.5" fill="#F27D63"/>
+  <!-- Symmetric 36-Stitch Woven Perimeter (2*pi*68 = 427.26 / 36 = 11.868) -->
+  <circle cx="80" cy="80" r="68" stroke="#0E6B74" stroke-width="2" stroke-dasharray="5.4 6.468" stroke-linecap="round" />
+
+  <!-- Cardinal Compass Degree Ticks (N/S Hairlines + E/W Coral Diamonds) -->
+  <line x1="80" y1="7" x2="80" y2="14" stroke="#0E6B74" stroke-width="2.4" stroke-linecap="round" />
+  <line x1="80" y1="146" x2="80" y2="153" stroke="#0E6B74" stroke-width="2.4" stroke-linecap="round" />
+  <polygon points="12,75 16.5,80 12,85 7.5,80" fill="#F27D63" />
+  <polygon points="148,75 152.5,80 148,85 143.5,80" fill="#F27D63" />
+
+  <!-- Inner Deep Lagoon Aperture Frame -->
+  <circle cx="80" cy="80" r="58.5" fill="#072D32" stroke="#0E6B74" stroke-width="2.4" />
+
+  <!-- Clipped Seascape Core -->
+  <g clip-path="url(#suot-stamp-lens)">
+    <rect x="20" y="20" width="120" height="120" fill="url(#suot-sky-grad)" />
+
+    <!-- Subtle Solar Meridian Arcs -->
+    <circle cx="80" cy="84" r="41" stroke="#FAF6EE" stroke-opacity="0.14" stroke-width="1.4" />
+    <circle cx="80" cy="84" r="31" stroke="#FAF6EE" stroke-opacity="0.18" stroke-width="1.4" />
+
+    <!-- Radiant Coral Rising Sun -->
+    <circle cx="80" cy="81" r="21" fill="url(#suot-sun-grad)" />
+
+    <!-- Midground Ocean Swell Layer -->
+    <path d="M18 93 C42 80, 62 82, 79 92 C95 102, 114 96, 142 79 L142 142 L18 142 Z" fill="#0E6B74" />
+
+    <!-- Deep Lagoon Trough Layer -->
+    <path d="M18 112 C48 102, 78 104, 104 115 C120 121, 134 117, 142 109 L142 142 L18 142 Z" fill="#062226" />
+
+    <!-- Sculptural White Linen Curling Pacific Barrel Crest -->
+    <path d="M19 92 C43 79, 63 80, 79 89 C94 98, 111 93, 117 79 C121 70, 115 59, 103 59 C92 59, 85 67, 87 74 C88 79, 93 80, 96 77" stroke="#FAF6EE" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Secondary Seafoam Mist Horizon Line -->
+    <path d="M19 105 C49 95, 76 97, 102 107 C118 113, 132 108, 142 100" stroke="#A8D5BA" stroke-width="2.8" stroke-linecap="round" />
+  </g>
 </svg>

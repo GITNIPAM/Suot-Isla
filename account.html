@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orders &amp; Island Club — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
-  <link rel="stylesheet" href="assets/css/base.css?v=46" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=46" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
+  <link rel="stylesheet" href="assets/css/base.css?v=62" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=62" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -110,7 +111,7 @@
           <div>
             <h2 style="margin:0 0 0.2rem 0;">Returns, Cancellations &amp; Refunds</h2>
             <p style="margin:0;font-size:0.95rem;color:var(--text-secondary);">
-              Track restocking review and GCash / Maya / card refund status for your requests.
+              Track restocking review and GCash / Cash refund status for your requests.
             </p>
           </div>
           <button type="button" class="btn btn-coral btn-pill" id="open-return-modal-tab-btn">
@@ -188,7 +189,7 @@
 
         <div class="form-group">
           <label class="form-label" for="ret-notes">Additional Notes for Store Admin</label>
-          <textarea id="ret-notes" name="customer_notes" class="form-textarea" rows="3" placeholder="Describe item condition or preferred refund method (GCash / Maya / Card)..."></textarea>
+          <textarea id="ret-notes" name="customer_notes" class="form-textarea" rows="3" placeholder="Describe item condition or preferred GCash / Cash refund details..."></textarea>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:var(--space-2);">
@@ -201,10 +202,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=46"></script>
-  <script src="assets/js/store.js?v=46"></script>
-  <script src="assets/js/components.js?v=46"></script>
-  <script src="assets/js/ocean-overdrive.js?v=46"></script>
+  <script src="assets/js/data.js?v=62"></script>
+  <script src="assets/js/store.js?v=62"></script>
+  <script src="assets/js/components.js?v=62"></script>
+  <script src="assets/js/ocean-overdrive.js?v=62"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const heroNameEl = document.getElementById("acct-hero-name");
@@ -449,6 +450,9 @@
                     </span>
 
                     <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
+                      <button type="button" class="btn btn-primary btn-sm btn-pill" data-view-receipt="${o.orderNumber}">
+                        View E-Receipt
+                      </button>
                       ${
                         o.status === "Pending" || o.status === "Confirmed"
                           ? `<button type="button" class="btn btn-outline btn-sm btn-pill" data-quick-req-order="${o.orderNumber}" data-quick-req-type="Cancellation" style="color:var(--color-coral-deep);">
@@ -491,6 +495,12 @@
               `Added ${prod ? prod.name : pid} (${sz}, ${clr}) back to your Island Bag!`,
               "Reordered"
             );
+          });
+        });
+
+        ordersListEl.querySelectorAll("[data-view-receipt]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            window.SuotUI.openReceiptModal(btn.getAttribute("data-view-receipt"));
           });
         });
 
@@ -659,13 +669,25 @@
       window.addEventListener("suotisla:statechange", renderAccountPage);
       renderAccountPage();
 
-      // Deep-link highlight when navigated from homepage Track Your Order form (?order=...)
-      const trackedOrder = (new URLSearchParams(window.location.search).get("order") || "").trim().replace(/^#/, "");
-      if (trackedOrder) {
+      function focusOrderCard(rawNum) {
+        const trackedOrder = String(rawNum || "").trim().replace(/^#/, "");
+        if (!trackedOrder) return;
         setWorkspaceTab("orders");
+        if (activeOrderFilter !== "all" || orderSearch) {
+          activeOrderFilter = "all";
+          orderSearch = "";
+          if (searchInput) searchInput.value = "";
+          document.querySelectorAll("[data-order-filter]").forEach((t) => {
+            const isAll = t.getAttribute("data-order-filter") === "all";
+            t.classList.toggle("active", isAll);
+            t.setAttribute("aria-selected", isAll ? "true" : "false");
+          });
+          renderAccountPage();
+        }
         const curr = window.SuotStore.getCurrentUser();
         const targetCard = ordersListEl.querySelector(`[data-order-card="${CSS.escape(trackedOrder)}"]`);
         if (targetCard) {
+          targetCard.classList.remove("order-highlight-pulse");
           setTimeout(() => {
             targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
             targetCard.classList.add("order-highlight-pulse");
@@ -677,6 +699,18 @@
             "Access Restricted"
           );
         }
+      }
+
+      window.addEventListener("suotisla:focusorder", (e) => {
+        if (e && e.detail && e.detail.orderNumber) {
+          focusOrderCard(e.detail.orderNumber);
+        }
+      });
+
+      // Deep-link highlight when navigated from homepage Track Your Order form or Email Drawer (?order=...)
+      const initialTrackedOrder = new URLSearchParams(window.location.search).get("order");
+      if (initialTrackedOrder) {
+        focusOrderCard(initialTrackedOrder);
       }
     });
   </script>

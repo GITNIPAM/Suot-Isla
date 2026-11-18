@@ -4,17 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout &amp; Validation — Suot Isla</title>
-  <link rel="stylesheet" href="assets/css/tokens.css?v=46" />
-  <link rel="stylesheet" href="assets/css/base.css?v=46" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=46" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
+  <link rel="stylesheet" href="assets/css/base.css?v=62" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
 </head>
 <body>
   <div id="site-header-mount"></div>
 
   <main class="container">
     <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
-      <h1 style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Structured Island Checkout</h1>
-      <p>Includes live Stock Validation, Philippine Shipping Address Validation, and Mock Payment Gateway verification.</p>
+      <h1 id="checkout-head-title" style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Island Checkout &amp; Dispatch</h1>
+      <p id="checkout-head-desc">Live Manila Hub stock reservation, verified 11-digit Philippine mobile SMS alerts, and GCash or Cash on Delivery.</p>
     </div>
 
     <div class="split-checkout-grid" id="checkout-mount">
@@ -40,7 +41,20 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="chk-phone">Mobile Number (Courier SMS) *</label>
-            <input type="tel" id="chk-phone" name="phone" class="form-input" required value="+63 917 842 1904" />
+            <input
+              type="tel"
+              id="chk-phone"
+              name="phone"
+              class="form-input tabular"
+              required
+              maxlength="11"
+              minlength="11"
+              inputmode="numeric"
+              pattern="09[0-9]{9}"
+              placeholder="09178421904"
+              value="09178421904"
+            />
+            <span class="phone-digit-hint" id="chk-phone-hint">11 digits · PH format 09XXXXXXXXX</span>
           </div>
           <div class="form-group">
             <label class="form-label" for="chk-preset-addr">Quick-Fill Saved Philippine Address</label>
@@ -94,14 +108,6 @@
             <span class="pill pill-lagoon">GCash</span>
             <span>GCash Express Wallet</span>
           </button>
-          <button type="button" class="payment-option" data-pay-method="Maya">
-            <span class="pill pill-delivery">Maya</span>
-            <span>Maya Digital Bank</span>
-          </button>
-          <button type="button" class="payment-option" data-pay-method="Card">
-            <span class="pill pill-sand">Card</span>
-            <span>Visa / Mastercard</span>
-          </button>
           <button type="button" class="payment-option" data-pay-method="COD">
             <span class="pill pill-coral">COD</span>
             <span>Cash on Delivery</span>
@@ -128,10 +134,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=46"></script>
-  <script src="assets/js/store.js?v=46"></script>
-  <script src="assets/js/components.js?v=46"></script>
-  <script src="assets/js/ocean-overdrive.js?v=46"></script>
+  <script src="assets/js/data.js?v=62"></script>
+  <script src="assets/js/store.js?v=62"></script>
+  <script src="assets/js/components.js?v=62"></script>
+  <script src="assets/js/ocean-overdrive.js?v=62"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const formEl = document.getElementById("checkout-form");
@@ -141,12 +147,15 @@
       const payMethodInput = document.getElementById("chk-payment-method");
       const payAccountInput = document.getElementById("chk-pay-account");
 
+      const chkPhoneEl = document.getElementById("chk-phone");
+      const chkPhoneHint = document.getElementById("chk-phone-hint");
       const currUser = window.SuotStore.getCurrentUser();
       if (currUser) {
         document.getElementById("chk-fullname").value = currUser.name || "";
         document.getElementById("chk-email").value = currUser.email || "";
-        document.getElementById("chk-phone").value = currUser.phone || "";
+        chkPhoneEl.value = window.SuotStore.normalizePhMobile(currUser.phone) || "09178421904";
       }
+      window.SuotStore.bindPhPhoneInput(chkPhoneEl, chkPhoneHint);
 
       const presets = {
         cavite: {
@@ -190,8 +199,6 @@
           const method = btn.getAttribute("data-pay-method");
           payMethodInput.value = method;
           if (method === "GCash") payAccountInput.value = "0917-842-1904 (GCash Verified)";
-          if (method === "Maya") payAccountInput.value = "0917-842-1904 (Maya Verified)";
-          if (method === "Card") payAccountInput.value = "•••• •••• •••• 4242 (Visa Exp 08/29)";
           if (method === "COD") payAccountInput.value = "Pay Cash Upon Courier Delivery";
         });
       });
@@ -282,7 +289,7 @@
         const requiredIds = [
           { id: "chk-fullname", msg: "Please enter recipient full name." },
           { id: "chk-email", msg: "Please enter a valid confirmation email address." },
-          { id: "chk-phone", msg: "Please enter a valid Philippine mobile number." },
+          { id: "chk-phone", msg: "Mobile number must be 11 digits starting with 09 (e.g. 09171234567)." },
           { id: "chk-street", msg: "Please enter house / unit number and street name." },
           { id: "chk-barangay", msg: "Please enter barangay." },
           { id: "chk-city", msg: "Please enter city or municipality." },
@@ -292,7 +299,8 @@
 
         for (const field of requiredIds) {
           const el = document.getElementById(field.id);
-          if (!el || !el.checkValidity()) {
+          const phoneInvalid = field.id === "chk-phone" && !window.SuotStore.isValidPhMobile(el ? el.value : "");
+          if (!el || !el.checkValidity() || phoneInvalid) {
             triggerInvalidField(el, field.msg);
             return;
           }
@@ -332,46 +340,100 @@
             "Order Confirmed"
           );
 
+          const headTitle = document.getElementById("checkout-head-title");
+          const headDesc = document.getElementById("checkout-head-desc");
+          if (headTitle) headTitle.textContent = "Order Confirmed & E-Receipt Ready";
+          if (headDesc) {
+            headDesc.textContent = `Salamat! Your island dispatch is queued at Manila Hub and confirmation has been sent to ${res.order.customerEmail}.`;
+          }
+
+          const firstName = String(res.order.customerName || "Traveler").split(/\s+/)[0];
+          const phoneFormatted = window.SuotStore.normalizePhMobile(res.order.customerPhone) || res.order.customerPhone || "";
+          const payChip =
+            res.order.paymentMethod === "COD"
+              ? "Cash on Delivery · Pay Courier"
+              : `${res.order.paymentMethod} Paid · ${res.order.paymentRef}`;
+
+          checkoutMount.className = "checkout-confirm-grid";
           checkoutMount.innerHTML = `
-            <div class="surface-card is-revealed" data-reveal style="grid-column:1 / -1;padding:var(--space-10);text-align:center;">
-              <span class="pill pill-delivery" style="margin-bottom:var(--space-3);">✓ Order Confirmed &amp; Email Dispatched</span>
-              <h2 style="margin-top:0;">Salamat, ${res.order.customerName}! Order #${res.order.orderNumber}</h2>
-              <p style="margin:var(--space-2) auto var(--space-6);">
-                Your payment via <strong>${res.order.paymentMethod}</strong> (${res.order.paymentRef}) is recorded and a confirmation email has been sent to <strong>${res.order.customerEmail}</strong>.
-              </p>
-
-              <div style="max-width:620px;margin:0 auto var(--space-6);text-align:left;background:var(--color-sand);padding:var(--space-5);border-radius:var(--radius-md);border:1px solid var(--border-subtle);">
-                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                  <strong>Order Reference:</strong>
-                  <span class="mono">${res.order.orderNumber}</span>
+            <article class="confirm-dispatch-card is-cascading" aria-label="Order Confirmation and Dispatch Status">
+              <div class="confirm-hero-banner">
+                <div class="confirm-hero-top">
+                  <span class="pill pill-delivery">✓ Order Confirmed &amp; Email Dispatched</span>
+                  <span class="mono" style="font-size:0.72rem;color:rgba(250,246,238,0.82);">${res.order.placedAt}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                  <strong>Tracking Number:</strong>
-                  <span class="mono">${res.order.trackingNumber}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
-                  <strong>Shipping Destination:</strong>
-                  <span>${res.order.shippingAddress}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;">
-                  <strong>Total Paid / Due:</strong>
-                  <strong class="price">${window.SuotStore.formatPrice(res.order.total)}</strong>
+                <h2>Salamat, <em>${firstName}!</em></h2>
+                <p class="confirm-hero-sub">
+                  Your Suot Isla gear is reserved at Manila Hub. Live milestone updates are sent to <strong>${res.order.customerEmail}</strong>${phoneFormatted ? ` and SMS to <strong>${phoneFormatted}</strong>` : ""}.
+                </p>
+                <div class="confirm-hero-chips">
+                  <span class="confirm-ref-chip">Order #${res.order.orderNumber}</span>
+                  <span class="confirm-ref-chip">Tracking: ${res.order.trackingNumber}</span>
+                  <span class="confirm-ref-chip">${payChip}</span>
                 </div>
               </div>
 
-              <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:var(--space-3);">
-                <button type="button" class="btn btn-coral btn-lg" id="view-conf-email-btn">
-                  View Order Confirmation Email
-                </button>
-                <a href="account.html" class="btn btn-primary btn-lg">
-                  Track Order &amp; Manage Returns
-                </a>
-                <a href="catalog.html" class="btn btn-outline btn-lg">
-                  Continue Shopping
-                </a>
+              <div class="confirm-dispatch-body">
+                <div class="confirm-milestone-strip" aria-label="Dispatch Progress">
+                  <div class="confirm-milestone-step is-done">
+                    <span>✓ Done</span>
+                    <strong>Confirmed</strong>
+                    <span>Stock reserved</span>
+                  </div>
+                  <div class="confirm-milestone-step">
+                    <span>02 · Next</span>
+                    <strong>Manila Hub</strong>
+                    <span>Quality pack</span>
+                  </div>
+                  <div class="confirm-milestone-step">
+                    <span>03</span>
+                    <strong>Island Express</strong>
+                    <span>Sea &amp; air port</span>
+                  </div>
+                  <div class="confirm-milestone-step">
+                    <span>04</span>
+                    <strong>Doorstep</strong>
+                    <span>2–5 days est.</span>
+                  </div>
+                </div>
+
+                <div class="confirm-info-grid">
+                  <div class="confirm-info-box">
+                    <span class="confirm-info-label">Shipping Destination</span>
+                    <strong>${res.order.customerName}</strong>
+                    <div style="color:var(--text-muted);margin-top:2px;line-height:1.45;">
+                      ${res.order.shippingAddress}
+                    </div>
+                  </div>
+                  <div class="confirm-info-box">
+                    <span class="confirm-info-label">Payment &amp; Tracking</span>
+                    <strong>${res.order.paymentMethod} (${res.order.paymentStatus})</strong>
+                    <div class="mono" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">
+                      Ref: ${res.order.paymentRef}<br />
+                      Waybill: ${res.order.trackingNumber}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="confirm-cta-row">
+                  <a href="account.html" class="btn btn-primary btn-pill">
+                    Track Order &amp; Manage Returns →
+                  </a>
+                  <button type="button" class="btn btn-coral btn-pill" id="view-conf-email-btn">
+                    View Email Receipt
+                  </button>
+                  <a href="catalog.html" class="btn btn-outline btn-pill">
+                    Continue Shopping
+                  </a>
+                </div>
               </div>
-            </div>
+            </article>
+
+            <div id="checkout-receipt-mount" class="is-cascading" style="animation-delay:75ms;"></div>
           `;
+
+          window.SuotUI.renderReceiptSheet(res.order, document.getElementById("checkout-receipt-mount"));
+          window.scrollTo({ top: 0, behavior: "smooth" });
 
           document.getElementById("view-conf-email-btn").addEventListener("click", () => {
             window.SuotUI.openDrawer("email");

@@ -46,14 +46,73 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (searchInput && state.search) searchInput.value = state.search;
 
-  function withTransition(fn) {
-    if (typeof document.startViewTransition === "function") {
-      try {
-        const vt = document.startViewTransition(fn);
-        if (vt && vt.finished) vt.finished.catch(() => {});
-        if (vt && vt.ready) vt.ready.catch(() => {});
+  let activeHeroSrc = heroImgEl ? heroImgEl.getAttribute("src") : "";
+  let heroFadeLayer = null;
+  let heroToken = 0;
+
+  function crossfadeHeroImage(nextSrc, nextAlt) {
+    if (!heroImgEl) return;
+    const versionedSrc =
+      window.SuotStore && window.SuotStore.withAssetVersion
+        ? window.SuotStore.withAssetVersion(nextSrc)
+        : nextSrc;
+    if (activeHeroSrc === versionedSrc) return;
+    activeHeroSrc = versionedSrc;
+
+    const token = ++heroToken;
+    const pre = new Image();
+    pre.src = versionedSrc;
+
+    const applyFade = () => {
+      if (token !== heroToken || !heroImgEl.isConnected) return;
+      const heroSection = heroImgEl.closest(".catalog-hero");
+      if (!heroSection) {
+        heroImgEl.src = versionedSrc;
+        heroImgEl.alt = nextAlt;
         return;
-      } catch (_) {}
+      }
+      if (heroFadeLayer && heroFadeLayer.parentNode) {
+        heroFadeLayer.remove();
+      }
+      const nextImg = document.createElement("img");
+      nextImg.src = versionedSrc;
+      nextImg.alt = nextAlt;
+      nextImg.className = "catalog-hero-bg catalog-hero-bg-next";
+      heroImgEl.insertAdjacentElement("afterend", nextImg);
+      heroFadeLayer = nextImg;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (token !== heroToken) return;
+          nextImg.classList.add("is-visible");
+        });
+      });
+
+      setTimeout(() => {
+        if (token !== heroToken) {
+          if (nextImg.parentNode) nextImg.remove();
+          return;
+        }
+        heroImgEl.src = versionedSrc;
+        heroImgEl.alt = nextAlt;
+        if (nextImg.parentNode) nextImg.remove();
+        if (heroFadeLayer === nextImg) heroFadeLayer = null;
+      }, 500);
+    };
+
+    if (pre.complete) {
+      applyFade();
+    } else if (typeof pre.decode === "function") {
+      pre.decode().then(applyFade, applyFade);
+    } else {
+      pre.onload = applyFade;
+      pre.onerror = applyFade;
+    }
+  }
+
+  function withTransition(fn) {
+    if (window.SuotMotion && typeof window.SuotMotion.pulseTide === "function") {
+      window.SuotMotion.pulseTide();
     }
     fn();
   }
@@ -69,34 +128,49 @@ document.addEventListener("DOMContentLoaded", () => {
     window.dispatchEvent(new Event("suotisla:statechange"));
   }
 
-  function updateCatalogHero() {
+  function updateCatalogHero(shouldMorph = false) {
     if (!heroImgEl || !heroEyebrowEl || !heroTitleEl || !heroDescEl) return;
 
     if (allBackLinkEl) {
       allBackLinkEl.style.display = state.series === "all" ? "none" : "inline-flex";
     }
 
-    if (state.series === "all") {
-      heroImgEl.src = "assets/images/hero-surf.jpg";
-      heroImgEl.alt = "Suot Isla coastal surf & resort apparel capsule";
-      heroEyebrowEl.textContent = "ISLAND ARCHIVE • 4 CAPSULES • 16 PIECES";
-      heroTitleEl.innerHTML = `Island Apparel. <em>Built for Salt Water.</em>`;
-      heroDescEl.textContent =
-        "Salt-tested boardshorts, golden-hour Boracay linen, and reef-safe essentials crafted for Philippine waters.";
-      return;
+    let nextSrc = "assets/images/hero-surf.jpg";
+    let nextAlt = "Suot Isla coastal surf & resort apparel capsule";
+    let nextEyebrow = "ISLAND ARCHIVE • 4 CAPSULES • 16 PIECES";
+    let nextTitleHtml = `Island Apparel. <em>Built for Salt Water.</em>`;
+    let nextDesc =
+      "Salt-tested boardshorts, golden-hour Boracay linen, and reef-safe essentials crafted for Philippine waters.";
+
+    if (state.series !== "all") {
+      const sInfo = window.SUOT_ISLA_DATA.islandSeries.find((s) => s.id === state.series);
+      if (sInfo) {
+        nextSrc = sInfo.image;
+        nextAlt = `${sInfo.name} coastal editorial lookbook`;
+        nextEyebrow = `${sInfo.coords} • ${sInfo.swellTag.toUpperCase()}`;
+        nextTitleHtml = `${sInfo.id} <em>Series.</em>`;
+        nextDesc = `${sInfo.subtitle}. ${sInfo.description}`;
+      }
     }
 
-    const sInfo = window.SUOT_ISLA_DATA.islandSeries.find((s) => s.id === state.series);
-    if (sInfo) {
-      heroImgEl.src = sInfo.image;
-      heroImgEl.alt = `${sInfo.name} coastal editorial lookbook`;
-      heroEyebrowEl.textContent = `${sInfo.coords} • ${sInfo.swellTag.toUpperCase()}`;
-      heroTitleEl.innerHTML = `${sInfo.id} <em>Series.</em>`;
-      heroDescEl.textContent = `${sInfo.subtitle}. ${sInfo.description}`;
+    const textChanged = heroEyebrowEl.textContent !== nextEyebrow;
+    heroEyebrowEl.textContent = nextEyebrow;
+    heroTitleEl.innerHTML = nextTitleHtml;
+    heroDescEl.textContent = nextDesc;
+
+    if (shouldMorph && textChanged) {
+      const heroCopyTop = heroTitleEl.closest(".catalog-hero-top");
+      if (heroCopyTop) {
+        heroCopyTop.classList.remove("is-morphing");
+        void heroCopyTop.offsetWidth;
+        heroCopyTop.classList.add("is-morphing");
+      }
     }
+
+    crossfadeHeroImage(nextSrc, nextAlt);
   }
 
-  function buildFilterControls() {
+  function buildFilterControls(shouldMorph = false) {
     const products = window.SuotStore.getProducts();
     const seriesScoped =
       state.series === "all" ? products : products.filter((p) => p.series === state.series);
@@ -138,10 +212,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     categoryDockEl.querySelectorAll("[data-cat-pill]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        state.category = btn.getAttribute("data-cat-pill");
+        const nextCat = btn.getAttribute("data-cat-pill");
+        if (nextCat === state.category) return;
+        state.category = nextCat;
         withTransition(() => {
-          buildFilterControls();
-          renderCatalog();
+          buildFilterControls(false);
+          renderCatalog(true);
         });
       });
     });
@@ -220,13 +296,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. Sync Hero Frosted Island Dock
     document.querySelectorAll("[data-quick-series]").forEach((btn) => {
       const val = btn.getAttribute("data-quick-series");
-      btn.classList.toggle("active", val === state.series);
+      const isActive = val === state.series;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
     });
 
-    updateCatalogHero();
+    updateCatalogHero(shouldMorph);
   }
 
-  function renderCatalog() {
+  function renderCatalog(cascade = false) {
     const allProducts = window.SuotStore.getProducts();
     const q = state.search.trim().toLowerCase();
 
@@ -317,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     gridEl.innerHTML = filtered
-      .map((p) => {
+      .map((p, idx) => {
         const activeColor =
           state.selectedColorPerProduct[p.id] ||
           (state.color !== "all" && p.colors.includes(state.color) ? state.color : p.colors[0]);
@@ -326,9 +404,11 @@ document.addEventListener("DOMContentLoaded", () => {
           (state.size !== "all" && p.sizes.includes(state.size) ? state.size : p.sizes[0]);
         const isLowStock = p.stock <= 5;
         const statusText = isLowStock ? `Only ${p.stock} left` : p.badge || "";
+        const cascadeClass = cascade ? " is-cascading" : "";
+        const cascadeStyle = cascade ? ` style="animation-delay:${Math.min(idx * 26, 208)}ms;"` : "";
 
         return `
-          <article class="product-card" data-product-card="${p.id}">
+          <article class="product-card${cascadeClass}"${cascadeStyle} data-product-card="${p.id}">
             <a href="product.html?id=${encodeURIComponent(p.id)}&color=${encodeURIComponent(activeColor)}" class="product-thumb-wrap">
               <div class="product-thumb-badges">
                 <span class="thumb-series-pill">${p.series}</span>
@@ -443,9 +523,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (priceLabelEl) priceLabelEl.textContent = "₱2,600";
     if (sortSelectEl) sortSelectEl.value = "featured";
 
-    syncUrlSeries();
-    buildFilterControls();
-    renderCatalog();
+    withTransition(() => {
+      syncUrlSeries();
+      buildFilterControls(true);
+      renderCatalog(true);
+    });
   }
 
   if (refineBtn && refineTray) {
@@ -475,7 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sortSelectEl) {
     sortSelectEl.addEventListener("change", () => {
       state.sort = sortSelectEl.value;
-      renderCatalog();
+      renderCatalog(true);
     });
   }
 
@@ -485,7 +567,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll("[data-quick-series]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.series = btn.getAttribute("data-quick-series");
+      const nextSeries = btn.getAttribute("data-quick-series");
+      if (nextSeries === state.series) return;
+      state.series = nextSeries;
       if (state.series !== "all" && state.category !== "all") {
         const hasInCat = window.SuotStore
           .getProducts()
@@ -494,8 +578,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       withTransition(() => {
         syncUrlSeries();
-        buildFilterControls();
-        renderCatalog();
+        buildFilterControls(true);
+        renderCatalog(true);
       });
     });
   });

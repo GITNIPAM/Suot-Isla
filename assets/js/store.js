@@ -123,9 +123,56 @@
     withAssetVersion(src) {
       if (!src || typeof src !== "string") return src || "";
       if (src.startsWith("assets/images/") && !src.includes("?")) {
-        return `${src}?v=46`;
+        return `${src}?v=62`;
       }
       return src;
+    },
+
+    normalizePhMobile(raw) {
+      let digits = String(raw || "").replace(/\D/g, "");
+      if (digits.startsWith("63") && digits.length >= 11) {
+        digits = "0" + digits.slice(2);
+      }
+      return digits.slice(0, 11);
+    },
+
+    isValidPhMobile(raw) {
+      return /^09\d{9}$/.test(this.normalizePhMobile(raw));
+    },
+
+    bindPhPhoneInput(inputEl, hintEl) {
+      if (!inputEl) return;
+      const sync = () => {
+        const cleaned = this.normalizePhMobile(inputEl.value);
+        if (inputEl.value !== cleaned) {
+          inputEl.value = cleaned;
+        }
+        if (hintEl) {
+          const len = cleaned.length;
+          if (!len) {
+            hintEl.textContent = "11 digits · PH format 09XXXXXXXXX";
+            hintEl.classList.remove("is-valid", "is-warn");
+          } else if (len === 11 && /^09\d{9}$/.test(cleaned)) {
+            hintEl.textContent = `✓ ${len}/11 digits verified`;
+            hintEl.classList.add("is-valid");
+            hintEl.classList.remove("is-warn");
+          } else if (len >= 2 && !cleaned.startsWith("09")) {
+            hintEl.textContent = `${len}/11 digits · Must start with 09`;
+            hintEl.classList.add("is-warn");
+            hintEl.classList.remove("is-valid");
+          } else {
+            hintEl.textContent = `${len}/11 digits · PH format 09XXXXXXXXX`;
+            hintEl.classList.remove("is-valid", "is-warn");
+          }
+        }
+      };
+
+      inputEl.setAttribute("maxlength", "11");
+      inputEl.setAttribute("minlength", "11");
+      inputEl.setAttribute("inputmode", "numeric");
+      inputEl.setAttribute("pattern", "09[0-9]{9}");
+      inputEl.addEventListener("input", sync);
+      sync();
     },
 
     getProductImageForColor(product, activeColor) {
@@ -373,7 +420,7 @@
         id: Date.now(),
         name: data.fullName || "Island Customer",
         email: data.email || "traveler@suotisla.ph",
-        phone: data.phone || "+63 917 000 0000",
+        phone: this.normalizePhMobile(data.phone) || "09170000000",
         role: data.role || "customer",
         passwordHash: "$2y$10$" + btoa(String(data.email || "suot")).slice(0, 22),
         joinedAt: formatNow().slice(0, 10)
@@ -410,7 +457,21 @@
 
     // -------------------- Orders, Fulfillment & Email Notifications --------------------
     getOrders() {
-      return readJSON(KEYS.ORDERS, window.SUOT_ISLA_DATA.initialOrders);
+      const list = readJSON(KEYS.ORDERS, window.SUOT_ISLA_DATA.initialOrders);
+      let migrated = false;
+      const cleaned = list.map((o) => {
+        if (o && (o.paymentMethod === "Maya" || o.paymentMethod === "Card")) {
+          migrated = true;
+          return {
+            ...o,
+            paymentMethod: "GCash",
+            paymentRef: typeof o.paymentRef === "string" ? o.paymentRef.replace(/^MY-/, "GC-") : o.paymentRef
+          };
+        }
+        return o;
+      });
+      if (migrated) writeJSON(KEYS.ORDERS, cleaned);
+      return cleaned;
     },
 
     getOrdersForCurrentUser() {
