@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account &amp; Role Access — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
-  <link rel="stylesheet" href="assets/css/base.css?v=62" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
+  <link rel="stylesheet" href="assets/css/base.css?v=64" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -42,16 +42,18 @@
 
           <div class="form-group">
             <label class="form-label" for="login-email">Email Address *</label>
-            <input type="email" id="login-email" name="email" class="form-input" required autocomplete="email" value="mateo.alonzo@student.pcu.edu.ph" />
+            <input type="email" id="login-email" name="email" class="form-input" required autocomplete="email" placeholder="you@suotisla.ph" />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="login-password">Password *</label>
             <div class="auth-pass-wrap">
-              <input type="password" id="login-password" name="password" class="form-input" required autocomplete="current-password" value="SuotIsla2026!" />
+              <input type="password" id="login-password" name="password" class="form-input" required autocomplete="current-password" placeholder="Enter your account password" />
               <button type="button" class="auth-pass-toggle" data-toggle-pass="login-password" aria-label="Show password">Show</button>
             </div>
           </div>
+
+          <div id="login-auth-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.55);color:var(--color-coral-deep);font-size:0.8rem;font-weight:600;"></div>
 
           <button type="submit" class="btn btn-primary btn-block btn-lg">
             Sign In &amp; Continue →
@@ -102,6 +104,8 @@
             </div>
             <span class="form-hint" id="reg-pass-hint">Enter at least 8 characters.</span>
           </div>
+
+          <div id="register-auth-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.55);color:var(--color-coral-deep);font-size:0.8rem;font-weight:600;"></div>
 
           <button type="submit" class="btn btn-primary btn-block btn-lg">
             Create Account &amp; Continue →
@@ -173,10 +177,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=62"></script>
-  <script src="assets/js/store.js?v=62"></script>
-  <script src="assets/js/components.js?v=62"></script>
-  <script src="assets/js/ocean-overdrive.js?v=62"></script>
+  <script src="assets/js/data.js?v=64"></script>
+  <script src="assets/js/store.js?v=64"></script>
+  <script src="assets/js/components.js?v=64"></script>
+  <script src="assets/js/ocean-overdrive.js?v=64"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const loginForm = document.getElementById("login-form");
@@ -219,8 +223,21 @@
         window.SuotUI.toast(message, "Check Input");
       }
 
+      const loginAuthAlert = document.getElementById("login-auth-alert");
+      const registerAuthAlert = document.getElementById("register-auth-alert");
+
       document.querySelectorAll("#login-form input, #register-form input").forEach((inp) => {
-        inp.addEventListener("input", () => inp.classList.remove("is-invalid-field"));
+        inp.addEventListener("input", () => {
+          inp.classList.remove("is-invalid-field");
+          if (loginAuthAlert && inp.closest("#login-form")) {
+            loginAuthAlert.style.display = "none";
+            loginAuthAlert.textContent = "";
+          }
+          if (registerAuthAlert && inp.closest("#register-form")) {
+            registerAuthAlert.style.display = "none";
+            registerAuthAlert.textContent = "";
+          }
+        });
       });
 
       document.querySelectorAll("[data-toggle-pass]").forEach((btn) => {
@@ -305,6 +322,10 @@
 
       loginForm.addEventListener("submit", (e) => {
         e.preventDefault();
+        if (loginAuthAlert) {
+          loginAuthAlert.style.display = "none";
+          loginAuthAlert.textContent = "";
+        }
         if (!loginEmailInput.value.trim() || !loginEmailInput.checkValidity()) {
           triggerFieldError(loginEmailInput, "Please enter a valid email address.");
           return;
@@ -315,12 +336,25 @@
           return;
         }
         const res = window.SuotStore.loginWithCredentials(loginEmailInput.value, passInput.value);
+        if (!res.ok) {
+          const targetField = res.field === "email" ? loginEmailInput : passInput;
+          if (loginAuthAlert) {
+            loginAuthAlert.textContent = res.message;
+            loginAuthAlert.style.display = "block";
+          }
+          triggerFieldError(targetField, res.message);
+          return;
+        }
         window.SuotUI.toast(`Signed in as ${res.user.name} (${res.user.role.toUpperCase()})`, "Authenticated");
         window.SuotUI.navigateTo(getRoleDestination(res.user.role));
       });
 
       registerForm.addEventListener("submit", (e) => {
         e.preventDefault();
+        if (registerAuthAlert) {
+          registerAuthAlert.style.display = "none";
+          registerAuthAlert.textContent = "";
+        }
         if (!regNameInput.value.trim()) {
           triggerFieldError(regNameInput, "Please enter your full name.");
           return;
@@ -338,13 +372,23 @@
           return;
         }
 
-        const user = window.SuotStore.registerUser({
+        const regRes = window.SuotStore.registerUser({
           fullName: regNameInput.value.trim(),
           email: regEmailInput.value.trim(),
           phone: window.SuotStore.normalizePhMobile(regPhoneInput.value),
+          password: regPassInput.value,
           role: "customer"
         });
-        window.SuotUI.toast(`Welcome, ${user.name}! Opening your dashboard...`, "Account Created");
+        if (!regRes.ok) {
+          const targetEl = regRes.field === "password" ? regPassInput : regEmailInput;
+          if (registerAuthAlert) {
+            registerAuthAlert.textContent = regRes.message;
+            registerAuthAlert.style.display = "block";
+          }
+          triggerFieldError(targetEl, regRes.message);
+          return;
+        }
+        window.SuotUI.toast(`Welcome, ${regRes.user.name}! Opening your dashboard...`, "Account Created");
         window.SuotUI.navigateTo(getRoleDestination("customer"));
       });
 

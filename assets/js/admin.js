@@ -21,6 +21,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const imagePreviewWrap = document.getElementById("crud-image-preview");
   const imagePreviewImg = document.getElementById("crud-preview-img");
 
+  const confirmModal = document.getElementById("admin-confirm-modal");
+  const confirmBadgeEl = document.getElementById("admin-confirm-badge");
+  const confirmTitleEl = document.getElementById("admin-confirm-title");
+  const confirmBodyEl = document.getElementById("admin-confirm-body");
+  const confirmProceedBtn = document.getElementById("admin-confirm-proceed-btn");
+  let pendingConfirmHandler = null;
+
+  const refundModal = document.getElementById("admin-refund-modal");
+  const refundForm = document.getElementById("admin-refund-form");
+  const refundRetIdEl = document.getElementById("refund-ret-id");
+  const refundSummaryEl = document.getElementById("refund-order-summary");
+  const refundMethodSel = document.getElementById("refund-method-sel");
+  const refundTxnInput = document.getElementById("refund-txn-ref");
+  const refundNotesInput = document.getElementById("refund-txn-notes");
+  const refundVerifyChk = document.getElementById("refund-verify-checkbox");
+  const refundAlertEl = document.getElementById("refund-form-alert");
+
   const currUser = window.SuotStore.getCurrentUser();
   let activeRole = ["admin", "staff", "courier"].includes(currUser.role) ? currUser.role : "admin";
   roleSelectEl.value = activeRole;
@@ -34,6 +51,172 @@ document.addEventListener("DOMContentLoaded", () => {
   function getProductThumb(product, color) {
     if (!product) return "";
     return window.SuotStore.renderProductVisual(product, color || (product.colors && product.colors[0]));
+  }
+
+  function closeConfirmDialog() {
+    if (confirmModal) confirmModal.classList.remove("open");
+    pendingConfirmHandler = null;
+  }
+
+  function openConfirmDialog({ badge = "CONFIRM", badgeClass = "pill-coral", title, bodyHtml, confirmLabel = "Confirm", confirmBtnClass = "btn-coral", onConfirm }) {
+    if (!confirmModal) {
+      if (typeof onConfirm === "function") onConfirm();
+      return;
+    }
+    confirmBadgeEl.className = `pill ${badgeClass}`;
+    confirmBadgeEl.textContent = badge;
+    confirmTitleEl.textContent = title;
+    confirmBodyEl.innerHTML = bodyHtml;
+    confirmProceedBtn.className = `btn ${confirmBtnClass} btn-pill`;
+    confirmProceedBtn.textContent = confirmLabel;
+    pendingConfirmHandler = onConfirm || null;
+    confirmModal.classList.add("open");
+  }
+
+  if (confirmModal) {
+    document.getElementById("close-confirm-modal-btn").addEventListener("click", closeConfirmDialog);
+    document.getElementById("admin-confirm-cancel-btn").addEventListener("click", closeConfirmDialog);
+    confirmModal.addEventListener("click", (e) => {
+      if (e.target === confirmModal) closeConfirmDialog();
+    });
+    confirmProceedBtn.addEventListener("click", () => {
+      const fn = pendingConfirmHandler;
+      closeConfirmDialog();
+      if (typeof fn === "function") fn();
+    });
+  }
+
+  function closeRefundModal() {
+    if (refundModal) refundModal.classList.remove("open");
+  }
+
+  function openRefundModal(returnId) {
+    const req = window.SuotStore.getReturns().find((r) => r.returnId === returnId);
+    if (!req || !refundModal) return;
+    const ord = window.SuotStore.getOrders().find((o) => o.orderNumber === req.orderNumber);
+    refundRetIdEl.value = req.returnId;
+    refundSummaryEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+        <strong class="mono">${req.returnId} · #${req.orderNumber}</strong>
+        <strong class="price" style="font-size:1rem;color:var(--color-lagoon-ink);">${window.SuotStore.formatPrice(req.amount)}</strong>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);">
+        <strong>${req.customerName}</strong> (${req.customerEmail})<br />
+        <span>Original Payment: ${ord ? `${ord.paymentMethod} (${ord.paymentRef})` : "GCash"}</span>
+      </div>
+    `;
+    refundMethodSel.value = ord && ord.paymentMethod === "COD" ? "Cash / Courier Payout" : "GCash Express Refund";
+    refundTxnInput.value = "";
+    refundTxnInput.classList.remove("is-invalid-field");
+    refundNotesInput.value = "";
+    refundVerifyChk.checked = false;
+    refundAlertEl.style.display = "none";
+    refundAlertEl.textContent = "";
+    refundModal.classList.add("open");
+    setTimeout(() => refundTxnInput.focus(), 60);
+  }
+
+  if (refundModal && refundForm) {
+    document.getElementById("close-refund-modal-btn").addEventListener("click", closeRefundModal);
+    document.getElementById("cancel-refund-modal-btn").addEventListener("click", closeRefundModal);
+    refundModal.addEventListener("click", (e) => {
+      if (e.target === refundModal) closeRefundModal();
+    });
+    refundTxnInput.addEventListener("input", () => {
+      refundTxnInput.classList.remove("is-invalid-field");
+      refundAlertEl.style.display = "none";
+    });
+    refundForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const retId = refundRetIdEl.value;
+      const res = window.SuotStore.confirmReturnRefund(retId, {
+        refundMethod: refundMethodSel.value,
+        refundRef: refundTxnInput.value,
+        notes: refundNotesInput.value,
+        verified: refundVerifyChk.checked
+      });
+      if (!res.ok) {
+        refundAlertEl.textContent = res.message;
+        refundAlertEl.style.display = "block";
+        if (res.field === "refundRef") {
+          refundTxnInput.classList.add("is-invalid-field");
+          refundTxnInput.focus();
+        }
+        return;
+      }
+      closeRefundModal();
+      window.SuotUI.toast(
+        `Verified refund of ${window.SuotStore.formatPrice(res.request.amount)} (${res.request.refundRef}) & updated analytics/e-receipt!`,
+        "Refund Paid"
+      );
+      syncRolePermissions();
+      renderReturnsTab();
+      flashAdminRow(retId);
+    });
+  }
+
+  function attemptOrderStatusChange(ordNum, newStatus, courier, trk, onDone) {
+    const ord = window.SuotStore.getOrders().find((o) => o.orderNumber === ordNum);
+    if (!ord) return;
+
+    if (newStatus === "Cancelled") {
+      if (ord.status === "Delivered") {
+        window.SuotUI.toast(
+          `Order #${ordNum} was already Delivered. Use Returns & Refunds instead of cancelling.`,
+          "Cancellation Blocked"
+        );
+        if (typeof onDone === "function") onDone(false);
+        return;
+      }
+      if (ord.status === "Cancelled" || ord.status === "Returned") {
+        window.SuotUI.toast(`Order #${ordNum} is already marked "${ord.status}".`, "No Change Needed");
+        if (typeof onDone === "function") onDone(false);
+        return;
+      }
+
+      const unitCount = (ord.items || []).reduce((sum, i) => sum + Number(i.qty || 1), 0);
+      const wasPaid = ord.paymentStatus === "Paid";
+      openConfirmDialog({
+        badge: "ORDER CANCELLATION",
+        badgeClass: "pill-coral",
+        title: `Cancel Order #${ordNum}?`,
+        confirmLabel: "Confirm Cancel & Restock",
+        confirmBtnClass: "btn-coral",
+        bodyHtml: `
+          <div class="admin-confirm-summary">
+            <div><strong>${ord.customerName}</strong> · ${window.SuotStore.formatPrice(ord.total)}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
+              • <strong>+${unitCount} unit${unitCount === 1 ? "" : "s"}</strong> will return to catalog inventory<br />
+              • Payment becomes <strong>${wasPaid ? "Refund Pending (queued for TXN verification)" : "Cancelled"}</strong><br />
+              • Live Analytics &amp; Island Series revenue will exclude this order
+            </div>
+          </div>
+        `,
+        onConfirm: () => {
+          const res = window.SuotStore.updateOrderStatus(ordNum, "Cancelled", courier, trk);
+          if (!res || !res.ok) {
+            window.SuotUI.toast((res && res.message) || "Unable to cancel order.", "Blocked");
+            if (typeof onDone === "function") onDone(false);
+            return;
+          }
+          window.SuotUI.toast(
+            `Order #${ordNum} cancelled (${res.restockedUnits} units restocked) & revenue updated.`,
+            "Order Cancelled"
+          );
+          if (typeof onDone === "function") onDone(true);
+        }
+      });
+      return;
+    }
+
+    const res = window.SuotStore.updateOrderStatus(ordNum, newStatus, courier, trk);
+    if (!res || !res.ok) {
+      window.SuotUI.toast((res && res.message) || "Cannot update closed order status.", "Action Blocked");
+      if (typeof onDone === "function") onDone(false);
+      return;
+    }
+    window.SuotUI.toast(`Order #${ordNum} updated to "${newStatus}" & email sent to customer!`, "Status & Email Sent");
+    if (typeof onDone === "function") onDone(true);
   }
 
   function flashAdminRow(rowKey) {
@@ -73,13 +256,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const orders = window.SuotStore.getOrders();
     const returns = window.SuotStore.getReturns();
     const awaitingPack = orders.filter((o) => o.status === "Pending" || o.status === "Confirmed").length;
-    const pendingRet = returns.filter((r) => r.status.includes("Pending")).length;
+    const actionReturns = returns.filter((r) => r.status.includes("Pending") || r.status.includes("Awaiting Refund")).length;
 
     document.getElementById("nav-prod-count").textContent = prods.length;
     document.getElementById("nav-order-count").textContent = awaitingPack
       ? `${awaitingPack} due`
       : String(orders.length);
-    document.getElementById("nav-return-count").textContent = pendingRet;
+    document.getElementById("nav-return-count").textContent = actionReturns;
   }
 
   function navigateAdminTab(nextTab, opts = {}) {
@@ -114,41 +297,77 @@ document.addEventListener("DOMContentLoaded", () => {
     const orders = window.SuotStore.getOrders();
     const returns = window.SuotStore.getReturns();
 
-    const activeOrders = orders.filter((o) => o.status !== "Cancelled" && o.status !== "Returned");
+    // Pure live order analytics — exclude cancelled, returned, and refunded/refund-pending orders
+    const activeOrders = orders.filter(
+      (o) =>
+        o.status !== "Cancelled" &&
+        o.status !== "Returned" &&
+        o.paymentStatus !== "Refunded" &&
+        o.paymentStatus !== "Refund Pending"
+    );
+    const excludedOrders = orders.filter((o) => !activeOrders.includes(o));
+    const excludedTotal = excludedOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
     const liveRevenue = activeOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const collectedRevenue = activeOrders
+      .filter((o) => o.paymentStatus === "Paid" || o.status === "Delivered")
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const codPendingRevenue = Math.max(0, liveRevenue - collectedRevenue);
+
     const pendingPackOrders = orders.filter((o) => o.status === "Pending" || o.status === "Confirmed");
     const inTransitOrders = orders.filter((o) => o.status === "Packed" || o.status === "Out for Delivery");
     const lowStockItems = products.filter((p) => !p.archived && p.stock <= 5).sort((a, b) => a.stock - b.stock);
-    const pendingReturns = returns.filter((r) => r.status.includes("Pending"));
-    const topProducts = [...products]
-      .filter((p) => !p.archived)
-      .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
-      .slice(0, 5);
+    const actionReturns = returns.filter((r) => r.status.includes("Pending") || r.status.includes("Awaiting Refund"));
 
-    // Seasonal base totals + live revenue attribution from active orders
-    const seriesTotals = {
-      Siargao: 132000,
-      Boracay: 112500,
-      "El Nido": 94200,
-      "La Union": 124800
+    const seriesStats = {
+      Siargao: { amt: 0, units: 0, orders: new Set() },
+      Boracay: { amt: 0, units: 0, orders: new Set() },
+      "El Nido": { amt: 0, units: 0, orders: new Set() },
+      "La Union": { amt: 0, units: 0, orders: new Set() }
     };
+    const productLiveStats = {};
+
     activeOrders.forEach((o) => {
+      const sub = Number(o.subtotal || 0);
+      const disc = Number(o.discount || 0);
+      const netFactor = sub > 0 && disc > 0 ? Math.max(0, sub - disc) / sub : 1;
       (o.items || []).forEach((it) => {
-        const s = it.series || (window.SuotStore.getProductById(it.productId) || {}).series;
-        if (s && seriesTotals[s] != null) {
-          seriesTotals[s] += Number(it.price || 0) * Number(it.qty || 1);
+        const prod = window.SuotStore.getProductById(it.productId);
+        const s = it.series || (prod && prod.series);
+        const qty = Number(it.qty || 1);
+        const lineNet = Math.round(Number(it.price || 0) * qty * netFactor);
+        if (s && seriesStats[s]) {
+          seriesStats[s].amt += lineNet;
+          seriesStats[s].units += qty;
+          seriesStats[s].orders.add(o.orderNumber);
+        }
+        if (it.productId) {
+          if (!productLiveStats[it.productId]) productLiveStats[it.productId] = { units: 0, rev: 0 };
+          productLiveStats[it.productId].units += qty;
+          productLiveStats[it.productId].rev += lineNet;
         }
       });
     });
-    const maxSeriesAmt = Math.max(...Object.values(seriesTotals), 150000);
-    const totalUrgentActions = pendingPackOrders.length + lowStockItems.length + pendingReturns.length;
+
+    const maxSeriesAmt = Math.max(...Object.values(seriesStats).map((x) => x.amt), 1);
+    const totalUrgentActions = pendingPackOrders.length + lowStockItems.length + actionReturns.length;
+
+    const topProducts = [...products]
+      .filter((p) => !p.archived)
+      .map((p) => ({
+        product: p,
+        liveUnits: (productLiveStats[p.id] && productLiveStats[p.id].units) || 0,
+        liveRev: (productLiveStats[p.id] && productLiveStats[p.id].rev) || 0
+      }))
+      .sort((a, b) => b.liveRev - a.liveRev || b.liveUnits - a.liveUnits || (b.product.soldCount || 0) - (a.product.soldCount || 0))
+      .slice(0, 5);
 
     workspaceEl.innerHTML = `
       <div class="admin-header-bar">
         <div>
           <h1>Store Analytics &amp; Operations Command</h1>
           <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0;">
-            Real-time Philippine dispatch pipeline, critical stock watch, and seasonal performance across 4 Island Series.
+            Computed directly from active non-cancelled, non-refunded orders across all 4 Island Series.
           </p>
         </div>
         <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
@@ -182,9 +401,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>Critical Stock (&le;5)</span>
             <span class="ops-action-count">${lowStockItems.length}</span>
           </button>
-          <button type="button" class="ops-action-chip ${pendingReturns.length ? "is-urgent" : ""}" id="attn-returns-btn">
-            <span>Pending Returns</span>
-            <span class="ops-action-count">${pendingReturns.length}</span>
+          <button type="button" class="ops-action-chip ${actionReturns.length ? "is-urgent" : ""}" id="attn-returns-btn">
+            <span>Returns &amp; Refunds Due</span>
+            <span class="ops-action-count">${actionReturns.length}</span>
           </button>
         </div>
       </div>
@@ -193,11 +412,14 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="ops-summary-grid">
         <button type="button" class="ops-tile is-interactive is-active-lagoon" id="kpi-rev-btn">
           <div class="ops-tile-top">
-            <span class="ops-tile-title">Season &amp; Live Revenue</span>
-            <span class="pill pill-delivery">+18.4%</span>
+            <span class="ops-tile-title">Live Net Order Revenue</span>
+            <span class="pill pill-delivery">${activeOrders.length} Active</span>
           </div>
-          <div class="ops-tile-value">${window.SuotStore.formatPrice(liveRevenue + 463500)}</div>
-          <div class="ops-tile-foot">${activeOrders.length} active orders · ${inTransitOrders.length} in transit</div>
+          <div class="ops-tile-value" id="analytics-live-rev">${window.SuotStore.formatPrice(liveRevenue)}</div>
+          <div class="ops-tile-foot">
+            Paid: ${window.SuotStore.formatPrice(collectedRevenue)} · COD: ${window.SuotStore.formatPrice(codPendingRevenue)}
+            ${excludedOrders.length ? `<br />Excl. ${excludedOrders.length} cancelled/refunded (${window.SuotStore.formatPrice(excludedTotal)})` : ""}
+          </div>
         </button>
 
         <button type="button" class="ops-tile is-interactive ${pendingPackOrders.length ? "is-urgent-coral" : "is-active-lagoon"}" id="kpi-pack-btn">
@@ -206,7 +428,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="pill ${pendingPackOrders.length ? "pill-coral" : "pill-delivery"}">${pendingPackOrders.length ? "Needs Pack" : "Clear"}</span>
           </div>
           <div class="ops-tile-value" style="${pendingPackOrders.length ? "color:var(--color-coral-deep);" : ""}">${pendingPackOrders.length}</div>
-          <div class="ops-tile-foot">Ready for Manila Hub staging &amp; courier handoff →</div>
+          <div class="ops-tile-foot">${inTransitOrders.length} in transit · Click to process queue →</div>
         </button>
 
         <button type="button" class="ops-tile is-interactive ${lowStockItems.length ? "is-urgent-coral" : ""}" id="kpi-stock-btn">
@@ -218,36 +440,35 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="ops-tile-foot">Click to open Low-Stock filter in Catalog →</div>
         </button>
 
-        <button type="button" class="ops-tile is-interactive ${pendingReturns.length ? "is-urgent-coral" : ""}" id="kpi-ret-btn">
+        <button type="button" class="ops-tile is-interactive ${actionReturns.length ? "is-urgent-coral" : ""}" id="kpi-ret-btn">
           <div class="ops-tile-top">
-            <span class="ops-tile-title">Pending Return Approvals</span>
-            <span class="pill ${pendingReturns.length ? "pill-coral" : "pill-sand"}">${pendingReturns.length ? "Review" : "Clear"}</span>
+            <span class="ops-tile-title">Returns &amp; Payouts Queue</span>
+            <span class="pill ${actionReturns.length ? "pill-coral" : "pill-sand"}">${actionReturns.length ? "Review" : "Clear"}</span>
           </div>
-          <div class="ops-tile-value">${pendingReturns.length}</div>
-          <div class="ops-tile-foot">Awaiting restock inspection &amp; refund release →</div>
+          <div class="ops-tile-value">${actionReturns.length}</div>
+          <div class="ops-tile-foot">Stage 1 review &amp; Stage 2 payout confirmation →</div>
         </button>
       </div>
 
       <div class="split-checkout-grid" style="padding-block:0;">
-        <!-- Island Series Breakdown + Top Sellers with Studio Thumbnails -->
+        <!-- Island Series Breakdown + Top Sellers computed strictly from live orders -->
         <section class="surface-card">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:var(--space-4);">
             <h2 style="margin:0;font-size:var(--text-lg);">Revenue by Philippine Island Series</h2>
-            <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">Live order totals included</span>
+            <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">Live item sales · Excl. cancelled/refunded</span>
           </div>
 
           <div class="series-bar-list" style="margin-bottom:var(--space-6);">
-            ${Object.entries(seriesTotals)
-              .map(([series, amt]) => {
-                const pct = Math.min(100, Math.round((amt / maxSeriesAmt) * 100));
-                const count = products.filter((p) => p.series === series && !p.archived).length;
+            ${Object.entries(seriesStats)
+              .map(([series, stat]) => {
+                const pct = stat.amt > 0 ? Math.max(4, Math.min(100, Math.round((stat.amt / maxSeriesAmt) * 100))) : 0;
                 return `
-                  <div class="series-bar-item">
+                  <div class="series-bar-item" data-series-stat="${series}">
                     <div class="series-bar-top">
                       <button type="button" class="card-size-pill" data-jump-series="${series}" style="font-weight:700;">
-                        ${series} Series · ${count} SKUs →
+                        ${series} · ${stat.orders.size} ord · ${stat.units} units →
                       </button>
-                      <span class="price">${window.SuotStore.formatPrice(amt)}</span>
+                      <span class="price" data-series-rev="${series}">${window.SuotStore.formatPrice(stat.amt)}</span>
                     </div>
                     <div class="series-bar-track">
                       <div class="series-bar-fill" style="width:${pct}%;"></div>
@@ -258,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
               .join("")}
           </div>
 
-          <h3 style="font-size:var(--text-base);margin-bottom:var(--space-3);">Top 5 Best-Selling Pieces</h3>
+          <h3 style="font-size:var(--text-base);margin-bottom:var(--space-3);">Top 5 Pieces by Live Order Revenue</h3>
           <div class="data-table-wrap" style="padding:0;">
             <table class="data-table">
               <thead>
@@ -266,13 +487,13 @@ document.addEventListener("DOMContentLoaded", () => {
                   <th>Product</th>
                   <th>Series</th>
                   <th>Price</th>
-                  <th>Units Sold</th>
+                  <th>Active Orders</th>
                 </tr>
               </thead>
               <tbody>
                 ${topProducts
                   .map(
-                    (p) => `
+                    ({ product: p, liveUnits, liveRev }) => `
                     <tr>
                       <td>
                         <div style="display:flex;align-items:center;gap:0.65rem;">
@@ -285,7 +506,10 @@ document.addEventListener("DOMContentLoaded", () => {
                       </td>
                       <td><span class="pill pill-lagoon">${p.series}</span></td>
                       <td class="price">${window.SuotStore.formatPrice(p.price)}</td>
-                      <td class="tabular"><strong>${p.soldCount} sold</strong></td>
+                      <td class="tabular">
+                        <strong>${liveUnits} unit${liveUnits === 1 ? "" : "s"}</strong>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">${window.SuotStore.formatPrice(liveRev)}</div>
+                      </td>
                     </tr>
                   `
                   )
@@ -603,10 +827,35 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", () => {
         const pid = btn.getAttribute("data-delete-prod");
         const prod = window.SuotStore.getProductById(pid);
-        window.SuotStore.deleteProduct(pid);
-        window.SuotUI.toast(`Deleted ${prod.name} from catalog.`, "Product Deleted");
-        syncRolePermissions();
-        renderInventoryTab();
+        if (!prod) return;
+        openConfirmDialog({
+          badge: "DELETE PRODUCT",
+          badgeClass: "pill-coral",
+          title: `Delete "${prod.name}"?`,
+          confirmLabel: "Permanently Delete",
+          confirmBtnClass: "btn-coral",
+          bodyHtml: `
+            <div class="admin-confirm-summary" style="display:flex;align-items:center;gap:0.85rem;">
+              <div class="admin-thumb-sm" style="width:52px;height:64px;">${getProductThumb(prod)}</div>
+              <div style="min-width:0;">
+                <div class="mono" style="font-size:0.74rem;color:var(--text-muted);">${prod.sku} · ${prod.series} Series</div>
+                <strong style="display:block;font-size:0.95rem;">${prod.name}</strong>
+                <div style="font-size:0.78rem;color:var(--color-coral-deep);margin-top:3px;">
+                  ${prod.stock} units in stock · ${window.SuotStore.formatPrice(prod.price)}
+                </div>
+              </div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin:var(--space-3) 0 0;">
+              This permanently removes the item from Catalog and Admin Inventory. Consider using <strong>Archive</strong> instead if this seasonal piece may return later.
+            </p>
+          `,
+          onConfirm: () => {
+            window.SuotStore.deleteProduct(pid);
+            window.SuotUI.toast(`Deleted ${prod.name} (${prod.sku}) from catalog.`, "Product Deleted");
+            syncRolePermissions();
+            renderInventoryTab();
+          }
+        });
       });
     });
 
@@ -898,11 +1147,11 @@ document.addEventListener("DOMContentLoaded", () => {
             ? "ISLA-TRK-" + Math.floor(10000 + Math.random() * 89999)
             : undefined;
 
-        window.SuotStore.updateOrderStatus(ordNum, newStatus, courier, trk);
-        window.SuotUI.toast(`Order #${ordNum} updated to "${newStatus}" & email sent to customer!`, "Status & Email Sent");
-        syncRolePermissions();
-        renderOrdersTab();
-        flashAdminRow(ordNum);
+        attemptOrderStatusChange(ordNum, newStatus, courier, trk, (updated) => {
+          syncRolePermissions();
+          renderOrdersTab();
+          if (updated) flashAdminRow(ordNum);
+        });
       });
     });
 
@@ -983,11 +1232,11 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", () => {
         const ordNum = btn.getAttribute("data-courier-act");
         const st = btn.getAttribute("data-courier-status");
-        window.SuotStore.updateOrderStatus(ordNum, st, "Kuya Jomar Santos (Island Express)");
-        window.SuotUI.toast(`Courier updated #${ordNum} to "${st}" and notified customer via email!`, "Courier Dispatch");
-        syncRolePermissions();
-        renderCourierTab();
-        flashAdminRow(ordNum);
+        attemptOrderStatusChange(ordNum, st, "Kuya Jomar Santos (Island Express)", undefined, (updated) => {
+          syncRolePermissions();
+          renderCourierTab();
+          if (updated) flashAdminRow(ordNum);
+        });
       });
     });
 
@@ -1002,16 +1251,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // -------------------- TAB 5: RETURNS & REFUNDS PROCESSING --------------------
   function renderReturnsTab(animate = false) {
-    const returnsList = [...window.SuotStore.getReturns()].sort((a, b) =>
-      a.status.includes("Pending") === b.status.includes("Pending") ? 0 : a.status.includes("Pending") ? -1 : 1
-    );
+    const rankWeight = (s) => (s.includes("Pending Review") ? 0 : s.includes("Awaiting Refund") ? 1 : 2);
+    const returnsList = [...window.SuotStore.getReturns()].sort((a, b) => rankWeight(a.status) - rankWeight(b.status));
 
     workspaceEl.innerHTML = `
       <div class="admin-header-bar">
         <div>
-          <h1>Refund &amp; Return Processing</h1>
+          <h1>Refund &amp; Return Processing (2-Stage Verification)</h1>
           <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0;">
-            Pending approvals are highlighted at the top—inspect items, return units to inventory, and release GCash/Cash refunds.
+            Stage 1 approves item return &amp; restocks inventory; Stage 2 verifies the actual GCash or Cash payout transaction reference before marking Refunded.
           </p>
         </div>
       </div>
@@ -1024,21 +1272,24 @@ document.addEventListener("DOMContentLoaded", () => {
               <th>Order # &amp; Customer</th>
               <th>Request Type &amp; Reason</th>
               <th>Item &amp; Refund Amount</th>
-              <th>Stock &amp; Refund State</th>
+              <th>Stock &amp; Payout Verification</th>
               <th>Status</th>
-              <th>Admin Decision</th>
+              <th>2-Stage Decision</th>
             </tr>
           </thead>
           <tbody>
             ${returnsList
               .map((r) => {
-                const isPending = r.status.includes("Pending");
+                const isStage1 = r.status.includes("Pending Review");
+                const isStage2 = r.status === "Approved · Awaiting Refund";
+                const rowClass = isStage1 ? "admin-row-urgent" : isStage2 ? "admin-row-needs-action" : "";
                 return `
-                  <tr data-row-key="${r.returnId}" class="${isPending ? "admin-row-urgent" : ""}">
+                  <tr data-row-key="${r.returnId}" class="${rowClass}">
                     <td class="mono">
                       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                         <strong>${r.returnId}</strong>
-                        ${isPending ? `<span class="pill pill-coral">ACTION</span>` : ""}
+                        ${isStage1 ? `<span class="pill pill-coral">STAGE 1 · REVIEW</span>` : ""}
+                        ${isStage2 ? `<span class="pill pill-lagoon">STAGE 2 · PAYOUT DUE</span>` : ""}
                       </div>
                       <div style="color:var(--text-muted);font-size:0.72rem;margin-top:2px;">${r.requestedAt}</div>
                     </td>
@@ -1056,13 +1307,18 @@ document.addEventListener("DOMContentLoaded", () => {
                       <strong class="price">${window.SuotStore.formatPrice(r.amount)}</strong>
                     </td>
                     <td style="font-size:var(--text-xs);">
-                      <div>Restocked: <strong>${r.restocked ? "Yes (+1 stock)" : "Pending"}</strong></div>
-                      <div>Refunded: <strong>${r.refunded ? "Yes (Released)" : "Pending"}</strong></div>
+                      <div>Restocked: <strong>${r.restocked ? `Yes (+${r.qty || 1} unit)` : "Not Yet"}</strong></div>
+                      <div>
+                        Payout TXN:
+                        <strong>${r.refunded ? `Verified (${r.refundRef})` : isStage2 ? "Awaiting TXN Ref" : "Not Started"}</strong>
+                      </div>
                     </td>
                     <td>
                       <span class="pill ${
-                        r.status.includes("Approved")
+                        r.status.includes("Refunded") || r.status.includes("Closed")
                           ? "pill-delivery"
+                          : isStage2
+                          ? "pill-sand"
                           : r.status.includes("Rejected")
                           ? "pill-coral"
                           : "pill-lagoon"
@@ -1070,7 +1326,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </td>
                     <td>
                       ${
-                        isPending
+                        isStage1
                           ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
                               <button type="button" class="btn btn-primary btn-sm btn-pill" data-ret-decide="${r.returnId}" data-ret-val="Approved">
                                 Approve &amp; Restock
@@ -1079,7 +1335,23 @@ document.addEventListener("DOMContentLoaded", () => {
                                 Reject
                               </button>
                             </div>`
-                          : `<span style="font-size:var(--text-xs);color:var(--text-muted);">Processed</span>`
+                          : isStage2
+                          ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+                              <button type="button" class="btn btn-coral btn-sm btn-pill" data-ret-verify-refund="${r.returnId}">
+                                Verify Refund TXN →
+                              </button>
+                              <button type="button" class="btn btn-outline btn-sm btn-pill" data-ret-receipt="${r.orderNumber}">
+                                E-Receipt
+                              </button>
+                            </div>`
+                          : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                              <span style="font-size:var(--text-xs);color:var(--text-muted);">
+                                ${r.refundedAt ? `Settled ${r.refundedAt}` : "Completed"}
+                              </span>
+                              <button type="button" class="btn btn-outline btn-sm btn-pill" data-ret-receipt="${r.orderNumber}">
+                                E-Receipt
+                              </button>
+                            </div>`
                       }
                     </td>
                   </tr>
@@ -1095,16 +1367,69 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", () => {
         const retId = btn.getAttribute("data-ret-decide");
         const decision = btn.getAttribute("data-ret-val");
-        window.SuotStore.processReturnRequest(retId, decision, true, true);
-        window.SuotUI.toast(
-          decision === "Approved"
-            ? `Request ${retId} approved! Inventory restocked and refund processed.`
-            : `Request ${retId} marked as rejected.`,
-          "Return Processed"
-        );
-        syncRolePermissions();
-        renderReturnsTab();
-        flashAdminRow(retId);
+        const req = window.SuotStore.getReturns().find((r) => r.returnId === retId);
+        if (!req) return;
+
+        if (decision === "Approved") {
+          openConfirmDialog({
+            badge: "STAGE 1 · APPROVE RETURN",
+            badgeClass: "pill-lagoon",
+            title: `Approve Request ${retId}?`,
+            confirmLabel: "Approve & Restock Item",
+            confirmBtnClass: "btn-primary",
+            bodyHtml: `
+              <div class="admin-confirm-summary">
+                <strong>${req.itemSummary}</strong>
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
+                  Customer: <strong>${req.customerName}</strong> · Order #${req.orderNumber} (${window.SuotStore.formatPrice(req.amount)})
+                </div>
+              </div>
+              <p style="font-size:0.82rem;color:var(--text-secondary);margin:var(--space-3) 0 0;">
+                Approving returns <strong>+${req.qty || 1} unit</strong> to inventory and queues payment for <strong>Stage 2 Transaction Verification</strong> (money is not marked refunded until you enter the TXN reference).
+              </p>
+            `,
+            onConfirm: () => {
+              const res = window.SuotStore.processReturnRequest(retId, "Approved", true);
+              if (res && res.ok) {
+                window.SuotUI.toast(
+                  `Approved ${retId}! Restocked & moved to Stage 2 (Awaiting Refund TXN).`,
+                  "Return Approved"
+                );
+              }
+              syncRolePermissions();
+              renderReturnsTab();
+              flashAdminRow(retId);
+            }
+          });
+        } else {
+          openConfirmDialog({
+            badge: "REJECT RETURN",
+            badgeClass: "pill-coral",
+            title: `Reject Request ${retId}?`,
+            confirmLabel: "Confirm Rejection",
+            confirmBtnClass: "btn-coral",
+            bodyHtml: `<p style="font-size:0.84rem;color:var(--text-secondary);margin:0;">This marks request <strong>${retId}</strong> (#${req.orderNumber}) as rejected and emails <strong>${req.customerName}</strong>. Inventory and payments remain untouched.</p>`,
+            onConfirm: () => {
+              window.SuotStore.processReturnRequest(retId, "Rejected", false);
+              window.SuotUI.toast(`Request ${retId} marked as rejected.`, "Return Rejected");
+              syncRolePermissions();
+              renderReturnsTab();
+              flashAdminRow(retId);
+            }
+          });
+        }
+      });
+    });
+
+    workspaceEl.querySelectorAll("[data-ret-verify-refund]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        openRefundModal(btn.getAttribute("data-ret-verify-refund"));
+      });
+    });
+
+    workspaceEl.querySelectorAll("[data-ret-receipt]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        window.SuotUI.openReceiptModal(btn.getAttribute("data-ret-receipt"));
       });
     });
 
@@ -1249,6 +1574,13 @@ document.addEventListener("DOMContentLoaded", () => {
       flashAdminRow(ordNum);
     }
     window.SuotUI.toast(`Focused Order #${ordNum} in ${activeTab === "courier" ? "Courier Dispatch" : "Order Fulfillment"}.`, "Order Focused");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (confirmModal && confirmModal.classList.contains("open")) closeConfirmDialog();
+    if (refundModal && refundModal.classList.contains("open")) closeRefundModal();
+    if (crudModal && crudModal.classList.contains("open")) crudModal.classList.remove("open");
   });
 
   syncRolePermissions();

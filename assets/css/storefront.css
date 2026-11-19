@@ -3574,6 +3574,94 @@
   }
 }
 
+/* Stock Recovery Banner, Similar Options Swap Cards & GCash OTP Modal */
+.stock-recovery-panel {
+  padding: 0.95rem 1.05rem;
+  border-radius: var(--radius-md);
+  background: var(--color-coral-surface);
+  border: 1px solid rgba(242, 125, 99, 0.55);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.stock-recovery-panel.is-compact {
+  padding: 0.72rem 0.85rem;
+  font-size: 0.78rem;
+}
+
+.stock-alt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.stock-alt-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+}
+
+.stock-alt-thumb {
+  width: 40px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-sand);
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.stock-alt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gcash-pay-modal-card {
+  width: min(460px, 94vw);
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+  animation: suotModalRise 260ms var(--ease-spring) both;
+}
+
+.gcash-pay-banner {
+  background: linear-gradient(135deg, #073F45 0%, #0E6B74 100%);
+  color: #FAF6EE;
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.gcash-otp-box {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-sand);
+  border: 1px dashed rgba(14, 107, 116, 0.4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.gcash-otp-code {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--color-lagoon-ink);
+}
+
 @media (max-width: 960px) {
   .hero-grid,
   .series-grid,

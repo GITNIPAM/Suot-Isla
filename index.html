@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Suot Isla — Island-Born Surf &amp; Beachwear</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
-  <link rel="stylesheet" href="assets/css/base.css?v=62" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
+  <link rel="stylesheet" href="assets/css/base.css?v=64" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -24,7 +24,7 @@
       <div class="hero-scrim" aria-hidden="true"></div>
       <canvas id="hero-ocean-canvas" class="hero-ocean-canvas" aria-hidden="true"></canvas>
       <img
-        src="assets/images/logo-stamp.svg?v=62"
+        src="assets/images/logo-stamp.svg?v=64"
         alt="Suot Isla Stamp"
         class="hero-stamp-corner"
       />
@@ -71,7 +71,7 @@
 
           <div class="hero-lookbook-main">
             <a href="product.html?id=siargao-cloud9-boardshorts&color=Lagoon+Teal" class="hero-lookbook-thumb" id="hero-cap-link">
-              <img src="assets/images/products/siargao-cloud9-boardshorts.jpg?v=62" alt="Siargao Cloud 9 Boardshorts" id="hero-cap-img" />
+              <img src="assets/images/products/siargao-cloud9-boardshorts.jpg?v=64" alt="Siargao Cloud 9 Boardshorts" id="hero-cap-img" />
             </a>
             <div>
               <div class="hero-lookbook-title" id="hero-cap-title">Siargao Cloud 9 Boardshorts</div>
@@ -167,7 +167,7 @@
         <div class="journal-unified-grid" data-reveal>
           <div class="journal-photo-frame">
             <img
-              src="assets/images/series-boracay.jpg?v=62"
+              src="assets/images/series-boracay.jpg?v=64"
               alt="Breezy sand-toned linen resortwear and woven buri tote on Boracay White Beach at golden hour"
               loading="lazy"
             />
@@ -240,17 +240,7 @@
           <div class="order-track-copy">
             <h3>Track your island dispatch live</h3>
             <p>Inspect real courier milestones from Manila warehouse to island ports—or look up your own order by reference #.</p>
-            <div class="order-track-chips">
-              <button type="button" class="order-track-sample-btn" data-sample-order="SI-2026-1048">
-                SI-2026-1048 · Out for Delivery
-              </button>
-              <button type="button" class="order-track-sample-btn" data-sample-order="SI-2026-1052">
-                SI-2026-1052 · Pending Packing
-              </button>
-              <button type="button" class="order-track-sample-btn" data-sample-order="SI-2026-1041">
-                SI-2026-1041 · Delivered
-              </button>
-            </div>
+            <div class="order-track-chips" id="home-track-chips"></div>
           </div>
 
           <form class="order-track-form" id="home-order-track-form" action="account.html" method="GET">
@@ -259,7 +249,7 @@
               name="order"
               id="home-order-track-input"
               class="order-track-input"
-              value="SI-2026-1048"
+              value=""
               placeholder="Order # or Tracking ID"
               aria-label="Order Number or Tracking ID"
             />
@@ -274,10 +264,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=62"></script>
-  <script src="assets/js/store.js?v=62"></script>
-  <script src="assets/js/components.js?v=62"></script>
-  <script src="assets/js/ocean-overdrive.js?v=62"></script>
+  <script src="assets/js/data.js?v=64"></script>
+  <script src="assets/js/store.js?v=64"></script>
+  <script src="assets/js/components.js?v=64"></script>
+  <script src="assets/js/ocean-overdrive.js?v=64"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const seriesGrid = document.getElementById("home-series-grid");
@@ -339,9 +329,14 @@
       let heroCapColor = "Lagoon Teal";
       let heroCapSize = "28";
 
+      let activeHeroProdId = "siargao-cloud9-boardshorts";
+      let activeHeroMetaText = "SIARGAO CAPSULE • BEST SELLER";
+
       function renderHeroCapsule(productId, metaText) {
         const prod = window.SuotStore.getProductById(productId);
         if (!prod) return;
+        activeHeroProdId = prod.id;
+        activeHeroMetaText = metaText;
         if (!prod.colors.includes(heroCapColor)) heroCapColor = prod.colors[0];
         if (!prod.sizes.includes(heroCapSize)) heroCapSize = prod.sizes[0];
 
@@ -351,13 +346,26 @@
         capImgEl.src =
           window.SuotStore.getProductImageForColor(prod, heroCapColor) ||
           prod.image ||
-          "assets/images/products/siargao-cloud9-boardshorts.jpg?v=62";
+          "assets/images/products/siargao-cloud9-boardshorts.jpg?v=64";
         capImgEl.alt = `${prod.name} in ${heroCapColor}`;
         capMetaEl.textContent = metaText;
         capTitleEl.textContent = prod.name;
         capPriceEl.textContent = window.SuotStore.formatPrice(prod.price);
-        capAddBtn.textContent = `Quick Add · ${heroCapSize} — ${window.SuotStore.formatPrice(prod.price)}`;
         capAddBtn.setAttribute("data-hero-prod", prod.id);
+
+        const avail = Math.max(0, parseInt(prod.stock, 10) || 0);
+        const inBag = window.SuotStore.getCartQtyForProduct(prod.id);
+        const rem = Math.max(0, avail - inBag);
+        if (avail <= 0) {
+          capAddBtn.disabled = true;
+          capAddBtn.textContent = "Sold Out — View Similar";
+        } else if (rem <= 0) {
+          capAddBtn.disabled = true;
+          capAddBtn.textContent = `Max in Bag (${avail}) — Edit Bag`;
+        } else {
+          capAddBtn.disabled = false;
+          capAddBtn.textContent = `Quick Add · ${heroCapSize} — ${window.SuotStore.formatPrice(prod.price)}`;
+        }
 
         capSizesEl.innerHTML = prod.sizes
           .slice(0, 4)
@@ -434,12 +442,36 @@
         const prod = window.SuotStore.getProductById(pid);
         if (prod) {
           const chosenSize = heroCapSize || prod.sizes[0];
-          window.SuotStore.addToCart(prod.id, chosenSize, heroCapColor || prod.colors[0], 1);
+          const chosenColor = heroCapColor || prod.colors[0];
+          suppressHomeStateRender = true;
+          const res = window.SuotStore.addToCart(prod.id, chosenSize, chosenColor, 1);
+          if (!res || !res.ok) {
+            suppressHomeStateRender = false;
+            const firstAlt = res && res.alternatives && res.alternatives[0];
+            window.SuotUI.toast(
+              (res && res.message) || `${prod.name} has reached its available stock limit.`,
+              "Stock Unavailable",
+              firstAlt
+                ? {
+                    actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
+                    onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
+                  }
+                : {}
+            );
+            renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
+            return;
+          }
           window.SuotUI.flashButtonAdded(capAddBtn, "✓ Added to Bag");
+          window.SuotUI.animateCartBadge();
           window.SuotUI.toast(
-            `Added ${prod.name} (${chosenSize}, ${heroCapColor || prod.colors[0]}) to your Island Bag!`,
+            `Added ${prod.name} (${chosenSize}, ${chosenColor}) to your Island Bag!`,
             "Added to Bag"
           );
+          setTimeout(() => {
+            suppressHomeStateRender = false;
+            renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
+            renderFeaturedCards();
+          }, 1150);
         }
       });
 
@@ -542,8 +574,12 @@
           .map((p) => {
             const activeColor = p._selectedColor || p.colors[0];
             const activeSize = p._selectedSize || p.sizes[0];
-            const isLowStock = p.stock <= 5;
-            const statusText = isLowStock ? `Only ${p.stock} left` : p.badge || "";
+            const avail = Math.max(0, parseInt(p.stock, 10) || 0);
+            const inBag = window.SuotStore.getCartQtyForProduct(p.id);
+            const rem = Math.max(0, avail - inBag);
+            const isOutOfStock = avail <= 0;
+            const isLowStock = avail > 0 && avail <= 5;
+            const statusText = isOutOfStock ? "Sold Out" : isLowStock ? `Only ${avail} left` : p.badge || "";
 
             return `
               <article class="product-card" data-product-card="${p.id}">
@@ -552,7 +588,7 @@
                     <span class="thumb-series-pill">${p.series}</span>
                     ${
                       statusText
-                        ? `<span class="thumb-status-pill ${isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
+                        ? `<span class="thumb-status-pill ${isOutOfStock || isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
                         : ""
                     }
                   </div>
@@ -607,8 +643,9 @@
                     type="button"
                     class="btn-minimal-add"
                     data-quick-add="${p.id}"
+                    ${isOutOfStock || rem <= 0 ? "disabled" : ""}
                   >
-                    Add to Bag · ${activeSize}
+                    ${isOutOfStock ? "Sold Out" : rem <= 0 ? `Max in Bag (${avail})` : `Add to Bag · ${activeSize}`}
                   </button>
                 </div>
               </article>
@@ -647,9 +684,32 @@
             if (prod) {
               const color = prod._selectedColor || prod.colors[0];
               const size = prod._selectedSize || prod.sizes[0];
-              window.SuotStore.addToCart(prod.id, size, color, 1);
+              suppressHomeStateRender = true;
+              const res = window.SuotStore.addToCart(prod.id, size, color, 1);
+              if (!res || !res.ok) {
+                suppressHomeStateRender = false;
+                const firstAlt = res && res.alternatives && res.alternatives[0];
+                window.SuotUI.toast(
+                  (res && res.message) || `${prod.name} has no remaining stock available.`,
+                  "Stock Unavailable",
+                  firstAlt
+                    ? {
+                        actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
+                        onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
+                      }
+                    : {}
+                );
+                renderFeaturedCards();
+                return;
+              }
               window.SuotUI.flashButtonAdded(btn, `✓ Added · ${size}`);
+              window.SuotUI.animateCartBadge();
               window.SuotUI.toast(`Added ${prod.name} (${size}, ${color}) to your Island Bag!`, "Added to Bag");
+              setTimeout(() => {
+                suppressHomeStateRender = false;
+                renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
+                renderFeaturedCards();
+              }, 1150);
             }
           });
         });
@@ -793,24 +853,82 @@
         }
       }
 
+      const trackChipsEl = document.getElementById("home-track-chips");
+
+      function renderHomeTrackerChips(preserveCurrent) {
+        const u = window.SuotStore.getCurrentUser();
+        const userOrders = window.SuotStore.getOrdersForCurrentUser();
+        if (trackChipsEl) {
+          if (userOrders.length) {
+            trackChipsEl.innerHTML = userOrders
+              .slice(0, 3)
+              .map(
+                (o) => `
+                  <button type="button" class="order-track-sample-btn" data-sample-order="${o.orderNumber}">
+                    ${o.orderNumber} · ${o.status}
+                  </button>
+                `
+              )
+              .join("");
+            trackChipsEl.querySelectorAll("[data-sample-order]").forEach((chip) => {
+              chip.addEventListener("click", () => {
+                const code = chip.getAttribute("data-sample-order");
+                if (trackInput) trackInput.value = code;
+                renderLiveParcelTracker(code);
+              });
+            });
+          } else {
+            trackChipsEl.innerHTML = `<span style="font-size:0.78rem;color:rgba(250,246,238,0.72);">No active dispatches yet under <strong>${u ? u.email : "this account"}</strong> — place an order to see live milestones here.</span>`;
+          }
+        }
+
+        if (!preserveCurrent) {
+          if (userOrders.length) {
+            if (trackInput) trackInput.value = userOrders[0].orderNumber;
+            renderLiveParcelTracker(userOrders[0].orderNumber);
+          } else {
+            if (trackInput) trackInput.value = "";
+            if (trackResultEl) trackResultEl.innerHTML = "";
+          }
+        }
+      }
+
       if (trackForm && trackInput) {
         trackForm.addEventListener("submit", (e) => {
           e.preventDefault();
-          renderLiveParcelTracker(trackInput.value);
+          const code = trackInput.value.trim().replace(/^#/, "").toLowerCase();
+          const match = window.SuotStore
+            .getOrdersForCurrentUser()
+            .find(
+              (o) =>
+                o.orderNumber.toLowerCase() === code ||
+                String(o.trackingNumber || "").toLowerCase() === code
+            );
+          if (!match) {
+            trackResultEl.innerHTML = `
+              <div class="surface-card" style="padding:var(--space-4);border-color:rgba(242,125,99,0.5);">
+                <strong>No order found under your account</strong>
+                <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
+                  Only orders belonging to your signed-in account can be tracked here.
+                </div>
+              </div>
+            `;
+            return;
+          }
+          renderLiveParcelTracker(match.orderNumber);
         });
       }
 
-      document.querySelectorAll("[data-sample-order]").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          const code = chip.getAttribute("data-sample-order");
-          if (trackInput) {
-            trackInput.value = code;
-          }
-          renderLiveParcelTracker(code);
-        });
+      let suppressHomeStateRender = false;
+
+      window.addEventListener("suotisla:statechange", () => {
+        if (suppressHomeStateRender) return;
+        renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
+        renderFeaturedCards();
+        renderHomeTrackerChips(true);
       });
 
-      renderLiveParcelTracker("SI-2026-1048");
+      renderHomeTrackerChips(false);
       renderFeaturedCards();
     });
   </script>

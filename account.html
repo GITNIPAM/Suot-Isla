@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orders &amp; Island Club — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
-  <link rel="stylesheet" href="assets/css/base.css?v=62" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=62" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
+  <link rel="stylesheet" href="assets/css/base.css?v=64" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=64" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -58,7 +58,7 @@
           <button type="button" class="catalog-dock-tab" data-acct-tab="addresses" role="tab" aria-selected="false">
             <span class="catalog-dock-num">03</span>
             <span>Saved Addresses</span>
-            <span class="catalog-dock-num">(2)</span>
+            <span class="catalog-dock-num" id="tab-count-addresses">(0)</span>
           </button>
         </div>
       </div>
@@ -202,10 +202,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=62"></script>
-  <script src="assets/js/store.js?v=62"></script>
-  <script src="assets/js/components.js?v=62"></script>
-  <script src="assets/js/ocean-overdrive.js?v=62"></script>
+  <script src="assets/js/data.js?v=64"></script>
+  <script src="assets/js/store.js?v=64"></script>
+  <script src="assets/js/components.js?v=64"></script>
+  <script src="assets/js/ocean-overdrive.js?v=64"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const heroNameEl = document.getElementById("acct-hero-name");
@@ -275,11 +275,14 @@
 
         const orders = window.SuotStore.getOrdersForCurrentUser();
         const returnsList = window.SuotStore.getReturnsForCurrentUser();
+        const userAddresses = window.SuotStore.getSavedAddressesForCurrentUser();
 
         const tabCountOrders = document.getElementById("tab-count-orders");
         const tabCountReturns = document.getElementById("tab-count-returns");
+        const tabCountAddresses = document.getElementById("tab-count-addresses");
         if (tabCountOrders) tabCountOrders.textContent = `(${orders.length})`;
         if (tabCountReturns) tabCountReturns.textContent = `(${returnsList.length})`;
+        if (tabCountAddresses) tabCountAddresses.textContent = `(${userAddresses.length})`;
 
         const counts = {
           all: orders.length,
@@ -483,7 +486,21 @@
             const orderCard = btn.closest("[data-order-card]");
             const ordKey = orderCard ? orderCard.getAttribute("data-order-card") : "";
             const prod = window.SuotStore.getProductById(pid);
-            window.SuotStore.addToCart(pid, sz, clr, 1);
+            const res = window.SuotStore.addToCart(pid, sz, clr, 1);
+            if (!res || !res.ok) {
+              const firstAlt = res && res.alternatives && res.alternatives[0];
+              window.SuotUI.toast(
+                (res && res.message) || `${prod ? prod.name : pid} cannot be added right now due to low stock.`,
+                "Stock Unavailable",
+                firstAlt
+                  ? {
+                      actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
+                      onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
+                    }
+                  : {}
+              );
+              return;
+            }
 
             const liveBtn = ordKey
               ? ordersListEl.querySelector(
@@ -491,6 +508,7 @@
                 )
               : btn;
             window.SuotUI.flashButtonAdded(liveBtn || btn, "✓ Added");
+            window.SuotUI.animateCartBadge();
             window.SuotUI.toast(
               `Added ${prod ? prod.name : pid} (${sz}, ${clr}) back to your Island Bag!`,
               "Reordered"
@@ -529,12 +547,19 @@
               <td class="mono" style="white-space:nowrap;">${r.requestedAt}</td>
               <td>
                 <span class="pill ${
-                  r.status.includes("Approved")
+                  r.status.includes("Refunded") || r.status.includes("Closed")
                     ? "pill-delivery"
+                    : r.status.includes("Awaiting Refund")
+                    ? "pill-sand"
                     : r.status.includes("Rejected")
                     ? "pill-coral"
                     : "pill-lagoon"
                 }">${r.status}</span>
+                ${
+                  r.refundRef
+                    ? `<div class="mono" style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">TXN: ${r.refundRef}</div>`
+                    : ""
+                }
               </td>
             </tr>
           `
@@ -542,68 +567,47 @@
               .join("")
           : `<tr><td colspan="7" style="text-align:center;padding:var(--space-8);color:var(--text-muted);">No return or cancellation requests submitted under ${user.email}.</td></tr>`;
 
-        // Render Saved Delivery Addresses scoped to signed-in account
+        // Render Saved Delivery Addresses strictly scoped to signed-in account
         const addrGrid = document.getElementById("saved-addresses-grid");
         if (addrGrid) {
-          const userAddresses =
-            Number(user.id) === 5
-              ? [
-                  {
-                    label: "Makati City Condo",
-                    badge: "Default",
-                    badgeCls: "pill-delivery",
-                    line1: "148 Paseo de Roxas, Brgy. San Lorenzo",
-                    line2: "Makati City, Metro Manila 1223",
-                    cta: "Ship to Makati →"
-                  },
-                  {
-                    label: "Boracay Island Stay",
-                    badge: "Boracay • Station 2",
-                    badgeCls: "pill-lagoon",
-                    line1: "Station 2 White Beach Path, Brgy. Balabag",
-                    line2: "Malay, Aklan 5608",
-                    cta: "Ship to Boracay →"
-                  }
-                ]
-              : [
-                  {
-                    label: "Home / Campus Residence",
-                    badge: "Default",
-                    badgeCls: "pill-delivery",
-                    line1: "Blk 4 Lot 12 Emilio Aguinaldo Hwy, Brgy. Sampaloc I",
-                    line2: "Dasmariñas City, Cavite 4114",
-                    cta: "Ship to This Address →"
-                  },
-                  {
-                    label: "Island Surf Hostel",
-                    badge: "Siargao • Cloud 9",
-                    badgeCls: "pill-lagoon",
-                    line1: "Tourism Road, Cloud 9 Boardwalk, Brgy. Catangnan",
-                    line2: "General Luna, Surigao del Norte 8419",
-                    cta: "Ship to This Island →"
-                  }
-                ];
+          const normPhone = window.SuotStore.normalizePhMobile(user.phone) || user.phone || "";
 
-          addrGrid.innerHTML = userAddresses
-            .map(
-              (a) => `
-              <article class="saved-address-card">
+          addrGrid.innerHTML = userAddresses.length
+            ? userAddresses
+                .map(
+                  (a, idx) => `
+                  <article class="saved-address-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                      <strong style="font-family:var(--font-display);font-size:1.05rem;">${a.label || "Saved Address"}</strong>
+                      <span class="pill ${idx === 0 ? "pill-delivery" : "pill-lagoon"}">${a.badge || (idx === 0 ? "Default" : a.city)}</span>
+                    </div>
+                    <p style="margin:0;font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+                      ${user.name}${normPhone ? ` • <span class="mono">${normPhone}</span>` : ""}<br />
+                      ${a.street}${a.barangay ? `, Brgy. ${a.barangay}` : ""}<br />
+                      ${a.city}, ${a.province} ${a.postal}
+                    </p>
+                    <div style="margin-top:auto;padding-top:var(--space-2);">
+                      <a href="checkout.html" class="btn btn-outline btn-sm btn-pill">Ship to ${a.city || "This Address"} →</a>
+                    </div>
+                  </article>
+                `
+                )
+                .join("")
+            : `
+              <article class="saved-address-card" style="grid-column:1 / -1;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-                  <strong style="font-family:var(--font-display);font-size:1.05rem;">${a.label}</strong>
-                  <span class="pill ${a.badgeCls}">${a.badge}</span>
+                  <strong style="font-family:var(--font-display);font-size:1.05rem;">No Saved Delivery Addresses Yet</strong>
+                  <span class="pill pill-sand">${user.email}</span>
                 </div>
                 <p style="margin:0;font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
-                  ${user.name} • <span class="mono">${user.phone}</span><br />
-                  ${a.line1}<br />
-                  ${a.line2}
+                  This account starts with a clean address book. Your delivery address will automatically be saved here after your first checkout.
                 </p>
-                <div style="margin-top:auto;padding-top:var(--space-2);">
-                  <a href="checkout.html" class="btn btn-outline btn-sm btn-pill">${a.cta}</a>
+                <div style="margin-top:auto;padding-top:var(--space-2);display:flex;gap:8px;flex-wrap:wrap;">
+                  <a href="catalog.html" class="btn btn-primary btn-sm btn-pill">Browse Catalog →</a>
+                  <a href="checkout.html" class="btn btn-outline btn-sm btn-pill">Go to Checkout</a>
                 </div>
               </article>
-            `
-            )
-            .join("");
+            `;
         }
       }
 

@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Product Details — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
-  <link rel="stylesheet" href="assets/css/base.css?v=62" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
+  <link rel="stylesheet" href="assets/css/base.css?v=64" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -41,15 +41,15 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=62"></script>
-  <script src="assets/js/store.js?v=62"></script>
-  <script src="assets/js/components.js?v=62"></script>
-  <script src="assets/js/ocean-overdrive.js?v=62"></script>
+  <script src="assets/js/data.js?v=64"></script>
+  <script src="assets/js/store.js?v=64"></script>
+  <script src="assets/js/components.js?v=64"></script>
+  <script src="assets/js/ocean-overdrive.js?v=64"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
       const pid = params.get("id") || "siargao-cloud9-boardshorts";
-      const product = window.SuotStore.getProductById(pid);
+      let product = window.SuotStore.getProductById(pid);
       const paramColor = params.get("color");
 
       let chosenColor =
@@ -222,10 +222,22 @@
       }
 
       function renderPDP() {
-        const isLowStock = product.stock <= 5;
+        product = window.SuotStore.getProductById(product.id) || product;
+        const availStock = Math.max(0, parseInt(product.stock, 10) || 0);
+        const inBagQty = window.SuotStore.getCartQtyForProduct(product.id);
+        const remainingAddable = Math.max(0, availStock - inBagQty);
+        const isOutOfStock = availStock <= 0;
+        const isLowStock = availStock > 0 && availStock <= 5;
+        if (remainingAddable > 0 && chosenQty > remainingAddable) {
+          chosenQty = remainingAddable;
+        } else if (remainingAddable <= 0) {
+          chosenQty = 1;
+        }
+
         const lineSubtotal = product.price * chosenQty;
         const shipMeta = getShippingMeta(lineSubtotal);
         const guide = getSizeGuideData(product);
+        const similarInStock = window.SuotStore.findSimilarInStockProducts(product, 3);
 
         mountEl.innerHTML = `
           <div class="pdp-gallery-col">
@@ -234,9 +246,11 @@
                 <div class="pdp-stage-badges">
                   <span class="pill pill-lagoon">${product.series} Series</span>
                   ${
-                    isLowStock
-                      ? `<span class="pill pill-coral">Low Stock: Only ${product.stock} left</span>`
-                      : `<span class="pill pill-delivery">In Stock (${product.stock} units)</span>`
+                    isOutOfStock
+                      ? `<span class="pill pill-coral">Sold Out</span>`
+                      : isLowStock
+                      ? `<span class="pill pill-coral">Low Stock: Only ${availStock} left</span>`
+                      : `<span class="pill pill-delivery">In Stock (${availStock} units)</span>`
                   }
                 </div>
                 <div class="pdp-stage-tools">
@@ -309,11 +323,17 @@
             <div class="pdp-price-panel">
               <div class="pdp-price-row">
                 <span class="pdp-price">${window.SuotStore.formatPrice(product.price)}</span>
-                <span class="pdp-stock-signal ${isLowStock ? "is-low" : ""}">
+                <span class="pdp-stock-signal ${isOutOfStock || isLowStock ? "is-low" : ""}">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    ${isLowStock ? `<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>` : `<polyline points="20 6 9 17 4 12"></polyline>`}
+                    ${isOutOfStock || isLowStock ? `<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>` : `<polyline points="20 6 9 17 4 12"></polyline>`}
                   </svg>
-                  ${isLowStock ? `Only ${product.stock} left in Philippine stock` : "Ready for Immediate Island Dispatch"}
+                  ${
+                    isOutOfStock
+                      ? "Sold Out — Similar options available below"
+                      : isLowStock
+                      ? `Only ${availStock} left in Philippine stock${inBagQty ? ` (${inBagQty} in bag)` : ""}`
+                      : `Ready for Immediate Dispatch (${availStock} left${inBagQty ? ` · ${inBagQty} in bag` : ""})`
+                  }
                 </span>
               </div>
 
@@ -419,19 +439,53 @@
 
               <div class="qty-action-row">
                 <div class="qty-stepper" aria-label="Quantity">
-                  <button type="button" id="pdp-qty-dec" aria-label="Decrease quantity">−</button>
-                  <input type="number" name="quantity" id="pdp-qty-input" value="${chosenQty}" min="1" max="${product.stock}" readonly aria-label="Quantity" />
-                  <button type="button" id="pdp-qty-inc" aria-label="Increase quantity">+</button>
+                  <button type="button" id="pdp-qty-dec" aria-label="Decrease quantity" ${isOutOfStock || remainingAddable <= 0 || chosenQty <= 1 ? "disabled" : ""}>−</button>
+                  <input type="number" name="quantity" id="pdp-qty-input" value="${chosenQty}" min="1" max="${Math.max(1, remainingAddable)}" readonly aria-label="Quantity" />
+                  <button type="button" id="pdp-qty-inc" aria-label="Increase quantity" ${isOutOfStock || remainingAddable <= 0 || chosenQty >= remainingAddable ? "disabled" : ""}>+</button>
                 </div>
 
-                <button type="button" class="btn btn-primary btn-lg" id="pdp-add-btn" style="flex:1;">
-                  Add to Island Bag — ${window.SuotStore.formatPrice(lineSubtotal)}
+                <button type="button" class="btn btn-primary btn-lg" id="pdp-add-btn" style="flex:1;" ${isOutOfStock || remainingAddable <= 0 ? "disabled" : ""}>
+                  ${
+                    isOutOfStock
+                      ? "Sold Out"
+                      : remainingAddable <= 0
+                      ? `Max Available (${availStock}) in Bag`
+                      : `Add to Island Bag — ${window.SuotStore.formatPrice(lineSubtotal)}`
+                  }
                 </button>
 
-                <button type="button" class="btn btn-coral btn-lg" id="pdp-buy-now-btn">
+                <button type="button" class="btn btn-coral btn-lg" id="pdp-buy-now-btn" ${isOutOfStock || remainingAddable <= 0 ? "disabled" : ""}>
                   Buy Now
                 </button>
               </div>
+              ${
+                (isOutOfStock || remainingAddable <= 0) && similarInStock.length
+                  ? `
+                    <div class="stock-recovery-panel" style="margin-top:var(--space-4);">
+                      <strong style="display:block;font-size:var(--text-sm);color:#a63418;margin-bottom:8px;">
+                        ${isOutOfStock ? "Out of Stock — Try Similar Island Gear In Stock" : `Maximum Warehouse Stock (${availStock}) Reached in Bag — Similar In Stock`}
+                      </strong>
+                      <div class="stock-alt-grid">
+                        ${similarInStock
+                          .map((alt) => {
+                            const c0 = (alt.colors && alt.colors[0]) || "Sand";
+                            return `
+                              <div class="stock-alt-card">
+                                <div class="stock-alt-thumb">${window.SuotStore.renderProductVisual(alt, c0)}</div>
+                                <div style="min-width:0;flex:1;">
+                                  <a href="product.html?id=${encodeURIComponent(alt.id)}" style="font-size:var(--text-xs);font-weight:700;color:var(--text-primary);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${alt.name}</a>
+                                  <div style="font-size:11px;color:var(--text-muted);">${alt.series} · ${alt.stock} left · ${window.SuotStore.formatPrice(alt.price)}</div>
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm" data-pdp-sim-add="${alt.id}">Add Similar →</button>
+                              </div>
+                            `;
+                          })
+                          .join("")}
+                      </div>
+                    </div>
+                  `
+                  : ""
+              }
             </form>
 
             <div class="pdp-voucher-row">
@@ -604,22 +658,60 @@
         });
 
         document.getElementById("pdp-qty-inc").addEventListener("click", () => {
-          chosenQty = Math.min(product.stock || 20, chosenQty + 1);
+          const cap = Math.max(1, remainingAddable);
+          if (chosenQty >= cap) {
+            window.SuotUI.toast(`Only ${availStock} in stock${inBagQty ? ` (${inBagQty} already in your bag)` : ""}.`, "Stock Ceiling Reached");
+            return;
+          }
+          chosenQty = Math.min(cap, chosenQty + 1);
           renderPDP();
           const btn = document.getElementById("pdp-add-btn");
           if (btn) btn.classList.add("price-pulse");
         });
 
+        mountEl.querySelectorAll("[data-pdp-sim-add]").forEach((simBtn) => {
+          simBtn.addEventListener("click", () => {
+            const simId = simBtn.getAttribute("data-pdp-sim-add");
+            const alt = window.SuotStore.getProductById(simId);
+            if (!alt) return;
+            const res = window.SuotStore.addToCart(alt.id, alt.sizes[0], alt.colors[0], 1);
+            if (!res || !res.ok) {
+              window.SuotUI.toast((res && res.message) || "Item unavailable.", "Stock Unavailable");
+              return;
+            }
+            window.SuotUI.flashButtonAdded(simBtn, "✓ Added");
+            window.SuotUI.animateCartBadge();
+            window.SuotUI.toast(`Added similar option ${alt.name} to your Island Bag!`, "Added Similar Item");
+          });
+        });
+
         document.getElementById("pdp-add-btn").addEventListener("click", (e) => {
           const addBtn = e.currentTarget;
-          window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          suppressPdpStateRender = true;
+          const res = window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          if (!res || !res.ok) {
+            suppressPdpStateRender = false;
+            window.SuotUI.toast((res && res.message) || "Insufficient stock available.", "Stock Unavailable");
+            renderPDP();
+            return;
+          }
           window.SuotUI.flashButtonAdded(addBtn, `✓ Added ${chosenQty} to Bag`);
+          window.SuotUI.animateCartBadge();
           window.SuotUI.toast(`Added ${chosenQty}× ${product.name} (${chosenSize}, ${chosenColor}) to your bag!`, "Added to Bag");
           setTimeout(() => window.SuotUI.openDrawer("cart"), 240);
+          setTimeout(() => {
+            suppressPdpStateRender = false;
+            renderPDP();
+          }, 1150);
         });
 
         document.getElementById("pdp-buy-now-btn").addEventListener("click", () => {
-          window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          const res = window.SuotStore.addToCart(product.id, chosenSize, chosenColor, chosenQty);
+          if (!res || !res.ok) {
+            window.SuotUI.toast((res && res.message) || "Insufficient stock available for instant checkout.", "Stock Unavailable");
+            renderPDP();
+            return;
+          }
           window.SuotUI.navigateTo("checkout.html");
         });
       }
@@ -653,38 +745,43 @@
       function renderRelated() {
         relatedEl.innerHTML = related
           .map((p) => {
-            const activeColor = p._relColor || p.colors[0];
-            const activeSize = p._relSize || p.sizes[0];
-            const isLowStock = p.stock <= 5;
-            const statusText = isLowStock ? `Only ${p.stock} left` : p.badge || "";
+            const liveProd = window.SuotStore.getProductById(p.id) || p;
+            const activeColor = p._relColor || liveProd.colors[0];
+            const activeSize = p._relSize || liveProd.sizes[0];
+            const avail = Math.max(0, parseInt(liveProd.stock, 10) || 0);
+            const inBag = window.SuotStore.getCartQtyForProduct(liveProd.id);
+            const rem = Math.max(0, avail - inBag);
+            const isOutOfStock = avail <= 0;
+            const isLowStock = avail > 0 && avail <= 5;
+            const statusText = isOutOfStock ? "Sold Out" : isLowStock ? `Only ${avail} left` : liveProd.badge || "";
 
             return `
             <article class="product-card">
-              <a href="product.html?id=${encodeURIComponent(p.id)}&color=${encodeURIComponent(activeColor)}" class="product-thumb-wrap">
+              <a href="product.html?id=${encodeURIComponent(liveProd.id)}&color=${encodeURIComponent(activeColor)}" class="product-thumb-wrap">
                 <div class="product-thumb-badges">
-                  <span class="thumb-series-pill">${p.series}</span>
+                  <span class="thumb-series-pill">${liveProd.series}</span>
                   ${
                     statusText
-                      ? `<span class="thumb-status-pill ${isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
+                      ? `<span class="thumb-status-pill ${isOutOfStock || isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
                       : ""
                   }
                 </div>
                 <div class="product-svg-stage">
-                  ${window.SuotStore.renderProductVisual(p, activeColor)}
+                  ${window.SuotStore.renderProductVisual(liveProd, activeColor)}
                 </div>
                 <span class="thumb-quickview-pill">View Details →</span>
               </a>
 
               <div class="product-body">
                 <div class="product-meta-header">
-                  <a href="product.html?id=${encodeURIComponent(p.id)}&color=${encodeURIComponent(activeColor)}" class="product-title-link">
-                    <h3>${p.name}</h3>
+                  <a href="product.html?id=${encodeURIComponent(liveProd.id)}&color=${encodeURIComponent(activeColor)}" class="product-title-link">
+                    <h3>${liveProd.name}</h3>
                   </a>
-                  <div class="product-price">${window.SuotStore.formatPrice(p.price)}</div>
+                  <div class="product-price">${window.SuotStore.formatPrice(liveProd.price)}</div>
                 </div>
 
                 <div class="swatch-row" aria-label="Color Variants">
-                  ${p.colors
+                  ${liveProd.colors
                     .map(
                       (c) => `
                       <button
@@ -692,7 +789,7 @@
                         class="color-swatch ${c === activeColor ? "active" : ""}"
                         style="background-color:${window.SuotStore.getColorHex(c)};"
                         title="${c}"
-                        data-rel-swatch-prod="${p.id}"
+                        data-rel-swatch-prod="${liveProd.id}"
                         data-rel-swatch-val="${c}"
                       ></button>
                     `
@@ -702,13 +799,13 @@
                 </div>
 
                 <div class="card-size-row" aria-label="Quick Size Selection">
-                  ${p.sizes
+                  ${liveProd.sizes
                     .map(
                       (sz) => `
                       <button
                         type="button"
                         class="card-size-pill ${sz === activeSize ? "active" : ""}"
-                        data-rel-size-prod="${p.id}"
+                        data-rel-size-prod="${liveProd.id}"
                         data-rel-size-val="${sz}"
                       >${sz}</button>
                     `
@@ -716,8 +813,8 @@
                     .join("")}
                 </div>
 
-                <button type="button" class="btn-minimal-add" data-rel-add="${p.id}">
-                  Add to Bag · ${activeSize}
+                <button type="button" class="btn-minimal-add" data-rel-add="${liveProd.id}" ${isOutOfStock || rem <= 0 ? "disabled" : ""}>
+                  ${isOutOfStock ? "Sold Out" : rem <= 0 ? `Max in Bag (${avail})` : `Add to Bag · ${activeSize}`}
                 </button>
               </div>
             </article>
@@ -751,13 +848,32 @@
             if (p) {
               const color = p._relColor || p.colors[0];
               const size = p._relSize || p.sizes[0];
-              window.SuotStore.addToCart(p.id, size, color, 1);
+              suppressPdpStateRender = true;
+              const res = window.SuotStore.addToCart(p.id, size, color, 1);
+              if (!res || !res.ok) {
+                suppressPdpStateRender = false;
+                window.SuotUI.toast((res && res.message) || "Insufficient stock available.", "Stock Unavailable");
+                renderRelated();
+                return;
+              }
               window.SuotUI.flashButtonAdded(btn, `✓ Added · ${size}`);
+              window.SuotUI.animateCartBadge();
               window.SuotUI.toast(`Added ${p.name} (${size}, ${color}) to your Island Bag!`, "Added to Bag");
+              setTimeout(() => {
+                suppressPdpStateRender = false;
+                renderRelated();
+              }, 1150);
             }
           });
         });
       }
+
+      let suppressPdpStateRender = false;
+      window.addEventListener("suotisla:statechange", () => {
+        if (suppressPdpStateRender) return;
+        renderPDP();
+        renderRelated();
+      });
 
       renderPDP();
       renderSeriesBand();

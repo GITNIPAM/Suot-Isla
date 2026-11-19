@@ -738,18 +738,39 @@
       return;
     }
 
+    const stockCheck = window.SuotStore.validateCartStock();
+    const issueByIndex = new Map(stockCheck.issues.map((iss) => [iss.index, iss]));
+
     bodyEl.innerHTML =
       SuotUI.renderShippingMeterHTML(totals.subtotal) +
+      (!stockCheck.ok
+        ? `<div class="stock-recovery-panel is-compact" style="margin-bottom:var(--space-3);">
+            <strong>Stock Notice:</strong> Some items exceed available warehouse units. Review quantities or swap in-stock pieces below.
+          </div>`
+        : "") +
       cart
         .map((item, idx) => {
           const prod = window.SuotStore.getProductById(item.productId);
+          const availStock = prod && !prod.archived ? Math.max(0, parseInt(prod.stock, 10) || 0) : 0;
+          const totalInCart = window.SuotStore.getCartQtyForProduct(item.productId);
+          const iss = issueByIndex.get(idx);
+          const incDisabled = availStock <= 0 || totalInCart >= availStock;
+          const stockTag =
+            availStock <= 0
+              ? `<span class="pill pill-coral" style="margin-left:4px;">Out of Stock</span>`
+              : totalInCart > availStock
+              ? `<span class="pill pill-coral" style="margin-left:4px;">Only ${availStock} left</span>`
+              : availStock <= 5
+              ? `<span class="pill pill-sand" style="margin-left:4px;">${availStock} left</span>`
+              : "";
+
           return `
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3);padding-block:var(--space-3);border-bottom:1px solid var(--border-subtle);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3);padding-block:var(--space-3);border-bottom:1px solid var(--border-subtle);${iss ? "background:rgba(242,125,99,0.06);padding-inline:8px;border-radius:var(--radius-sm);" : ""}">
           <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="width:52px;height:64px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-subtle);background:var(--color-sand);flex-shrink:0;display:block;">
             ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
           </a>
           <div style="flex:1;min-width:0;">
-            <span class="pill pill-lagoon" style="margin-bottom:4px;">${item.series} Series</span>
+            <span class="pill pill-lagoon" style="margin-bottom:4px;">${item.series} Series</span>${stockTag}
             <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);">
               <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="color:inherit;text-decoration:none;">${item.name}</a>
             </div>
@@ -761,7 +782,7 @@
             <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);">
               <button type="button" class="btn btn-outline btn-sm" data-cart-dec="${idx}" style="padding:2px 8px;">−</button>
               <span class="tabular" style="font-size:var(--text-xs);font-weight:700;">${item.qty}</span>
-              <button type="button" class="btn btn-outline btn-sm" data-cart-inc="${idx}" style="padding:2px 8px;">+</button>
+              <button type="button" class="btn btn-outline btn-sm" data-cart-inc="${idx}" ${incDisabled ? "disabled title='Maximum available stock reached'" : ""} style="padding:2px 8px;">+</button>
               <button type="button" class="btn btn-ghost btn-sm" data-cart-rem="${idx}" style="color:var(--color-coral-deep);margin-left:auto;">Remove</button>
             </div>
           </div>
@@ -771,7 +792,8 @@
         </div>
       `;
         })
-        .join("");
+        .join("") +
+      (!stockCheck.ok ? SuotUI.renderStockRecoveryHTML(stockCheck.issues, { compact: true }) : "");
 
     footEl.innerHTML = `
       <div class="summary-row">
@@ -796,7 +818,11 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-4);">
         <a href="cart.html" class="btn btn-outline">View Full Bag</a>
-        <a href="checkout.html" class="btn btn-primary">Checkout</a>
+        ${
+          stockCheck.ok
+            ? `<a href="checkout.html" class="btn btn-primary">Checkout</a>`
+            : `<a href="cart.html" class="btn btn-coral">Resolve Stock</a>`
+        }
       </div>
     `;
 
@@ -809,7 +835,10 @@
     bodyEl.querySelectorAll("[data-cart-inc]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const i = Number(btn.getAttribute("data-cart-inc"));
-        window.SuotStore.updateCartQty(i, cart[i].qty + 1);
+        const res = window.SuotStore.updateCartQty(i, cart[i].qty + 1);
+        if (res && res.clamped && res.message) {
+          SuotUI.toast(res.message, "Stock Limit Reached");
+        }
       });
     });
     bodyEl.querySelectorAll("[data-cart-rem]").forEach((btn) => {
@@ -821,13 +850,15 @@
           SuotUI.toast(`Removed ${snap.name} from bag.`, "Bag Updated", {
             actionLabel: "Undo",
             onAction: () => {
-              window.SuotStore.addToCart(snap.productId, snap.size, snap.color, snap.qty);
-              SuotUI.animateCartBadge();
+              const undoRes = window.SuotStore.addToCart(snap.productId, snap.size, snap.color, snap.qty);
+              if (undoRes.ok) SuotUI.animateCartBadge();
+              else SuotUI.toast(undoRes.message, "Stock Unavailable");
             }
           });
         }
       });
     });
+    SuotUI.bindStockRecoveryActions(bodyEl);
   }
 
   function renderEmailDrawerContents() {
@@ -1002,6 +1033,120 @@
       `;
     },
 
+    renderStockRecoveryHTML(issues, options = {}) {
+      if (!Array.isArray(issues) || !issues.length) return "";
+      const compact = Boolean(options.compact);
+      const escape = window.SuotStore.escapeHtml ? window.SuotStore.escapeHtml : (s) => String(s || "");
+
+      return `
+        <div class="stock-recovery-panel" data-stock-recovery-root style="${compact ? "padding:12px;margin-top:12px;" : "margin-bottom:18px;"}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <strong style="color:var(--color-coral-text, #a63418);font-size:var(--text-sm);">
+              ⚠ Stock Availability Check (${issues.length} ${issues.length === 1 ? "item needs attention" : "items need attention"})
+            </strong>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:${compact ? "10px" : "14px"};">
+            ${issues
+              .map((iss) => {
+                const avail = Number(iss.available || 0);
+                const itemName = iss.item ? iss.item.name : "Item";
+                const statusCopy =
+                  avail <= 0
+                    ? "Currently sold out (0 left in warehouse)."
+                    : `Only ${avail} in stock (bag requests ${iss.requestedTotal} total for this SKU).`;
+                const alts = Array.isArray(iss.alternatives) ? iss.alternatives : [];
+                return `
+                  <div style="padding-top:8px;border-top:1px dashed rgba(242,125,99,0.35);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                      <div>
+                        <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);">${escape(itemName)}</div>
+                        <div style="font-size:var(--text-xs);color:var(--color-coral-text, #a63418);">${escape(statusCopy)}</div>
+                      </div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${
+                          avail > 0
+                            ? `<button type="button" class="btn btn-outline btn-sm" data-stock-fix="${iss.index}" data-stock-max="${avail}">Fix to ${avail}</button>`
+                            : ""
+                        }
+                        <button type="button" class="btn btn-ghost btn-sm" data-stock-remove="${iss.index}">Remove</button>
+                      </div>
+                    </div>
+                    ${
+                      alts.length
+                        ? `
+                          <div style="margin-top:8px;">
+                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:6px;">
+                              Similar Options In Stock
+                            </div>
+                            <div class="stock-alt-grid" style="${compact ? "grid-template-columns:1fr;" : ""}">
+                              ${alts
+                                .slice(0, compact ? 2 : 3)
+                                .map((alt) => {
+                                  const firstColor = (alt.colors && alt.colors[0]) || "Sand";
+                                  return `
+                                    <div class="stock-alt-card">
+                                      <div class="stock-alt-thumb">
+                                        ${window.SuotStore.renderProductVisual(alt, firstColor)}
+                                      </div>
+                                      <div style="min-width:0;flex:1;">
+                                        <div style="font-size:var(--text-xs);font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escape(alt.name)}</div>
+                                        <div style="font-size:11px;color:var(--text-muted);">${escape(alt.series)} · ${alt.stock} left · ${window.SuotStore.formatPrice(alt.price)}</div>
+                                      </div>
+                                      <button type="button" class="btn btn-primary btn-sm" data-stock-swap-idx="${iss.index}" data-stock-swap-id="${alt.id}">
+                                        Swap →
+                                      </button>
+                                    </div>
+                                  `;
+                                })
+                                .join("")}
+                            </div>
+                          </div>
+                        `
+                        : ""
+                    }
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `;
+    },
+
+    bindStockRecoveryActions(containerEl, onUpdated) {
+      if (!containerEl) return;
+      containerEl.querySelectorAll("[data-stock-remove]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.getAttribute("data-stock-remove"));
+          window.SuotStore.removeFromCart(idx);
+          SuotUI.toast("Removed unavailable item from your bag.", "Bag Updated");
+          if (typeof onUpdated === "function") onUpdated();
+        });
+      });
+      containerEl.querySelectorAll("[data-stock-fix]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.getAttribute("data-stock-fix"));
+          const maxQty = Math.max(1, Number(btn.getAttribute("data-stock-max") || 1));
+          const res = window.SuotStore.updateCartQty(idx, maxQty);
+          SuotUI.toast(
+            (res && res.message) || `Adjusted item quantity to ${maxQty} available.`,
+            "Quantity Updated"
+          );
+          if (typeof onUpdated === "function") onUpdated();
+        });
+      });
+      containerEl.querySelectorAll("[data-stock-swap-idx][data-stock-swap-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.getAttribute("data-stock-swap-idx"));
+          const altId = Number(btn.getAttribute("data-stock-swap-id"));
+          const res = window.SuotStore.swapCartItem(idx, altId);
+          SuotUI.toast(res.message, res.ok ? "Swapped to In-Stock Gear" : "Swap Notice");
+          if (res.ok) SuotUI.animateCartBadge();
+          if (res.ok && typeof onUpdated === "function") onUpdated();
+        });
+      });
+    },
+
     animateCartBadge() {
       const badge = document.getElementById("header-cart-count");
       if (!badge) return;
@@ -1101,9 +1246,22 @@
     _renderReceiptMarkup(order, options = {}) {
       const fin = this._computeReceiptFinancials(order);
       const phone = window.SuotStore.normalizePhMobile(order.customerPhone) || order.customerPhone || "";
-      const isPaid = order.paymentStatus === "Paid" || order.status === "Delivered";
-      const badgeClass = isPaid ? "pill-delivery" : "pill-sand";
-      const badgeLabel = isPaid ? "PAID" : order.paymentMethod === "COD" ? "COD UPON DELIVERY" : "PENDING";
+      const isRefunded = order.paymentStatus === "Refunded";
+      const isRefundPending = order.paymentStatus === "Refund Pending";
+      const isCancelled = order.status === "Cancelled";
+      const isPaid = !isRefunded && !isRefundPending && !isCancelled && (order.paymentStatus === "Paid" || order.status === "Delivered");
+      const badgeClass = isRefunded || isCancelled ? "pill-coral" : isPaid ? "pill-delivery" : "pill-sand";
+      const badgeLabel = isRefunded
+        ? "REFUNDED"
+        : isRefundPending
+        ? "REFUND PENDING"
+        : isCancelled
+        ? "CANCELLED"
+        : isPaid
+        ? "PAID"
+        : order.paymentMethod === "COD"
+        ? "COD UPON DELIVERY"
+        : "PENDING";
 
       const itemRows = (order.items || [])
         .map((item) => {
@@ -1164,6 +1322,11 @@
               <span class="receipt-meta-label">Payment Method</span>
               <div class="receipt-meta-val">${order.paymentMethod || "GCash"}</div>
               <div class="mono" style="font-size:0.7rem;color:var(--text-muted);">${order.paymentRef || ""}</div>
+              ${
+                order.refundRef
+                  ? `<div class="mono" style="font-size:0.7rem;color:var(--color-coral-deep);font-weight:700;">Refund TXN: ${order.refundRef}</div>`
+                  : ""
+              }
             </div>
             <div style="grid-column:1 / -1;">
               <span class="receipt-meta-label">Shipping Destination</span>

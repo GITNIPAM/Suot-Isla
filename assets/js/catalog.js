@@ -402,8 +402,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const activeSize =
           state.selectedSizePerProduct[p.id] ||
           (state.size !== "all" && p.sizes.includes(state.size) ? state.size : p.sizes[0]);
-        const isLowStock = p.stock <= 5;
-        const statusText = isLowStock ? `Only ${p.stock} left` : p.badge || "";
+        const avail = Math.max(0, parseInt(p.stock, 10) || 0);
+        const inBag = window.SuotStore.getCartQtyForProduct(p.id);
+        const rem = Math.max(0, avail - inBag);
+        const isOutOfStock = avail <= 0;
+        const isLowStock = avail > 0 && avail <= 5;
+        const statusText = isOutOfStock ? "Sold Out" : isLowStock ? `Only ${avail} left` : p.badge || "";
         const cascadeClass = cascade ? " is-cascading" : "";
         const cascadeStyle = cascade ? ` style="animation-delay:${Math.min(idx * 26, 208)}ms;"` : "";
 
@@ -414,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="thumb-series-pill">${p.series}</span>
                 ${
                   statusText
-                    ? `<span class="thumb-status-pill ${isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
+                    ? `<span class="thumb-status-pill ${isOutOfStock || isLowStock ? "is-low-stock" : ""}">${statusText}</span>`
                     : ""
                 }
               </div>
@@ -465,8 +469,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   .join("")}
               </div>
 
-              <button type="button" class="btn-minimal-add" data-card-add="${p.id}">
-                Add to Bag · ${activeSize}
+              <button type="button" class="btn-minimal-add" data-card-add="${p.id}" ${isOutOfStock || rem <= 0 ? "disabled" : ""}>
+                ${isOutOfStock ? "Sold Out" : rem <= 0 ? `Max in Bag (${avail})` : `Add to Bag · ${activeSize}`}
               </button>
             </div>
           </article>
@@ -502,9 +506,31 @@ document.addEventListener("DOMContentLoaded", () => {
         const size =
           state.selectedSizePerProduct[pid] ||
           (state.size !== "all" && prod.sizes.includes(state.size) ? state.size : prod.sizes[0]);
-        window.SuotStore.addToCart(pid, size, color, 1);
+        suppressSelfAddRender = true;
+        const res = window.SuotStore.addToCart(pid, size, color, 1);
+        if (!res || !res.ok) {
+          suppressSelfAddRender = false;
+          const firstAlt = res && res.alternatives && res.alternatives[0];
+          window.SuotUI.toast(
+            (res && res.message) || `${prod.name} has insufficient warehouse stock.`,
+            "Stock Unavailable",
+            firstAlt
+              ? {
+                  actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
+                  onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
+                }
+              : {}
+          );
+          renderCatalog();
+          return;
+        }
         window.SuotUI.flashButtonAdded(btn, `✓ Added · ${size}`);
+        window.SuotUI.animateCartBadge();
         window.SuotUI.toast(`${prod.name} (${size}, ${color}) added to your Island Bag!`, "Bag Updated");
+        setTimeout(() => {
+          suppressSelfAddRender = false;
+          if (document.body.contains(gridEl)) renderCatalog();
+        }, 1150);
       });
     });
   }
@@ -584,9 +610,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  let suppressSelfAddRender = false;
+
   window.addEventListener("suotisla:productschange", () => {
     if (!document.body.contains(gridEl)) return;
     buildFilterControls();
+    renderCatalog();
+  });
+
+  window.addEventListener("suotisla:statechange", () => {
+    if (suppressSelfAddRender || !document.body.contains(gridEl)) return;
     renderCatalog();
   });
 

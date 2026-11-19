@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shopping Bag &amp; Totals — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=62" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=62" />
-  <link rel="stylesheet" href="assets/css/base.css?v=62" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=62" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
+  <link rel="stylesheet" href="assets/css/base.css?v=64" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -23,10 +23,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=62"></script>
-  <script src="assets/js/store.js?v=62"></script>
-  <script src="assets/js/components.js?v=62"></script>
-  <script src="assets/js/ocean-overdrive.js?v=62"></script>
+  <script src="assets/js/data.js?v=64"></script>
+  <script src="assets/js/store.js?v=64"></script>
+  <script src="assets/js/components.js?v=64"></script>
+  <script src="assets/js/ocean-overdrive.js?v=64"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const mountEl = document.getElementById("cart-page-mount");
@@ -183,11 +183,67 @@
               <span class="price price-pulse" id="cart-grand-total">${window.SuotStore.formatPrice(totals.total)}</span>
             </div>
 
-            <a href="checkout.html" class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-5);">
+            <div id="cart-stock-guard-slot"></div>
+
+            <a href="checkout.html" id="cart-checkout-cta" class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-5);">
               Proceed to Structured Checkout →
             </a>
           </aside>
         `;
+
+        const stockCheck = window.SuotStore.validateCartStock();
+        const guardSlot = document.getElementById("cart-stock-guard-slot");
+        if (guardSlot && window.SuotUI.renderStockRecoveryHTML) {
+          guardSlot.innerHTML = stockCheck.ok
+            ? ""
+            : window.SuotUI.renderStockRecoveryHTML(stockCheck.issues, { compact: true });
+          window.SuotUI.bindStockRecoveryActions(guardSlot, renderCartPage);
+        }
+
+        const checkoutCta = document.getElementById("cart-checkout-cta");
+        if (checkoutCta && !stockCheck.ok) {
+          checkoutCta.classList.remove("btn-primary");
+          checkoutCta.classList.add("btn-outline");
+          checkoutCta.setAttribute("aria-disabled", "true");
+          checkoutCta.style.opacity = "0.7";
+          checkoutCta.textContent = "Resolve Stock Issues Before Checkout";
+          checkoutCta.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.SuotUI.toast(
+              "Some items in your bag exceed live warehouse stock. Fix quantities or swap to an in-stock alternative first.",
+              "Stock Validation Required"
+            );
+            if (guardSlot) guardSlot.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          });
+        }
+
+        cart.forEach((item, idx) => {
+          const prod = window.SuotStore.getProductById(item.productId);
+          const avail = prod ? Math.max(0, parseInt(prod.stock, 10) || 0) : 0;
+          const totalInBag = window.SuotStore.getCartQtyForProduct(item.productId);
+          const incBtn = mountEl.querySelector(`[data-page-inc="${idx}"]`);
+          if (incBtn && totalInBag >= avail) {
+            incBtn.disabled = true;
+            incBtn.style.opacity = "0.45";
+            incBtn.style.cursor = "not-allowed";
+            incBtn.title = avail <= 0 ? "Out of stock" : `Max stock (${avail}) in bag`;
+          }
+          if (avail <= 0 || totalInBag > avail) {
+            const rowEl = incBtn && incBtn.closest("article, tr, .cart-item, .card");
+            if (rowEl) {
+              rowEl.style.borderColor = "var(--color-coral)";
+              rowEl.style.background = "rgba(242,125,99,0.06)";
+            }
+            const qtyBox = incBtn && incBtn.parentElement;
+            if (qtyBox && !qtyBox.querySelector(".cart-row-stock-note")) {
+              const note = document.createElement("span");
+              note.className = "pill pill-coral-soft cart-row-stock-note";
+              note.style.marginLeft = "8px";
+              note.textContent = avail <= 0 ? "Sold Out" : `Only ${avail} left`;
+              qtyBox.appendChild(note);
+            }
+          }
+        });
 
         mountEl.querySelectorAll("[data-page-dec]").forEach((btn) => {
           btn.addEventListener("click", () => {
@@ -199,7 +255,10 @@
         mountEl.querySelectorAll("[data-page-inc]").forEach((btn) => {
           btn.addEventListener("click", () => {
             const idx = Number(btn.getAttribute("data-page-inc"));
-            window.SuotStore.updateCartQty(idx, cart[idx].qty + 1);
+            const res = window.SuotStore.updateCartQty(idx, cart[idx].qty + 1);
+            if (res && res.clamped && res.message) {
+              window.SuotUI.toast(res.message, "Stock Limit Reached");
+            }
           });
         });
 

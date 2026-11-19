@@ -7,7 +7,10 @@
   const KEYS = {
     PRODUCTS: "suot_isla_products_v1",
     CART: "suot_isla_cart_v1",
+    CARTS_BY_USER: "suot_isla_carts_v2",
     COUPON: "suot_isla_coupon_v1",
+    COUPONS_BY_USER: "suot_isla_coupons_v2",
+    ADDRESSES_BY_USER: "suot_isla_addresses_v1",
     ORDERS: "suot_isla_orders_v1",
     RETURNS: "suot_isla_returns_v1",
     EMAILS: "suot_isla_emails_v1",
@@ -31,6 +34,13 @@
     } catch (e) {
       console.error("Storage error:", e);
     }
+  }
+
+  function getUserStorageKey(user) {
+    const u = user || readJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
+    if (u && u.id !== undefined && u.id !== null) return `uid-${u.id}`;
+    if (u && u.email) return String(u.email).trim().toLowerCase();
+    return "guest";
   }
 
   function ensureSeeded() {
@@ -82,8 +92,8 @@
     if (!localStorage.getItem(KEYS.CURRENT_USER)) {
       writeJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
     }
-    if (!localStorage.getItem(KEYS.CART)) {
-      writeJSON(KEYS.CART, [
+    if (!localStorage.getItem(KEYS.CARTS_BY_USER)) {
+      const seedItem = [
         {
           productId: "siargao-cloud9-boardshorts",
           name: "Siargao Cloud 9 Boardshorts",
@@ -94,7 +104,65 @@
           price: 1690,
           qty: 1
         }
-      ]);
+      ];
+      const legacyCart = readJSON(KEYS.CART, null);
+      const currKey = getUserStorageKey(readJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]));
+      const cartsMap = {
+        "uid-1": Array.isArray(legacyCart) && currKey === "uid-1" ? legacyCart : seedItem
+      };
+      if (Array.isArray(legacyCart) && currKey !== "uid-1") {
+        cartsMap[currKey] = legacyCart;
+      }
+      localStorage.setItem(KEYS.CARTS_BY_USER, JSON.stringify(cartsMap));
+    }
+    if (!localStorage.getItem(KEYS.ADDRESSES_BY_USER)) {
+      const addrSeed = {
+        "uid-1": [
+          {
+            id: "addr-1a",
+            label: "Home / Campus Residence",
+            badge: "Default",
+            street: "Blk 4 Lot 12 Emilio Aguinaldo Hwy",
+            barangay: "Sampaloc I",
+            city: "Dasmariñas City",
+            province: "Cavite (CALABARZON)",
+            postal: "4114"
+          },
+          {
+            id: "addr-1b",
+            label: "Island Surf Hostel",
+            badge: "Siargao • Cloud 9",
+            street: "Tourism Road, Cloud 9 Boardwalk",
+            barangay: "Catangnan",
+            city: "General Luna",
+            province: "Surigao del Norte",
+            postal: "8419"
+          }
+        ],
+        "uid-5": [
+          {
+            id: "addr-5a",
+            label: "Makati City Condo",
+            badge: "Default",
+            street: "148 Paseo de Roxas",
+            barangay: "San Lorenzo",
+            city: "Makati City",
+            province: "Metro Manila",
+            postal: "1223"
+          },
+          {
+            id: "addr-5b",
+            label: "Boracay Island Stay",
+            badge: "Boracay • Station 2",
+            street: "Station 2 White Beach Path",
+            barangay: "Balabag",
+            city: "Malay",
+            province: "Aklan",
+            postal: "5608"
+          }
+        ]
+      };
+      localStorage.setItem(KEYS.ADDRESSES_BY_USER, JSON.stringify(addrSeed));
     }
   }
 
@@ -123,7 +191,7 @@
     withAssetVersion(src) {
       if (!src || typeof src !== "string") return src || "";
       if (src.startsWith("assets/images/") && !src.includes("?")) {
-        return `${src}?v=62`;
+        return `${src}?v=64`;
       }
       return src;
     },
@@ -246,6 +314,18 @@
       return item;
     },
 
+    adjustProductMetrics(productId, stockDelta = 0, soldDelta = 0) {
+      const list = this.getProducts(true);
+      const item = list.find((p) => p.id === productId);
+      if (item) {
+        item.stock = Math.max(0, (parseInt(item.stock, 10) || 0) + (parseInt(stockDelta, 10) || 0));
+        item.soldCount = Math.max(0, (parseInt(item.soldCount, 10) || 0) + (parseInt(soldDelta, 10) || 0));
+        item.badge = item.stock <= 5 ? "Low Stock" : item.badge === "Low Stock" ? null : item.badge;
+        writeJSON(KEYS.PRODUCTS, list);
+      }
+      return item;
+    },
+
     toggleArchiveProduct(productId) {
       const list = this.getProducts(true);
       const item = list.find((p) => p.id === productId);
@@ -262,17 +342,167 @@
       return list;
     },
 
-    // -------------------- Shopping Cart & Session --------------------
+    // -------------------- Per-Account Saved Addresses & Cart --------------------
+    getSavedAddressesForCurrentUser() {
+      const map = readJSON(KEYS.ADDRESSES_BY_USER, {});
+      const key = getUserStorageKey();
+      return Array.isArray(map[key]) ? map[key] : [];
+    },
+
+    saveAddressForCurrentUser(addr) {
+      if (!addr || !addr.street || !addr.city) return this.getSavedAddressesForCurrentUser();
+      const map = readJSON(KEYS.ADDRESSES_BY_USER, {});
+      const key = getUserStorageKey();
+      const list = Array.isArray(map[key]) ? [...map[key]] : [];
+      const cleanStreet = String(addr.street).trim();
+      const cleanCity = String(addr.city).trim();
+      const exists = list.some(
+        (a) =>
+          String(a.street || "").trim().toLowerCase() === cleanStreet.toLowerCase() &&
+          String(a.city || "").trim().toLowerCase() === cleanCity.toLowerCase()
+      );
+      if (!exists) {
+        list.unshift({
+          id: "addr-" + Date.now(),
+          label: addr.label || `${cleanCity} Delivery`,
+          badge: list.length === 0 ? "Default" : "Saved",
+          street: cleanStreet,
+          barangay: String(addr.barangay || "").trim(),
+          city: cleanCity,
+          province: String(addr.province || "").trim(),
+          postal: String(addr.postal || addr.postalCode || "").trim()
+        });
+        map[key] = list;
+        writeJSON(KEYS.ADDRESSES_BY_USER, map);
+      }
+      return list;
+    },
+
     getCart() {
-      return readJSON(KEYS.CART, []);
+      const cartsMap = readJSON(KEYS.CARTS_BY_USER, {});
+      const key = getUserStorageKey();
+      return Array.isArray(cartsMap[key]) ? cartsMap[key] : [];
+    },
+
+    _saveCartForCurrentUser(cartList) {
+      const cartsMap = readJSON(KEYS.CARTS_BY_USER, {});
+      cartsMap[getUserStorageKey()] = Array.isArray(cartList) ? cartList : [];
+      writeJSON(KEYS.CARTS_BY_USER, cartsMap);
+    },
+
+    getCartQtyForProduct(productId) {
+      return this.getCart()
+        .filter((i) => i.productId === productId)
+        .reduce((sum, i) => sum + Number(i.qty || 0), 0);
+    },
+
+    findSimilarInStockProducts(targetProdOrId, limit = 3) {
+      const target =
+        typeof targetProdOrId === "object" && targetProdOrId
+          ? targetProdOrId
+          : this.getProductById(targetProdOrId);
+      const excludeId = target ? target.id : String(targetProdOrId || "");
+      const inStock = this.getProducts().filter(
+        (p) => !p.archived && Number(p.stock) > 0 && p.id !== excludeId
+      );
+      if (!target) return inStock.slice(0, limit);
+
+      return inStock
+        .map((p) => {
+          let score = 0;
+          if (p.category === target.category) score += 4;
+          if (p.series === target.series) score += 2;
+          return { p, score };
+        })
+        .sort((a, b) => b.score - a.score || (b.p.soldCount || 0) - (a.p.soldCount || 0))
+        .map((x) => x.p)
+        .slice(0, limit);
+    },
+
+    validateCartStock() {
+      const cart = this.getCart();
+      const prodTotals = {};
+      cart.forEach((item) => {
+        prodTotals[item.productId] = (prodTotals[item.productId] || 0) + Number(item.qty || 0);
+      });
+
+      const issues = [];
+      cart.forEach((item, index) => {
+        const prod = this.getProductById(item.productId);
+        const available = prod && !prod.archived ? Math.max(0, parseInt(prod.stock, 10) || 0) : 0;
+        const requestedTotal = prodTotals[item.productId] || Number(item.qty || 0);
+        if (available <= 0 || requestedTotal > available) {
+          issues.push({
+            index,
+            item,
+            product: prod,
+            available,
+            requestedTotal,
+            shortBy: Math.max(1, requestedTotal - available),
+            reason: available <= 0 ? "out_of_stock" : "insufficient_stock",
+            alternatives: this.findSimilarInStockProducts(prod || item.productId, 3)
+          });
+        }
+      });
+
+      return { ok: issues.length === 0, issues };
+    },
+
+    swapCartItem(index, replacementProductId) {
+      const cart = this.getCart();
+      if (!cart[index]) return { ok: false, message: "Bag item not found." };
+      const prod = this.getProductById(replacementProductId);
+      if (!prod || prod.archived || (parseInt(prod.stock, 10) || 0) <= 0) {
+        return { ok: false, message: "Replacement product is currently unavailable." };
+      }
+      const nextSize = (prod.sizes && prod.sizes[0]) || "One Size";
+      const nextColor = (prod.colors && prod.colors[0]) || "Lagoon Teal";
+      cart.splice(index, 1);
+      this._saveCartForCurrentUser(cart);
+      const added = this.addToCart(prod.id, nextSize, nextColor, 1);
+      return added.ok
+        ? { ok: true, product: prod, message: `Swapped to in-stock ${prod.name} (${nextSize}, ${nextColor}).` }
+        : added;
     },
 
     addToCart(productId, size, color, qty = 1) {
       const product = this.getProductById(productId);
-      if (!product) return { ok: false, message: "Product not found." };
+      if (!product || product.archived) {
+        return { ok: false, reason: "unavailable", message: "This item is no longer available." };
+      }
+      const available = Math.max(0, parseInt(product.stock, 10) || 0);
+      const alts = this.findSimilarInStockProducts(product, 3);
+      if (available <= 0) {
+        return {
+          ok: false,
+          reason: "out_of_stock",
+          available: 0,
+          remaining: 0,
+          message: `${product.name} is currently out of stock.`,
+          alternatives: alts
+        };
+      }
+
       const chosenSize = size || product.sizes[0];
       const chosenColor = color || product.colors[0];
       const addQty = Math.max(1, parseInt(qty, 10) || 1);
+      const alreadyInCart = this.getCartQtyForProduct(product.id);
+
+      if (alreadyInCart + addQty > available) {
+        const remaining = Math.max(0, available - alreadyInCart);
+        return {
+          ok: false,
+          reason: "insufficient_stock",
+          available,
+          alreadyInCart,
+          remaining,
+          message:
+            remaining === 0
+              ? `All ${available} available unit(s) of ${product.name} are already in your bag.`
+              : `Only ${remaining} more unit(s) of ${product.name} available (${available} total in stock).`,
+          alternatives: alts
+        };
+      }
 
       const cart = this.getCart();
       const existing = cart.find(
@@ -280,7 +510,7 @@
       );
 
       if (existing) {
-        existing.qty = Math.min(product.stock || 20, existing.qty + addQty);
+        existing.qty += addQty;
       } else {
         cart.push({
           productId: product.id,
@@ -293,37 +523,69 @@
           qty: addQty
         });
       }
-      writeJSON(KEYS.CART, cart);
-      return { ok: true, cart, product };
+      this._saveCartForCurrentUser(cart);
+      return { ok: true, cart, product, remaining: Math.max(0, available - (alreadyInCart + addQty)) };
     },
 
     updateCartQty(index, newQty) {
       const cart = this.getCart();
-      if (!cart[index]) return cart;
+      if (!cart[index]) return { ok: false, cart };
       const parsed = parseInt(newQty, 10);
-      if (parsed <= 0) {
+      if (isNaN(parsed) || parsed <= 0) {
         cart.splice(index, 1);
-      } else {
-        cart[index].qty = Math.min(25, parsed);
+        this._saveCartForCurrentUser(cart);
+        return { ok: true, cart, clamped: false };
       }
-      writeJSON(KEYS.CART, cart);
-      return cart;
+
+      const targetItem = cart[index];
+      const prod = this.getProductById(targetItem.productId);
+      const stockCap = prod && !prod.archived ? Math.max(0, parseInt(prod.stock, 10) || 0) : 0;
+      const otherVariantsQty = cart
+        .filter((it, idx) => idx !== index && it.productId === targetItem.productId)
+        .reduce((sum, it) => sum + Number(it.qty || 0), 0);
+      const maxForLine = Math.max(0, stockCap - otherVariantsQty);
+
+      if (maxForLine <= 0) {
+        return {
+          ok: false,
+          cart,
+          clamped: true,
+          message: `${targetItem.name} is out of stock. Remove it or swap for a similar item.`
+        };
+      }
+
+      const finalQty = Math.min(25, maxForLine, parsed);
+      const wasClamped = parsed > maxForLine;
+      targetItem.qty = finalQty;
+      this._saveCartForCurrentUser(cart);
+      return {
+        ok: !wasClamped,
+        cart,
+        clamped: wasClamped,
+        message: wasClamped ? `Maximum available stock for ${targetItem.name} is ${stockCap}.` : ""
+      };
     },
 
     removeFromCart(index) {
       const cart = this.getCart();
       cart.splice(index, 1);
-      writeJSON(KEYS.CART, cart);
+      this._saveCartForCurrentUser(cart);
       return cart;
     },
 
     clearCart() {
-      writeJSON(KEYS.CART, []);
-      localStorage.removeItem(KEYS.COUPON);
+      const cartsMap = readJSON(KEYS.CARTS_BY_USER, {});
+      cartsMap[getUserStorageKey()] = [];
+      writeJSON(KEYS.CARTS_BY_USER, cartsMap);
+
+      const couponsMap = readJSON(KEYS.COUPONS_BY_USER, {});
+      delete couponsMap[getUserStorageKey()];
+      writeJSON(KEYS.COUPONS_BY_USER, couponsMap);
     },
 
     getAppliedCoupon() {
-      return readJSON(KEYS.COUPON, null);
+      const couponsMap = readJSON(KEYS.COUPONS_BY_USER, {});
+      return couponsMap[getUserStorageKey()] || null;
     },
 
     applyCoupon(codeInput) {
@@ -339,13 +601,16 @@
           message: `Code ${found.code} requires a minimum spend of ${this.formatPrice(found.minSpend)}.`
         };
       }
-      writeJSON(KEYS.COUPON, found);
+      const couponsMap = readJSON(KEYS.COUPONS_BY_USER, {});
+      couponsMap[getUserStorageKey()] = found;
+      writeJSON(KEYS.COUPONS_BY_USER, couponsMap);
       return { ok: true, coupon: found, message: `Promo ${found.code} (${found.label}) applied!` };
     },
 
     removeCoupon() {
-      localStorage.removeItem(KEYS.COUPON);
-      window.dispatchEvent(new CustomEvent("suotisla:statechange", { detail: { key: KEYS.COUPON } }));
+      const couponsMap = readJSON(KEYS.COUPONS_BY_USER, {});
+      delete couponsMap[getUserStorageKey()];
+      writeJSON(KEYS.COUPONS_BY_USER, couponsMap);
     },
 
     getCartTotals() {
@@ -392,43 +657,89 @@
       return matched;
     },
 
-    loginWithCredentials(email, password) {
-      const users = this.getUsers();
-      const found = users.find((u) => u.email.toLowerCase() === String(email).trim().toLowerCase());
-      if (found) {
-        writeJSON(KEYS.CURRENT_USER, found);
-        return { ok: true, user: found };
+    hashDemoPassword(raw) {
+      const str = `suot-isla-salt:${String(raw || "")}`;
+      let h1 = 0x811c9dc5;
+      let h2 = 0x9e3779b9;
+      for (let i = 0; i < str.length; i++) {
+        const ch = str.charCodeAt(i);
+        h1 ^= ch;
+        h1 = Math.imul(h1, 0x01000193);
+        h2 ^= ch + i;
+        h2 = Math.imul(h2, 0x85ebca6b);
       }
-      const customUser = {
-        id: Date.now(),
-        name: String(email).split("@")[0] || "Island Traveler",
-        email: String(email).trim(),
-        phone: "+63 917 500 1234",
-        role: "customer",
-        passwordHash: "$2y$10$BcryptVerifiedSessionHash",
-        joinedAt: formatNow().slice(0, 10)
-      };
-      users.push(customUser);
-      writeJSON(KEYS.USERS, users);
-      writeJSON(KEYS.CURRENT_USER, customUser);
-      return { ok: true, user: customUser };
+      return `$si26$${(h1 >>> 0).toString(16).padStart(8, "0")}${(h2 >>> 0).toString(16).padStart(8, "0")}`;
+    },
+
+    loginWithCredentials(email, password) {
+      const cleanEmail = String(email || "").trim().toLowerCase();
+      if (!cleanEmail) {
+        return { ok: false, field: "email", message: "Please enter your email address." };
+      }
+      if (!password) {
+        return { ok: false, field: "password", message: "Please enter your password." };
+      }
+
+      const users = this.getUsers();
+      const found = users.find((u) => String(u.email || "").trim().toLowerCase() === cleanEmail);
+      if (!found) {
+        return {
+          ok: false,
+          field: "email",
+          message: "No Suot Isla account matches that email. Switch to Create Account to register."
+        };
+      }
+
+      const expectedDigest = found.passwordDigest || this.hashDemoPassword("SuotIsla2026!");
+      const enteredDigest = this.hashDemoPassword(password);
+      if (enteredDigest !== expectedDigest) {
+        return {
+          ok: false,
+          field: "password",
+          message: "Incorrect password. Please check your password and try again."
+        };
+      }
+
+      if (!found.passwordDigest) {
+        found.passwordDigest = expectedDigest;
+        writeJSON(KEYS.USERS, users);
+      }
+      writeJSON(KEYS.CURRENT_USER, found);
+      return { ok: true, user: found };
     },
 
     registerUser(data) {
+      const cleanEmail = String(data.email || "").trim().toLowerCase();
       const users = this.getUsers();
+      if (users.some((u) => String(u.email || "").trim().toLowerCase() === cleanEmail)) {
+        return {
+          ok: false,
+          field: "email",
+          message: "An account with this email already exists. Please sign in instead."
+        };
+      }
+      if (!data.password || String(data.password).length < 8) {
+        return {
+          ok: false,
+          field: "password",
+          message: "Password must be at least 8 characters."
+        };
+      }
+
       const newUser = {
         id: Date.now(),
         name: data.fullName || "Island Customer",
-        email: data.email || "traveler@suotisla.ph",
+        email: String(data.email || "").trim(),
         phone: this.normalizePhMobile(data.phone) || "09170000000",
         role: data.role || "customer",
-        passwordHash: "$2y$10$" + btoa(String(data.email || "suot")).slice(0, 22),
+        passwordDigest: this.hashDemoPassword(data.password),
+        passwordHash: "$2y$10$" + btoa(cleanEmail || "suot").slice(0, 22),
         joinedAt: formatNow().slice(0, 10)
       };
       users.push(newUser);
       writeJSON(KEYS.USERS, users);
       writeJSON(KEYS.CURRENT_USER, newUser);
-      return newUser;
+      return { ok: true, user: newUser };
     },
 
     updateUserRole(userId, newRole) {
@@ -507,31 +818,62 @@
     placeOrder(checkoutForm) {
       const cart = this.getCart();
       if (!cart.length) {
-        return { ok: false, message: "Your island bag is empty." };
+        return { ok: false, reason: "empty", message: "Your island bag is empty." };
+      }
+
+      const stockCheck = this.validateCartStock();
+      if (!stockCheck.ok) {
+        return {
+          ok: false,
+          reason: "stock",
+          issues: stockCheck.issues,
+          message:
+            "Stock check failed: some items exceed available units or are out of stock. Review options in your summary."
+        };
+      }
+
+      const method = checkoutForm.paymentMethod || "GCash";
+      if (method === "GCash" && !checkoutForm.paymentConfirmed) {
+        return {
+          ok: false,
+          reason: "payment_unconfirmed",
+          message: "Please verify your GCash payment confirmation code before completing this transaction."
+        };
+      }
+      if (!checkoutForm.paymentConfirmed) {
+        return {
+          ok: false,
+          reason: "payment_unconfirmed",
+          message: "Please confirm your order details before submitting."
+        };
       }
 
       const totals = this.getCartTotals();
       const orderNumber = "SI-2026-" + Math.floor(1055 + Math.random() * 890);
 
-      // Deduct stock per item
+      // Deduct stock and record live sold count per item
       cart.forEach((item) => {
-        this.adjustStock(item.productId, -item.qty, false);
+        this.adjustProductMetrics(item.productId, -item.qty, item.qty);
       });
+
+      const curr = this.getCurrentUser();
+      const verifiedPhone = this.normalizePhMobile(checkoutForm.phone) || this.normalizePhMobile(curr.phone) || checkoutForm.phone;
 
       const newOrder = {
         orderNumber,
-        userId: this.getCurrentUser().id,
-        customerName: checkoutForm.fullName || this.getCurrentUser().name,
-        customerEmail: checkoutForm.email || this.getCurrentUser().email,
-        customerPhone: checkoutForm.phone || this.getCurrentUser().phone,
+        userId: curr.id,
+        customerName: checkoutForm.fullName || curr.name,
+        customerEmail: checkoutForm.email || curr.email,
+        customerPhone: verifiedPhone,
         shippingAddress: `${checkoutForm.street}, Brgy. ${checkoutForm.barangay}, ${checkoutForm.city}, ${checkoutForm.province} ${checkoutForm.postalCode}`,
-        paymentMethod: checkoutForm.paymentMethod || "GCash",
+        paymentMethod: method,
         paymentRef:
-          checkoutForm.paymentMethod === "COD"
+          method === "COD"
             ? "COD-UPON-DELIVERY"
-            : (checkoutForm.paymentMethod.slice(0, 2).toUpperCase() + "-" + Math.floor(100000000 + Math.random() * 899999999)),
-        paymentStatus: checkoutForm.paymentMethod === "COD" ? "Pending" : "Paid",
+            : checkoutForm.paymentRef || "GC-" + Math.floor(100000000 + Math.random() * 899999999),
+        paymentStatus: method === "COD" ? "Pending" : "Paid",
         status: "Confirmed",
+        stockRestocked: false,
         courierName: "Awaiting Courier Assignment",
         trackingNumber: "ISLA-TRK-" + Math.floor(10000 + Math.random() * 89999),
         placedAt: formatNow(),
@@ -545,6 +887,15 @@
       const orders = this.getOrders();
       orders.unshift(newOrder);
       writeJSON(KEYS.ORDERS, orders);
+
+      this.saveAddressForCurrentUser({
+        label: `${checkoutForm.city || "Island"} Address`,
+        street: checkoutForm.street,
+        barangay: checkoutForm.barangay,
+        city: checkoutForm.city,
+        province: checkoutForm.province,
+        postal: checkoutForm.postalCode
+      });
 
       // Trigger Order Confirmation Email
       const emailSent = this.logEmail({
@@ -562,15 +913,77 @@
     updateOrderStatus(orderNumber, newStatus, courierName, trackingNumber) {
       const orders = this.getOrders();
       const order = orders.find((o) => o.orderNumber === orderNumber);
-      if (!order) return null;
+      if (!order) return { ok: false, message: "Order not found." };
+
+      const prevStatus = order.status;
+      if (newStatus === "Cancelled") {
+        if (prevStatus === "Cancelled" || prevStatus === "Returned") {
+          return { ok: false, message: `Order #${orderNumber} is already ${prevStatus}.` };
+        }
+        if (prevStatus === "Delivered") {
+          return {
+            ok: false,
+            message: `Order #${orderNumber} was already Delivered. Use Returns & Refunds to restock or refund.`
+          };
+        }
+      }
+
+      if ((prevStatus === "Cancelled" || prevStatus === "Returned") && newStatus !== prevStatus) {
+        return {
+          ok: false,
+          message: `Closed orders (${prevStatus}) cannot be moved back into "${newStatus}".`
+        };
+      }
 
       order.status = newStatus;
       if (courierName) order.courierName = courierName;
       if (trackingNumber) order.trackingNumber = trackingNumber;
+
+      let restockedUnits = 0;
+      const wasPaid = order.paymentStatus === "Paid";
+
       if (newStatus === "Delivered") {
         order.paymentStatus = "Paid";
       } else if (newStatus === "Cancelled") {
-        order.paymentStatus = order.paymentStatus === "Paid" ? "Refunded" : "Cancelled";
+        order.cancelledAt = formatNow();
+        order.paymentStatus = wasPaid ? "Refund Pending" : "Cancelled";
+        if (!order.stockRestocked) {
+          (order.items || []).forEach((it) => {
+            const qty = Number(it.qty || 1);
+            this.adjustProductMetrics(it.productId, qty, -qty);
+            restockedUnits += qty;
+          });
+          order.stockRestocked = true;
+        }
+
+        if (wasPaid) {
+          const returnsList = this.getReturns();
+          const hasQueue = returnsList.some((r) => r.orderNumber === order.orderNumber && !r.status.includes("Rejected"));
+          if (!hasQueue) {
+            const firstItem = order.items && order.items[0] ? order.items[0] : null;
+            returnsList.unshift({
+              returnId: "RET-2026-" + Math.floor(100 + Math.random() * 899),
+              userId: order.userId,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              customerEmail: order.customerEmail,
+              type: "Cancellation",
+              itemSummary: firstItem
+                ? `${firstItem.name}${order.items.length > 1 ? ` + ${order.items.length - 1} more` : ""}`
+                : `Order #${order.orderNumber}`,
+              productId: firstItem ? firstItem.productId : "siargao-cloud9-boardshorts",
+              qty: firstItem ? firstItem.qty : 1,
+              amount: Number(order.total || 0),
+              reason: "Cancelled Before Dispatch",
+              notes: "Order cancelled after payment; queued for refund reference verification.",
+              status: "Approved · Awaiting Refund",
+              restocked: true,
+              refunded: false,
+              requestedAt: formatNow()
+            });
+            writeJSON(KEYS.RETURNS, returnsList);
+          }
+        }
       }
 
       writeJSON(KEYS.ORDERS, orders);
@@ -584,11 +997,11 @@
         subject: `[Suot Isla] Order #${order.orderNumber} Status Updated: ${newStatus}`,
         body:
           newStatus === "Cancelled"
-            ? `Hello ${order.customerName}, your Suot Isla order #${order.orderNumber} has been cancelled. If a payment was made, your refund has been initiated.`
+            ? `Hello ${order.customerName}, your Suot Isla order #${order.orderNumber} has been cancelled (${restockedUnits} unit/s restocked). ${wasPaid ? "Your refund is now queued for transaction verification." : "No payment reversal is required for Cash on Delivery."}`
             : `Hello ${order.customerName}! Your Suot Isla order #${order.orderNumber} is now marked as "${newStatus}". Courier: ${order.courierName} | Tracking #: ${order.trackingNumber}.`
       });
 
-      return order;
+      return { ok: true, order, restockedUnits };
     },
 
     // -------------------- Returns, Cancellations & Refunds --------------------
@@ -643,27 +1056,41 @@
       return newReq;
     },
 
-    processReturnRequest(returnId, decision, shouldRestock = true, shouldRefund = true) {
+    processReturnRequest(returnId, decision, shouldRestock = true) {
       const returnsList = this.getReturns();
       const req = returnsList.find((r) => r.returnId === returnId);
-      if (!req) return null;
+      if (!req) return { ok: false, message: "Return request not found." };
+      if (!req.status.includes("Pending")) {
+        return { ok: false, message: `Request ${returnId} is already processed (${req.status}).` };
+      }
+
+      const orders = this.getOrders();
+      const ord = orders.find((o) => o.orderNumber === req.orderNumber);
+      const isPaidOrder = !ord || ord.paymentStatus === "Paid" || ord.status === "Delivered";
 
       if (decision === "Approved") {
-        req.status = "Approved & Completed";
-        if (shouldRestock && !req.restocked) {
-          this.adjustStock(req.productId, req.qty, false);
+        if (shouldRestock && !req.restocked && (!ord || !ord.stockRestocked)) {
+          this.adjustProductMetrics(req.productId, req.qty, -req.qty);
           req.restocked = true;
+          if (ord) ord.stockRestocked = true;
         }
-        if (shouldRefund && !req.refunded) {
-          req.refunded = true;
-        }
-        // Update parent order status
-        const orders = this.getOrders();
-        const ord = orders.find((o) => o.orderNumber === req.orderNumber);
-        if (ord) {
-          ord.status = req.type === "Cancellation" ? "Cancelled" : "Returned";
-          ord.paymentStatus = shouldRefund ? "Refunded" : ord.paymentStatus;
-          writeJSON(KEYS.ORDERS, orders);
+        req.approvedAt = formatNow();
+        req.refunded = false;
+
+        if (isPaidOrder) {
+          req.status = "Approved · Awaiting Refund";
+          if (ord) {
+            ord.status = req.type === "Cancellation" ? "Cancelled" : "Returned";
+            ord.paymentStatus = "Refund Pending";
+            writeJSON(KEYS.ORDERS, orders);
+          }
+        } else {
+          req.status = "Approved & Closed (Unpaid COD)";
+          if (ord) {
+            ord.status = "Cancelled";
+            ord.paymentStatus = "Cancelled";
+            writeJSON(KEYS.ORDERS, orders);
+          }
         }
       } else {
         req.status = "Rejected";
@@ -675,14 +1102,74 @@
         to: req.customerEmail,
         type: "Return & Refund Update",
         orderNumber: req.orderNumber,
-        subject: `[Suot Isla] Request ${req.returnId} ${decision} — Order #${req.orderNumber}`,
+        subject:
+          decision === "Approved"
+            ? `[Suot Isla] Request ${req.returnId} Approved — Order #${req.orderNumber}`
+            : `[Suot Isla] Request ${req.returnId} Update — Order #${req.orderNumber}`,
         body:
           decision === "Approved"
-            ? `Great news ${req.customerName}! Your ${req.type} request (${req.returnId}) for Order #${req.orderNumber} has been APPROVED. ${req.refunded ? "Refund of " + this.formatPrice(req.amount) + " has been processed back to your payment method." : ""}`
+            ? isPaidOrder
+              ? `Great news ${req.customerName}! Your ${req.type} (${req.returnId}) for Order #${req.orderNumber} is approved. Your refund of ${this.formatPrice(req.amount)} is now queued for payout transaction confirmation.`
+              : `Your cancellation (${req.returnId}) for COD Order #${req.orderNumber} is approved and closed with no balance due.`
             : `Hello ${req.customerName}, your request ${req.returnId} for Order #${req.orderNumber} could not be approved at this time. Please contact ola@suotisla.ph for support.`
       });
 
-      return req;
+      return { ok: true, request: req };
+    },
+
+    confirmReturnRefund(returnId, settlement = {}) {
+      const returnsList = this.getReturns();
+      const req = returnsList.find((r) => r.returnId === returnId);
+      if (!req) return { ok: false, message: "Return request not found." };
+      if (req.status !== "Approved · Awaiting Refund" || req.refunded) {
+        return { ok: false, message: "Return request is not awaiting refund settlement." };
+      }
+
+      const cleanRef = String(settlement.refundRef || "").trim();
+      if (cleanRef.length < 6) {
+        return {
+          ok: false,
+          field: "refundRef",
+          message: "Enter a valid payout transaction reference # (at least 6 characters)."
+        };
+      }
+      if (!settlement.verified) {
+        return {
+          ok: false,
+          field: "verified",
+          message: "Check the confirmation box to verify the refund transaction was sent."
+        };
+      }
+
+      req.status = "Refunded & Completed";
+      req.refunded = true;
+      req.refundMethod = settlement.refundMethod || "GCash Express Refund";
+      req.refundRef = cleanRef;
+      req.refundNotes = String(settlement.notes || "").trim();
+      req.refundedAt = formatNow();
+
+      const orders = this.getOrders();
+      const ord = orders.find((o) => o.orderNumber === req.orderNumber);
+      if (ord) {
+        ord.status = req.type === "Cancellation" ? "Cancelled" : "Returned";
+        ord.paymentStatus = "Refunded";
+        ord.refundMethod = req.refundMethod;
+        ord.refundRef = req.refundRef;
+        ord.refundedAt = req.refundedAt;
+        writeJSON(KEYS.ORDERS, orders);
+      }
+
+      writeJSON(KEYS.RETURNS, returnsList);
+
+      this.logEmail({
+        to: req.customerEmail,
+        type: "Return & Refund Update",
+        orderNumber: req.orderNumber,
+        subject: `[Suot Isla] Refund Paid (${req.refundRef}) — Order #${req.orderNumber}`,
+        body: `Mabuhay ${req.customerName}! Your refund of ${this.formatPrice(req.amount)} for #${req.orderNumber} (${req.returnId}) has been completed via ${req.refundMethod} (Transaction Ref: ${req.refundRef}). Your updated E-Receipt is ready in your dashboard.`
+      });
+
+      return { ok: true, request: req };
     },
 
     // -------------------- Studio Product Visual Renderer --------------------
