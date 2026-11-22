@@ -120,7 +120,35 @@ shop(function (PDO $db, array $user, array $data, string $method): array {
             description = ?, base_price = ?, image_url = COALESCE(?, image_url) WHERE product_id = ?',
             [...$fields, $imagePath, $id]);
     }
-    if ($action === 'create' || textField($data, 'variant_sku') !== '') {
+    if ($action === 'create' && array_key_exists('sizes', $data) && array_key_exists('colors', $data)) {
+        $options = static function (string $key, int $length) use ($data): array {
+            $values = [];
+            foreach (explode(',', field($data, $key, 2000)) as $part) {
+                $value = trim($part);
+                if ($value === '' || mb_strlen($value) > $length) {
+                    fail(422, 'Enter valid comma-separated ' . $key . '.');
+                }
+                $values[mb_strtolower($value)] = $value;
+            }
+            return array_values($values);
+        };
+        $sizes = $options('sizes', 40);
+        $colors = $options('colors', 60);
+        $variantCount = count($sizes) * count($colors);
+        if ($variantCount > 64) {
+            fail(422, 'A product can start with up to 64 size and color combinations.');
+        }
+        $stock = whole($data, 'stock_qty', 0, 100000);
+        $index = 0;
+        foreach ($sizes as $size) {
+            foreach ($colors as $color) {
+                $quantity = intdiv($stock, $variantCount) + ($index < $stock % $variantCount ? 1 : 0);
+                $variantSku = $sku . '-V' . str_pad((string) ++$index, 2, '0', STR_PAD_LEFT);
+                query($db, 'INSERT INTO product_variants (product_id, variant_sku, size_label, color_name, stock_qty)
+                    VALUES (?, ?, ?, ?, ?)', [$id, $variantSku, $size, $color, $quantity]);
+            }
+        }
+    } elseif ($action === 'create' || textField($data, 'variant_sku') !== '') {
         query($db, 'INSERT INTO product_variants (product_id, variant_sku, size_label, color_name, stock_qty)
             VALUES (?, ?, ?, ?, ?)', [$id, field($data, 'variant_sku', 60), field($data, 'size_label', 40),
             field($data, 'color_name', 60), whole($data, 'stock_qty', 0, 100000)]);

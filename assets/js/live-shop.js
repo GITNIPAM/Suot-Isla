@@ -1449,18 +1449,37 @@
       if (!groups.has(p.product_id)) groups.set(p.product_id,[]);
       groups.get(p.product_id).push(p);
     }
-    function productForm(p = {}) {
-      return form("admin-products", '<input type="hidden" name="action" value="' + (p.product_id ? "edit" : "create") + '">' +
-        (p.product_id ? '<input type="hidden" name="product_id" value="' + Number(p.product_id) + '">' : "") +
-        input("sku","Product SKU",p.sku) + input("slug","URL slug",p.slug) + input("name","Name",p.name) +
-        input("description","Description",p.description) + input("price","Price",p.base_price,'type="number" min="0" step=".01" required') +
-        select("category_id",categories,"Category",p.category_id) + select("series_id",series,"Island series",p.series_id) +
-        input("image","Product Image File Upload (with Live Preview)","","type=file accept=image/jpeg,image/png,image/webp") +
-        '<img class="operator-image-preview" alt="Product upload preview" hidden>' +
-        '<details' + (p.product_id ? "" : " open") + '><summary>Add a size/color variant</summary>' +
-        input("variant_sku","Variant SKU","","") + input("size_label","Size","","") + input("color_name","Color","","") +
-        input("stock_qty","Starting stock",0,'type="number" min="0"') + '</details>' + button(p.product_id ? "Save changes" : "Create product"),
-        'enctype="multipart/form-data"');
+    function productForm(product = {}, variants = []) {
+      const editing = Boolean(product.product_id);
+      const sizes = [...new Set(variants.map(row=>row.size_label).filter(Boolean))];
+      const colors = [...new Set(variants.map(row=>row.color_name).filter(Boolean))];
+      const stock = variants.filter(row=>!Number(row.variant_archived)).reduce((total,row)=>total+Number(row.stock_qty),0);
+      const choices = (rows, selected) => rows.map(([id,label])=>
+        '<option value="'+esc(id)+'"'+(String(id)===String(selected) ? " selected" : "")+'>'+esc(label)+'</option>').join("");
+      const control = (id,label,markup) =>
+        '<div class="form-group"><label class="form-label" for="'+id+'">'+label+'</label>'+markup+'</div>';
+      const field = (id,name,label,value,attrs="required") => control(id,label,
+        '<input id="'+id+'" name="'+name+'" class="form-input" value="'+esc(value)+'" '+attrs+'>');
+      const readonly = editing ? "readonly" : "required";
+      return '<form id="product-crud-form" data-action="admin-products" method="post" enctype="multipart/form-data">'+
+        '<input type="hidden" name="action" value="'+(editing?"edit":"create")+'">'+
+        (editing?'<input type="hidden" name="product_id" value="'+Number(product.product_id)+'">':"")+
+        '<div class="form-row">'+field("crud-name","name","Product Name *",product.name,'required maxlength="180" placeholder="e.g. Siargao Cloud 9 Boardshorts"')+
+        field("crud-sku","sku","SKU Code *",product.sku,'required maxlength="40" placeholder="SI-SRG-017"')+'</div>'+
+        '<div class="form-row">'+control("crud-series","Island Series *",'<select id="crud-series" name="series_id" class="form-select" data-native-select required>'+choices(series,product.series_id)+'</select>')+
+        control("crud-category","Catalog Category *",'<select id="crud-category" name="category_id" class="form-select" data-native-select required>'+choices(categories.filter(([id])=>!archivedCategories.has(id)||id===Number(product.category_id)),product.category_id)+'</select>')+'</div>'+
+        '<div class="form-row">'+field("crud-price","price","Price (PHP ₱) *",product.base_price,'type="number" min="0" step="0.01" required')+
+        field("crud-stock",editing?"current_stock":"stock_qty",editing?"Stock Quantity":"Starting Stock Quantity *",editing?stock:0,'type="number" min="0" max="100000" step="1" '+readonly)+'</div>'+
+        '<div class="form-row">'+field("crud-sizes",editing?"current_sizes":"sizes","Size Variants (Comma-separated)"+(editing?"":" *"),sizes.join(", "),readonly+' placeholder="S, M, L"')+
+        field("crud-colors",editing?"current_colors":"colors","Color Variants (Comma-separated)"+(editing?"":" *"),colors.join(", "),readonly+' placeholder="Lagoon Teal, Sunset Coral"')+'</div>'+
+        (editing?'<p class="form-hint">Use the variant controls below to update each size, color, or stock quantity.</p>':'<p class="form-hint">Starting stock is divided across the size and color combinations.</p>')+
+        control("crud-image-file","Product Image File Upload (with Live Preview)",'<input id="crud-image-file" type="file" name="image" class="form-input" accept="image/jpeg,image/png,image/webp">'+
+        '<span class="form-hint">JPG, PNG, or WebP up to 5 MB.</span><div class="operator-product-preview" hidden><img id="crud-preview-img" class="operator-image-preview" alt="Product upload preview"><span>Image ready for catalog</span></div>')+
+        control("crud-desc","Product Description *",'<textarea id="crud-desc" name="description" class="form-textarea" maxlength="5000" rows="2" required>'+esc(product.description)+'</textarea>')+
+        '<details><summary>Product URL</summary>'+field("crud-slug","slug","URL slug *",product.slug,'required maxlength="180" pattern="[a-z0-9]+(-[a-z0-9]+)*"')+'</details>'+
+        (editing?'<details><summary>Add a size/color variant</summary>'+input("variant_sku","Variant SKU","","")+input("size_label","Size","","")+
+          input("color_name","Color","","")+input("stock_qty","Starting stock",0,'type="number" min="0"')+'</details>':"")+
+        '<div class="operator-product-footer"><button type="button" class="btn btn-outline" id="cancel-crud-modal-btn">Cancel</button>'+button("Save Product to Catalog")+'</div></form>';
     }
     const inventoryCommand = (action, idField, id, label, extra = "") => form("admin-products",
       '<input type="hidden" name="action" value="' + action + '"><input type="hidden" name="' + idField + '" value="' +
@@ -1485,7 +1504,7 @@
       '</div><input type="search" class="admin-search-input" id="admin-inv-search" placeholder="Search SKU or product..." aria-label="Search inventory products"></div>';
     panel.innerHTML = toolbar+'<div data-inventory-rows></div><details class="surface-card"><summary>Manage categories</summary>'+categoryForm()+
       data.categories.map(row=>categoryForm(row)+archiveCommand("toggle_category","category_id",row.category_id,row.is_archived,"category")).join("")+'</details>'+
-      '<dialog class="modal-dialog inventory-editor operator-native-dialog" aria-labelledby="inventory-editor-title"><div class="modal-header"><h2 id="inventory-editor-title"></h2><button type="button" class="btn btn-ghost btn-sm" aria-label="Close">✕</button></div><div class="modal-body"></div></dialog>';
+      '<dialog id="product-crud-modal" class="modal-dialog inventory-editor operator-native-dialog" aria-labelledby="crud-modal-title"><div class="modal-header"><h3 id="crud-modal-title">Create / Update Island Product</h3><button type="button" class="btn btn-ghost btn-sm" aria-label="Close">✕</button></div><div class="modal-body"></div></dialog>';
     const dialog = panel.querySelector("dialog");
     const add = document.createElement("button");
     add.className = "btn btn-primary btn-pill";
@@ -1494,8 +1513,8 @@
     panel.previousElementSibling.append(add);
     function editor(group) {
       const p = group?.[0];
-      dialog.querySelector("h2").textContent = p ? "Edit Product · "+p.name : "Add Product";
-      dialog.querySelector(".modal-body").innerHTML = p ? (productForm(p) + (p.image_url ? inventoryCommand("remove_image","product_id",p.product_id,"Remove photo") : "") +
+      dialog.querySelector("#crud-modal-title").textContent = p ? "Edit Island Product" : "Create New Island Product";
+      dialog.querySelector(".modal-body").innerHTML = p ? (productForm(p,group) + (p.image_url ? inventoryCommand("remove_image","product_id",p.product_id,"Remove photo") : "") +
           form("admin-products", '<input type="hidden" name="product_id" value="' + Number(p.product_id) + '"><input type="hidden" name="action" value="' +
             (Number(p.is_archived) ? "restore" : "archive") + '">' + button(Number(p.is_archived) ? "Restore" : "Archive")) +
           group.filter(r => r.variant_id).map(r => '<p>' + esc(r.size_label) + ' / ' + esc(r.color_name) + ' · ' + Number(r.stock_qty) + ' in stock' +
@@ -1506,17 +1525,25 @@
               Number(r.variant_id) + '">' + input("size_label","Size",r.size_label) + input("color_name","Color",r.color_name) +
               input("stock_qty","Stock on hand",r.stock_qty,'type="number" min="0" max="100000" required') + button("Save variant")) +
             archiveCommand("toggle_variant","variant_id",r.variant_id,r.variant_archived,"variant")).join("")) : productForm();
-      const photo = dialog.querySelector("input[type=file]");
-      const preview = dialog.querySelector(".operator-image-preview");
+      dialog.querySelector(".modal-body").insertAdjacentHTML("beforeend",'<p class="live-status" data-editor-alert role="alert"></p>');
+      const photo = dialog.querySelector("#crud-image-file");
+      const preview = dialog.querySelector(".operator-product-preview");
+      const previewImage = preview.querySelector("img");
+      const name = dialog.querySelector("#crud-name");
+      const slug = dialog.querySelector("#crud-slug");
       let objectUrl;
+      if (!p) name.oninput=()=>{
+        slug.value=name.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+      };
+      dialog.querySelector("#cancel-crud-modal-btn").onclick=()=>dialog.close();
       photo.onchange=()=>{
         if (objectUrl) URL.revokeObjectURL(objectUrl);
         const file=photo.files[0];
         preview.hidden=!file;
         if (file) {
           objectUrl=URL.createObjectURL(file);
-          preview.src=objectUrl;
-        } else preview.removeAttribute("src");
+          previewImage.src=objectUrl;
+        } else previewImage.removeAttribute("src");
       };
       dialog.addEventListener("close",()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);},{once:true});
       dialog.showModal();
@@ -1649,6 +1676,8 @@
     if (submitter) submitter.disabled = true;
     const data = new FormData(formElement);
     const body = fields(data);
+    const editorAlert = formElement.closest("dialog")?.querySelector("[data-editor-alert]");
+    if (editorAlert) editorAlert.textContent = "";
     message("");
     try {
       if (!await confirmOperationsChange(body)) return;
@@ -1682,8 +1711,13 @@
         message("Saved.");
       }
     } catch (error) {
-      message(error.message, error.alternatives);
-      status.scrollIntoView({block:"nearest"});
+      if (editorAlert?.isConnected) {
+        editorAlert.textContent = error.message;
+        editorAlert.scrollIntoView({block:"nearest"});
+      } else {
+        message(error.message, error.alternatives);
+        status.scrollIntoView({block:"nearest"});
+      }
     } finally {
       if (action === "checkout") checkoutInProgress = false;
       if (submitter) submitter.disabled = false;
