@@ -695,6 +695,35 @@
       '</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map((c,i)=>'<td data-label="'+esc(headings[i])+'">'+c+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
   }
 
+  function operatorPill(status) {
+    const type = ["Cancelled","Returned","Rejected","Pending Review"].includes(status) ? "coral" :
+      ["Delivered","Paid","Refunded & Completed"].includes(status) ? "delivery" : "lagoon";
+    return '<span class="pill pill-'+type+'">'+esc(status)+'</span>';
+  }
+
+  function operatorItems(order) {
+    return (order?.items || []).map(item => {
+      const product = window.SuotStore.getProductById(item.slug);
+      const photo = product ? window.SuotStore.renderProductVisual(product,item.color_snapshot) : "";
+      return '<div class="operator-item"><span class="operator-item-thumb">'+photo+'</span><span><strong>'+
+        Number(item.quantity)+'× '+esc(item.product_name_snapshot)+'</strong><br>'+esc(item.size_snapshot)+' · '+esc(item.color_snapshot)+'</span></div>';
+    }).join("") || '—';
+  }
+
+  function operatorReceipt(order) {
+    window.SuotUI.openReceiptModal({
+      orderNumber:esc(order.order_number),trackingNumber:esc(order.tracking_number),placedAt:esc(order.placed_at),
+      customerName:esc(order.customer_name),customerEmail:"",shippingAddress:esc(order.shipping_address_snapshot),
+      paymentMethod:esc(order.payment_method),paymentStatus:esc(order.payment_status),status:esc(order.order_status),
+      subtotal:order.subtotal,deliveryFee:order.delivery_fee,discount:order.discount_amount,total:order.total_amount,
+      items:(order.items || []).map(item => ({
+        productId:item.slug,name:esc(item.product_name_snapshot),size:esc(item.size_snapshot),color:esc(item.color_snapshot),
+        qty:Number(item.quantity),price:Number(item.unit_price),
+        image:/^assets\/images\/[a-zA-Z0-9_.\/-]+$/.test(item.image_url) ? item.image_url : ""
+      }))
+    });
+  }
+
   async function operations() {
     if (!["staff","admin","courier"].includes(user?.role)) {
       root.innerHTML=document.getElementById("operator-login").innerHTML;
@@ -731,10 +760,22 @@
     role.textContent = user.role.toUpperCase();
     role.hidden = false;
     bindSignOut("admin-signout-btn");
-    const current = available.find(element => element.dataset.consoleTab === tab);
+    const outbox = document.getElementById("admin-open-emails-btn");
+    outbox.hidden = !staff;
+    outbox.onclick = staff ? () => window.SuotUI.openDrawer("email") : null;
+
     const tabTitles={orders:"Order Fulfillment & Status Pipeline",dispatch:"Courier Dispatch Board",report:"Store Analytics & Operations Command",
       products:"Catalog & Inventory Control",team:"Team & Customer Access Control",returns:"Refund & Return Processing (2-Stage Verification)"};
-    root.innerHTML = '<div class="admin-header-bar">'+heading(tabTitles[tab] || current.textContent.trim())+'</div>' + '<div data-workspace></div>';
+    const descriptions = {
+      report:"Review sales, warehouse stock, and orders that need attention.",
+      products:"Filter low-stock items, preview color variants, and manage product availability.",
+      orders:"Review order items, assign couriers, and open receipts.",
+      dispatch:"Track assigned deliveries and update their dispatch status.",
+      returns:"Review returns and record refunds after payout.",
+      team:"View registered members and assign store team permissions."
+    };
+    root.innerHTML = '<div class="admin-header-bar"><div>'+heading(tabTitles[tab])+
+      '<p class="operator-description">'+descriptions[tab]+'</p></div></div><div data-workspace></div>';
     const panel = root.querySelector("[data-workspace]");
     if (staff && tab === "report") {
       const [report,sales,claims] = await Promise.all([api("analytics"),api("orders"),api("returns")]);
@@ -742,9 +783,13 @@
       const due=claims.returns.filter(row=>["Pending Review","Approved · Awaiting Refund"].includes(row.status)).length;
       const tiles=[["Collected Revenue",money(report.totals.revenue),"orders"],["Awaiting Pack & Dispatch",queue,"orders"],
         ["Low-Stock Alerts",report.low_stock.length,"products"],["Returns & Payouts Queue",due,"returns"]];
+      panel.previousElementSibling.insertAdjacentHTML("beforeend",'<a href="admin.html?tab=products&amp;new=1" class="btn btn-primary btn-pill btn-sm">+ Add Product</a>');
       const highest=Math.max(1,...report.series.map(row=>Number(row.merchandise_revenue)));
       panel.innerHTML='<div class="ops-attention-strip"><div class="ops-attention-head"><span class="ops-pulse-dot"></span>'+
-        '<strong class="ops-attention-title">'+(queue+due+report.low_stock.length)+' operational items need attention</strong></div></div>'+
+        '<strong class="ops-attention-title">'+(queue+due+report.low_stock.length)+' operational items need attention</strong></div>'+
+        '<div class="ops-attention-pills"><a class="ops-action-chip" href="admin.html?tab=orders&amp;filter=needs-action">Awaiting Pack &amp; Dispatch <span class="ops-action-count">'+queue+'</span></a>'+
+        '<a class="ops-action-chip" href="admin.html?tab=products&amp;filter=low">Critical Stock <span class="ops-action-count">'+report.low_stock.length+'</span></a>'+
+        '<a class="ops-action-chip" href="admin.html?tab=returns">Returns &amp; Refunds Due <span class="ops-action-count">'+due+'</span></a></div></div>'+
         '<div class="ops-summary-grid">'+tiles.map(([title,value,to])=>'<a class="ops-tile is-interactive" href="admin.html?tab='+to+'">'+
           '<div class="ops-tile-top"><span class="ops-tile-title">'+esc(title)+'</span></div><div class="ops-tile-value">'+esc(value)+'</div></a>').join("")+'</div>'+
         '<div class="split-checkout-grid"><section class="surface-card"><h2>Revenue by Philippine Island Series</h2>'+
@@ -761,30 +806,38 @@
       const orderById = new Map(sales.orders.map(order => [Number(order.order_id),order]));
       const priority = status => status === "Pending Review" ? 0 : status.includes("Awaiting Refund") ? 1 : 2;
       claims.returns.sort((a,b) => priority(a.status) - priority(b.status));
-      panel.innerHTML = table(["Return ID","Order #","Request Type & Reason","Order Total","Stock & Payout Verification","Status","2-Stage Decision"],claims.returns.map(r => {
+      panel.innerHTML = table(["Return ID","Order # & Customer","Request Type & Reason","Item & Refund Amount","Stock & Payout Verification","Status","2-Stage Decision"],claims.returns.map(r => {
         const order = orderById.get(Number(r.order_id));
         const decision = r.status === "Pending Review" ? returnCommand(r,"approve","Approve") + returnCommand(r,"reject","Reject") :
           r.status === "Approved · Awaiting Refund" ? returnCommand(r,"confirm_refund","Record refund",
             select("refund_channel",[["GCash","GCash"],["Cash","Cash"]],"Refund channel") +
             input("refund_reference","Refund reference","","required minlength=6 maxlength=80")) : "—";
-        return ['<strong class="mono">'+esc(r.return_code)+'</strong><p>'+esc(r.requested_at)+'</p>',esc(r.order_number),
-          '<span class="pill pill-sand">'+esc(r.request_type)+'</span><p>'+esc(r.reason)+'</p>',order ? money(order.total_amount) : "—",
+        return ['<strong class="mono">'+esc(r.return_code)+'</strong><p>'+esc(r.requested_at)+'</p>','<strong>'+esc(r.order_number)+'</strong><p>'+esc(order?.customer_name)+'</p>',
+          '<span class="pill pill-sand">'+esc(r.request_type)+'</span><p>'+esc(r.reason)+'</p>',operatorItems(order)+(order ? '<p class="price">'+money(order.total_amount)+'</p>' : ""),
           (Number(r.is_restocked) ? "Restocked" : "Awaiting restock")+'<p>'+esc(r.refund_reference || "")+'</p>',
-          '<span class="pill pill-lagoon">'+esc(r.status)+'</span>',decision];
+          operatorPill(r.status),decision];
       })) + (claims.returns.length ? "" : "<p>No return requests.</p>");
       return;
     }
     if (staff && tab === "products") { await inventory(panel); return; }
     if (user.role === "admin" && tab === "team") {
       const {users} = await api("admin-team");
-      panel.innerHTML = table(["Account ID","Member & Email","Current Role","Assign Permission"],users.map(r => [Number(r.user_id),'<strong>'+esc(r.full_name)+'</strong><p>'+esc(r.email)+'</p>',esc(r.role),
-        (user.email === r.email ? '<p>Your account</p>' : form("admin-team", '<input type="hidden" name="user_id" value="' + Number(r.user_id) + '">' +
-        select("role",["customer","staff","courier","admin"].map(x => [x,x]),"Role",r.role) + button("Save role")))]));
+      panel.innerHTML = table(["Account ID","Member & Email","Mobile & Joined","Storefront Activity","Current Role","Assign Permission"],users.map(member => {
+        const initials = member.full_name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join("");
+        const identity = '<div class="operator-member"><span class="auth-avatar-badge">'+esc(initials)+'</span><div><strong>'+esc(member.full_name)+'</strong><br>'+esc(member.email)+'</div></div>';
+        const permissions = user.email === member.email ? "Your account" : form("admin-team",
+          '<input type="hidden" name="user_id" value="'+Number(member.user_id)+'">'+
+          select("role",["customer","staff","courier","admin"].map(role=>[role,role]),"Role",member.role)+button("Save role"));
+        return ['<span class="mono">#USR-'+Number(member.user_id)+'</span>',identity,
+          esc(member.phone || "—")+'<p>Joined '+esc(member.created_at?.slice(0,10) || "—")+'</p>',
+          Number(member.orders_placed || 0)+' orders placed',operatorPill(member.role.toUpperCase()),permissions];
+      }));
       return;
     }
     const [{orders}, team] = await Promise.all([api("orders"), staff ? api("admin-team") : {couriers:[]}]);
-    const displayedOrders = tab === "dispatch" ? orders.filter(order => ["Packed", "Out for Delivery", "Delivered"].includes(order.order_status)) : orders;
-    const fulfillment = displayedOrders.map(order => {
+    const dispatch = tab === "dispatch";
+    const displayedOrders = dispatch ? orders.filter(order => ["Packed", "Out for Delivery", "Delivered"].includes(order.order_status)) : orders;
+    const orderActions = order => {
       let actions = "";
       if (staff && ["Pending","Confirmed"].includes(order.order_status)) {
         if (order.payment_method === "GCash" && order.payment_status === "Pending") actions += orderCommand(order,"confirm_mock_gcash","Confirm mock GCash");
@@ -800,13 +853,58 @@
           '<label><input type="checkbox" name="collected" required> Cash collected</label>' : "");
       }
       if (staff && !["Delivered","Cancelled","Returned"].includes(order.order_status)) actions += orderCommand(order,"cancel","Cancel order");
-      return ['<strong>'+esc(order.order_number)+'</strong><p>'+esc(order.order_status)+'</p>',
-        esc(order.tracking_number)+'<p>'+esc(order.shipping_address_snapshot)+'</p>',esc(order.payment_method)+' · '+esc(order.payment_status),money(order.total_amount),actions];
+      return actions+'<button type="button" class="btn btn-outline btn-sm btn-pill" data-operator-receipt="'+Number(order.order_id)+'">Receipt</button>';
+    };
+    if (dispatch) {
+      const badge = document.createElement("span");
+      badge.className = "pill pill-delivery";
+      badge.textContent = staff ? "Courier Dispatch" : "Active Courier: "+user.name;
+      panel.previousElementSibling.append(badge);
+      panel.innerHTML = displayedOrders.map(order =>
+        '<article class="surface-card dispatch-record"><div><div class="operator-dispatch-pills"><strong class="mono">#'+esc(order.order_number)+
+        '</strong>'+operatorPill(order.tracking_number)+operatorPill(order.order_status)+'</div><strong>'+esc(order.customer_name)+
+        '</strong><p>Drop-off: '+esc(order.shipping_address_snapshot)+'</p><div class="operator-dispatch-items">'+operatorItems(order)+
+        '</div></div><div>'+orderActions(order)+'</div></article>').join("") || "<p>No orders to show.</p>";
+    } else {
+      const filters = [["all","All orders"],["needs-action","Needs action"],["transit","In transit"],["delivered","Delivered"],["cancelled","Cancelled"]];
+      const statuses = {"needs-action":["Pending","Confirmed","Packed"],transit:["Out for Delivery"],delivered:["Delivered"],cancelled:["Cancelled","Returned"]};
+      const matches = (order,key) => key === "all" || statuses[key]?.includes(order.order_status);
+      let filter = statuses[params.get("filter")] ? params.get("filter") : "all";
+      panel.innerHTML = '<div class="admin-toolbar-row"><div class="featured-filter-dock" id="admin-orders-dock">'+filters.map(([id,label])=>
+        '<button type="button" class="featured-filter-btn" data-admin-ord-filter="'+id+'">'+label+' <span class="featured-filter-count">('+
+        displayedOrders.filter(order=>matches(order,id)).length+')</span></button>').join("")+
+        '</div><input type="search" id="admin-orders-search" class="admin-search-input" placeholder="Search order #, customer, city..." aria-label="Search orders"></div><div data-operator-orders></div>';
+      const search = panel.querySelector("#admin-orders-search");
+      search.value = params.get("search") || "";
+      function drawOrders() {
+        const q = search.value.trim().toLowerCase();
+        const results = displayedOrders.filter(order=>matches(order,filter)&&
+          [order.order_number,order.customer_name,order.tracking_number,order.shipping_address_snapshot].some(value=>String(value||"").toLowerCase().includes(q)));
+        panel.querySelectorAll("[data-admin-ord-filter]").forEach(control=>{
+          const active = control.dataset.adminOrdFilter===filter;
+          control.classList.toggle("active",active);
+          control.setAttribute("aria-pressed",active);
+        });
+        panel.querySelector("[data-operator-orders]").innerHTML = results.length ? table(
+          ["Order # & Date","Customer & Destination","Items","Total & Payment","Courier & Tracking","Status","Update & Receipt"],results.map(order=>[
+            '<strong class="mono">#'+esc(order.order_number)+'</strong><p>'+esc(order.placed_at)+'</p>',
+            '<strong>'+esc(order.customer_name)+'</strong><p>'+esc(order.shipping_address_snapshot)+'</p>',operatorItems(order),
+            '<strong class="price">'+money(order.total_amount)+'</strong><p>'+esc(order.payment_method)+' · '+esc(order.payment_status)+'</p>',
+            esc(order.courier_name || "Awaiting assignment")+'<br><span class="mono">'+esc(order.tracking_number)+'</span>',
+            operatorPill(order.order_status),orderActions(order)
+          ])) : "<p>No orders to show.</p>";
+        enhanceSelects();
+      }
+      panel.querySelectorAll("[data-admin-ord-filter]").forEach(control=>control.onclick=()=>{filter=control.dataset.adminOrdFilter;drawOrders();});
+      search.oninput=drawOrders;
+      drawOrders();
+    }
+    panel.addEventListener("click",event=>{
+      const control=event.target.closest("[data-operator-receipt]");
+      if (!control) return;
+      const order=displayedOrders.find(row=>Number(row.order_id)===Number(control.dataset.operatorReceipt));
+      if (order) operatorReceipt(order);
     });
-    panel.innerHTML = tab === "dispatch" ? fulfillment.map(([order,address,payment,total,actions]) =>
-      '<article class="surface-card dispatch-record"><div><h2>'+order+'</h2><p>'+address+'</p></div><div>'+payment+'<p class="price">'+total+'</p></div><div>'+actions+'</div></article>').join("") :
-      table(["Order","Delivery","Payment","Total","Actions"],fulfillment);
-    if (!fulfillment.length) panel.insertAdjacentHTML("beforeend","<p>No orders to show.</p>");
   }
 
   async function inventory(panel) {
@@ -874,7 +972,7 @@
     }
     add.onclick = () => editor(null);
     dialog.querySelector(".modal-header button").onclick = () => dialog.close();
-    let filter = "all";
+    let filter = params.get("filter")==="low" ? "low" : "all";
     const search = panel.querySelector("#admin-inv-search");
     function drawInventory() {
       const q = search.value.trim().toLowerCase();
@@ -900,6 +998,11 @@
     });
     search.addEventListener("input",drawInventory);
     drawInventory();
+    if (params.get("new")==="1") {
+      params.delete("new");
+      history.replaceState(null,"","admin.html?"+params.toString());
+      editor(null);
+    }
   }
 
   const changePrompts = {

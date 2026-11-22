@@ -11,10 +11,31 @@ shop(function (PDO $db, array $user, array $data, string $method): array {
             'courier' => ' WHERE d.courier_user_id = ?',
             default => '',
         };
-        return ['orders' => query($db, 'SELECT o.*, p.payment_method, p.payment_status,
-            d.courier_user_id, d.courier_service, d.tracking_number, d.delivery_status
+        $parameters = $filter ? [$userId] : [];
+        $operatorFields = $role === 'customer' ? '' : ', u.full_name AS customer_name, cr.full_name AS courier_name';
+        $operatorJoins = $role === 'customer' ? '' : ' JOIN users u ON u.user_id = o.user_id LEFT JOIN users cr ON cr.user_id = d.courier_user_id';
+        $orders = query($db, 'SELECT o.*, p.payment_method, p.payment_status,
+            d.courier_user_id, d.courier_service, d.tracking_number, d.delivery_status' . $operatorFields . '
             FROM orders o JOIN payments p ON p.order_id = o.order_id JOIN deliveries d ON d.order_id = o.order_id'
-            . $filter . ' ORDER BY o.order_id DESC', $filter ? [$userId] : [])->fetchAll(PDO::FETCH_ASSOC)];
+            . $operatorJoins . $filter . ' ORDER BY o.order_id DESC', $parameters)->fetchAll(PDO::FETCH_ASSOC);
+        if ($role === 'customer') {
+            return ['orders' => $orders];
+        }
+
+        $items = query($db, 'SELECT i.order_id, i.product_name_snapshot, i.size_snapshot, i.color_snapshot,
+            i.quantity, i.unit_price, pr.slug, pr.image_url FROM order_items i
+            JOIN orders o ON o.order_id = i.order_id JOIN deliveries d ON d.order_id = o.order_id
+            JOIN product_variants v ON v.variant_id = i.variant_id JOIN products pr ON pr.product_id = v.product_id'
+            . $filter . ' ORDER BY i.order_item_id', $parameters)->fetchAll(PDO::FETCH_ASSOC);
+        $itemsByOrder = [];
+        foreach ($items as $item) {
+            $itemsByOrder[$item['order_id']][] = $item;
+        }
+        foreach ($orders as &$order) {
+            $order['items'] = $itemsByOrder[$order['order_id']] ?? [];
+        }
+        unset($order);
+        return ['orders' => $orders];
     }
 
     $orderId = whole($data, 'order_id');

@@ -6,7 +6,8 @@ shop(function (PDO $db, array $user, array $data, string $method): array {
     if ($method === 'GET') {
         $couriers = query($db, "SELECT user_id, full_name FROM users WHERE role = 'courier' ORDER BY full_name")->fetchAll(PDO::FETCH_ASSOC);
         $users = $user['role'] === 'admin'
-            ? query($db, 'SELECT user_id, full_name, email, role FROM users ORDER BY full_name')->fetchAll(PDO::FETCH_ASSOC)
+            ? query($db, 'SELECT u.user_id, u.full_name, u.email, u.phone, u.created_at, u.role,
+                (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.user_id) AS orders_placed FROM users u ORDER BY u.full_name')->fetchAll(PDO::FETCH_ASSOC)
             : [];
         return ['couriers' => $couriers, 'users' => $users];
     }

@@ -1230,8 +1230,13 @@
         const quote = code && cart.length ? await drawerRequest("checkout",{action:"validate",coupon:code}).catch(() => null) : null;
         renderCartDrawerContents(cart,body,footer,quote ? {code,totals:quote.totals} : null);
       } else {
-        const [{emails},{orders}] = await Promise.all([drawerRequest("customer-data"),drawerRequest("orders")]);
-        renderEmailDrawerContents(emails,orders,body);
+        if (document.body.classList.contains("admin-portal")) {
+          const {emails} = await drawerRequest("operator-outbox");
+          renderEmailDrawerContents(emails, [], body, true);
+        } else {
+          const [{emails},{orders}] = await Promise.all([drawerRequest("customer-data"),drawerRequest("orders")]);
+          renderEmailDrawerContents(emails,orders,body);
+        }
       }
     } catch(error) {
       body.textContent = error.status === 401 || error.status === 403 ? "Sign in to view your "+(type === "cart" ? "shopping bag." : "order emails.") : "Could not load this drawer. Please try again.";
@@ -1361,11 +1366,12 @@
     });
   }
 
-  function renderEmailDrawerContents(emails, orders, body) {
+  function renderEmailDrawerContents(emails, orders, body, operator = false) {
     const numbers = new Map(orders.map(order => [Number(order.order_id),order.order_number]));
     body.innerHTML = emails.map(email => {
-      const order = numbers.get(Number(email.order_id));
-      const link = order ? "account.html?order="+encodeURIComponent(order) : "";
+      const order = operator ? email.order_number : numbers.get(Number(email.order_id));
+      const path = operator ? "admin.html?tab=orders&search=" : "account.html?order=";
+      const link = order ? path+encodeURIComponent(order) : "";
       const status = /cancel/i.test(email.email_type) ? "pill-coral-soft" : /ship/i.test(email.email_type) ? "pill-delivery" : "pill-lagoon";
       const esc = escapeDrawerText;
       return `<article class="email-card">
@@ -1374,8 +1380,8 @@
         <div style="font-size:var(--text-xs);color:var(--text-muted);">To <strong>${esc(email.recipient_email)}</strong></div>
         <div class="email-body-preview">${esc(email.body_preview)}</div>
         ${link ? `<div class="email-card-actions">
-          <a href="${link}" class="btn btn-primary btn-sm btn-pill">Track #${esc(order)} →</a>
-          <a href="${link}&amp;receipt=1" class="btn btn-outline btn-sm btn-pill">E-Receipt</a>
+          <a href="${link}" class="btn btn-primary btn-sm btn-pill">${operator ? "Inspect" : "Track"} #${esc(order)} →</a>
+          ${operator ? "" : `<a href="${link}&amp;receipt=1" class="btn btn-outline btn-sm btn-pill">E-Receipt</a>`}
         </div>` : ""}
       </article>`;
     }).join("") || "<p>No order notifications yet.</p>";

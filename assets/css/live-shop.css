@@ -66,3 +66,11 @@
 
 #checkout-payment-modal { position: fixed; inset: 0; margin: auto; border: 0; padding: 0; max-height: 90dvh; overflow: auto; }
 #checkout-payment-modal::backdrop { background: rgb(6 26 29 / .62); backdrop-filter: blur(6px); }
+
+.operator-description { margin: 0; color: var(--text-muted); font-size: var(--text-sm); }
+.operator-item { display: flex; align-items: center; gap: 6px; margin-block: 4px; font-size: var(--text-xs); }
+.operator-item-thumb { display: block; width: 28px; height: 35px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--color-sand); }
+.operator-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.operator-dispatch-pills, .operator-dispatch-items, .operator-member { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.operator-dispatch-items .operator-item { padding: 4px 8px 4px 4px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+.operator-member .auth-avatar-badge { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--color-sand); font-size: var(--text-xs); }
