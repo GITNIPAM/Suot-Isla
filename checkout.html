@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout &amp; Validation — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
-  <link rel="stylesheet" href="assets/css/base.css?v=64" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=75" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=75" />
+  <link rel="stylesheet" href="assets/css/base.css?v=75" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=75" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -143,10 +143,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=64"></script>
-  <script src="assets/js/store.js?v=64"></script>
-  <script src="assets/js/components.js?v=64"></script>
-  <script src="assets/js/ocean-overdrive.js?v=64"></script>
+  <script src="assets/js/data.js?v=75"></script>
+  <script src="assets/js/store.js?v=75"></script>
+  <script src="assets/js/components.js?v=75"></script>
+  <script src="assets/js/ocean-overdrive.js?v=75"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const formEl = document.getElementById("checkout-form");
@@ -166,6 +166,34 @@
       const payModalTitle = document.getElementById("chk-pay-modal-title");
       const payModalBody = document.getElementById("chk-pay-modal-body");
       const payModalClose = document.getElementById("chk-pay-modal-close");
+
+      if (!window.SuotStore.getCurrentUser()) {
+        const guestCount = window.SuotStore.getCartTotals().itemCount;
+        const headDesc = document.getElementById("checkout-head-desc");
+        if (headDesc) {
+          headDesc.textContent = "Sign in or create a customer account to verify delivery details, reserve stock, and complete payment.";
+        }
+        checkoutMount.className = "";
+        checkoutMount.innerHTML = `
+          <section class="surface-card" id="checkout-auth-gate" style="max-width:680px;margin:var(--space-8) auto;text-align:center;padding:var(--space-8);">
+            <span class="pill pill-lagoon" style="margin-bottom:var(--space-3);">Sign In Required for Checkout</span>
+            <h2 style="margin-top:0;font-size:var(--text-2xl);">Sign In or Create an Account to Continue</h2>
+            <p style="color:var(--text-secondary);max-width:50ch;margin:var(--space-2) auto var(--space-6);">
+              ${
+                guestCount > 0
+                  ? `You have <strong>${guestCount} item(s)</strong> saved in your guest bag. Sign in or create a customer account and your bag transfers straight into checkout.`
+                  : `Browse our coastal catalog first or sign in with your Suot Isla account to start island dispatch checkout.`
+              }
+            </p>
+            <div style="display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;">
+              <a href="auth.html?redirect=checkout.html" class="btn btn-primary btn-lg btn-pill">Sign In to Existing Account →</a>
+              <a href="auth.html?redirect=checkout.html&mode=register" class="btn btn-coral btn-lg btn-pill">Create Customer Account →</a>
+              <a href="cart.html" class="btn btn-outline btn-lg btn-pill">← Back to Bag</a>
+            </div>
+          </section>
+        `;
+        return;
+      }
 
       let orderCompleted = false;
       let savedAddrs = [];
@@ -277,7 +305,7 @@
       }
 
       function renderSummary() {
-        if (orderCompleted) return;
+        if (orderCompleted || !window.SuotStore.getCurrentUser()) return;
         const cart = window.SuotStore.getCart();
         const totals = window.SuotStore.getCartTotals();
         const stockCheck = window.SuotStore.validateCartStock();

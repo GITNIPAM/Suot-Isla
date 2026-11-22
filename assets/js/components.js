@@ -101,7 +101,7 @@
           <nav class="primary-nav" aria-label="Primary Navigation">
             <a href="index.html" class="nav-link ${activePage === "index.html" ? "active" : ""}">Home</a>
             <a href="catalog.html" class="nav-link ${activePage === "catalog.html" ? "active" : ""}">Catalog</a>
-            <a href="account.html" class="nav-link ${activePage === "account.html" ? "active" : ""}">Orders</a>
+            <a href="${user ? "account.html" : "auth.html?redirect=account.html"}" class="nav-link ${activePage === "account.html" ? "active" : ""}" id="header-orders-nav-link">Orders</a>
           </nav>
 
           <div class="header-actions">
@@ -121,12 +121,12 @@
               <span class="badge-count" id="header-email-count">${emails.length}</span>
             </button>
 
-            <a href="${user ? "account.html" : "auth.html"}" class="icon-btn" title="Account &amp; Role Session">
+            <a href="${user ? "account.html" : "auth.html"}" class="icon-btn" id="header-auth-link" title="${user ? "Account & Order History" : "Sign In or Create Account"}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="8" r="4"/>
                 <path d="M4 20c1.8-3.6 5-5.5 8-5.5s6.2 1.9 8 5.5"/>
               </svg>
-              <span class="header-action-label" id="header-user-name">${user.name.split(" ")[0]}</span>
+              <span class="header-action-label" id="header-user-name">${user ? user.name.split(" ")[0] : "Sign In"}</span>
             </a>
 
             <button type="button" class="icon-btn icon-btn-bag" id="open-cart-drawer-btn" title="Open Island Shopping Bag">
@@ -269,7 +269,7 @@
                 <a href="catalog.html">Full 16-Piece Catalog</a>
                 <a href="cart.html">Shopping Bag &amp; Vouchers</a>
                 <a href="account.html">Orders, Tracking &amp; Returns</a>
-                <a href="auth.html">Sign In / Switch Account</a>
+                <a href="auth.html">Sign In / Island Club</a>
                 <a href="mailto:ola@suotisla.ph">ola@suotisla.ph</a>
               </nav>
 
@@ -312,8 +312,6 @@
             <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear</span>
             <div class="footer-bottom-meta">
               <button type="button" class="footer-top-btn" id="footer-scroll-top" aria-label="Scroll back to top">↑ Back to Top</button>
-              <span aria-hidden="true">·</span>
-              <a href="admin.html" class="footer-portal-link">Admin &amp; Operations Portal →</a>
             </div>
           </div>
         </div>
@@ -579,8 +577,10 @@
         }
       });
 
+      closeActiveSelectMenu(false);
       renderHeader();
       executePreparedScripts(scriptSources);
+      SuotUI.enhanceSelects(document);
 
       if (sourceVisual && destFile === "product.html") {
         const pdpTarget = document.querySelector(".pdp-gallery .studio-product-img, .pdp-gallery .product-svg-stage");
@@ -819,11 +819,18 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-4);">
         <a href="cart.html" class="btn btn-outline">View Full Bag</a>
         ${
-          stockCheck.ok
+          !stockCheck.ok
+            ? `<a href="cart.html" class="btn btn-coral">Resolve Stock</a>`
+            : window.SuotStore.getCurrentUser()
             ? `<a href="checkout.html" class="btn btn-primary">Checkout</a>`
-            : `<a href="cart.html" class="btn btn-coral">Resolve Stock</a>`
+            : `<a href="auth.html?redirect=checkout.html" class="btn btn-primary">Sign In &amp; Checkout →</a>`
         }
       </div>
+      ${
+        stockCheck.ok && !window.SuotStore.getCurrentUser()
+          ? `<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">Browsing as Guest · Sign in or create an account to keep your bag &amp; check out.</div>`
+          : ""
+      }
     `;
 
     bodyEl.querySelectorAll("[data-cart-dec]").forEach((btn) => {
@@ -871,7 +878,14 @@
       : window.SuotStore.getEmails();
     if (!emails.length) {
       const user = window.SuotStore.getCurrentUser();
-      bodyEl.innerHTML = `<p style="font-size:var(--text-sm);">No order emails yet for <strong>${user ? user.email : "this account"}</strong>.</p>`;
+      bodyEl.innerHTML = user
+        ? `<p style="font-size:var(--text-sm);">No order emails yet for <strong>${user.email}</strong>.</p>`
+        : `
+          <div style="padding:var(--space-4) 0;">
+            <p style="font-size:var(--text-sm);margin-bottom:var(--space-3);">Sign in or create a customer account to view confirmation and island shipping emails for your orders.</p>
+            <a href="auth.html" class="btn btn-primary btn-sm">Sign In / Create Account →</a>
+          </div>
+        `;
       return;
     }
 
@@ -980,9 +994,414 @@
     if (emailBadge) {
       emailBadge.textContent = String(emails.length);
     }
-    if (userNameEl && user) {
-      userNameEl.textContent = user.name.split(" ")[0];
+    if (userNameEl) {
+      userNameEl.textContent = user ? user.name.split(" ")[0] : "Sign In";
     }
+    const authLinkEl = document.getElementById("header-auth-link");
+    if (authLinkEl) {
+      authLinkEl.setAttribute("href", user ? "account.html" : "auth.html");
+      authLinkEl.setAttribute("title", user ? "Account & Order History" : "Sign In or Create Account");
+    }
+    const ordersNavEl = document.getElementById("header-orders-nav-link");
+    if (ordersNavEl) {
+      ordersNavEl.setAttribute("href", user ? "account.html" : "auth.html?redirect=account.html");
+    }
+  }
+
+  const SELECT_TONE_MAP = Object.freeze({
+    Pending: "sand",
+    Confirmed: "lagoon",
+    Packed: "deep-teal",
+    "Out for Delivery": "ocean",
+    Delivered: "palm",
+    Cancelled: "coral"
+  });
+
+  let activePortalSelect = null;
+  let suotSelectSeq = 0;
+
+  function buildSelectSvgMarkup(kind) {
+    if (kind === "check") {
+      return '<svg class="suot-select-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+    }
+    return '<svg class="suot-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  }
+
+  function closeActiveSelectMenu(restoreFocus = false) {
+    if (!activePortalSelect) return;
+    activePortalSelect.close(restoreFocus);
+  }
+
+  function getOptionTone(opt) {
+    if (!opt) return "";
+    return SELECT_TONE_MAP[opt.value] || SELECT_TONE_MAP[opt.textContent.trim()] || "";
+  }
+
+  function positionPortalMenu(menu, trigger, isCompact) {
+    const rect = trigger.getBoundingClientRect();
+    const minW = Math.max(rect.width, isCompact ? 184 : 210);
+    const width = Math.min(minW, Math.max(160, window.innerWidth - 20));
+    const measuredH = Math.min(menu.scrollHeight || 240, 292);
+    const spaceBelow = window.innerHeight - rect.bottom - 10;
+    const spaceAbove = rect.top - 10;
+    const flipAbove = spaceBelow < Math.min(measuredH, 210) && spaceAbove > spaceBelow;
+
+    let left = rect.left;
+    if (left + width > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - width - 10);
+    }
+
+    const availableSpace = flipAbove ? spaceAbove : spaceBelow;
+    const maxHeight = Math.min(292, Math.max(132, availableSpace - 6));
+    const effectiveH = Math.min(measuredH, maxHeight);
+    const top = flipAbove ? Math.max(10, rect.top - effectiveH - 6) : Math.max(10, rect.bottom + 6);
+
+    menu.classList.toggle("is-flipped", flipAbove);
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.minWidth = `${Math.round(width)}px`;
+    menu.style.maxHeight = `${Math.round(maxHeight)}px`;
+  }
+
+  function resolveTriggerLabelAttr(sel) {
+    if (sel.getAttribute("aria-label")) return { attr: "aria-label", val: sel.getAttribute("aria-label") };
+    if (sel.id) {
+      const lbl = document.querySelector(`label[for="${CSS.escape(sel.id)}"]`);
+      if (lbl) {
+        if (!lbl.id) lbl.id = `suot-lbl-${++suotSelectSeq}`;
+        return { attr: "aria-labelledby", val: lbl.id };
+      }
+    }
+    const statusOrder = sel.getAttribute("data-status-select");
+    if (statusOrder) return { attr: "aria-label", val: `Order ${statusOrder} status` };
+    if (sel.hasAttribute("data-user-role-id")) return { attr: "aria-label", val: "Account permission role" };
+    return null;
+  }
+
+  function setupPortalSelect(sel) {
+    if (!sel || sel.nodeName !== "SELECT" || sel.hasAttribute("data-native-select")) return;
+    if (sel.dataset.suotSelectEnhanced === "1" && typeof sel._suotSync === "function") {
+      sel._suotSync();
+      return;
+    }
+
+    const parent = sel.parentNode;
+    if (!parent) return;
+
+    const inlineStyle = sel.getAttribute("style") || "";
+    const isCompact =
+      sel.hasAttribute("data-status-select") ||
+      sel.hasAttribute("data-user-role-id") ||
+      /\bwidth:\s*auto\b/i.test(inlineStyle);
+    const isBold = /\bfont-weight:\s*(?:700|bold)\b/i.test(inlineStyle);
+    const menuId = `suot-select-menu-${++suotSelectSeq}`;
+
+    const wrap = document.createElement("div");
+    wrap.className = `suot-select-wrap${isCompact ? " is-compact" : ""}${isBold ? " is-bold" : ""}`;
+    parent.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+
+    sel.classList.add("suot-native-select-hidden");
+    sel.tabIndex = -1;
+    sel.setAttribute("aria-hidden", "true");
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "suot-select-trigger";
+    trigger.setAttribute("role", "combobox");
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", menuId);
+
+    const acc = resolveTriggerLabelAttr(sel);
+    if (acc) trigger.setAttribute(acc.attr, acc.val);
+
+    trigger.innerHTML = `
+      <span class="suot-select-value-row">
+        <span class="suot-select-dot" hidden></span>
+        <span class="suot-select-label"></span>
+      </span>
+      ${buildSelectSvgMarkup("chevron")}
+    `;
+    wrap.appendChild(trigger);
+
+    const dotEl = trigger.querySelector(".suot-select-dot");
+    const labelEl = trigger.querySelector(".suot-select-label");
+    const nativeValueDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+    const nativeIdxDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "selectedIndex");
+
+    const syncTrigger = () => {
+      wrap.classList.remove("is-tone-sand", "is-tone-lagoon", "is-tone-deep-teal", "is-tone-ocean", "is-tone-palm", "is-tone-coral");
+      const options = Array.from(sel.options);
+      const hasTone = sel.hasAttribute("data-status-select") || options.some((opt) => !!getOptionTone(opt));
+      const selectedOpt = sel.selectedOptions[0] || options[sel.selectedIndex] || options[0];
+
+      labelEl.textContent = selectedOpt ? selectedOpt.textContent.trim() : "Select option";
+      const activeTone = getOptionTone(selectedOpt);
+      dotEl.hidden = !(hasTone && activeTone);
+      dotEl.className = `suot-select-dot${activeTone ? ` tone-${activeTone}` : ""}`;
+      if (activeTone) wrap.classList.add(`is-tone-${activeTone}`);
+
+      trigger.disabled = !!sel.disabled;
+      if (activePortalSelect && activePortalSelect.select === sel) {
+        activePortalSelect.renderOptions();
+      }
+    };
+
+    const commitOptionValue = (nextVal) => {
+      const currentVal = nativeValueDesc ? nativeValueDesc.get.call(sel) : sel.value;
+      if (currentVal !== nextVal) {
+        if (nativeValueDesc && nativeValueDesc.set) {
+          nativeValueDesc.set.call(sel, nextVal);
+        } else {
+          sel.value = nextVal;
+        }
+        syncTrigger();
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    };
+
+    if (nativeValueDesc && nativeValueDesc.get && nativeValueDesc.set) {
+      Object.defineProperty(sel, "value", {
+        configurable: true,
+        get() {
+          return nativeValueDesc.get.call(this);
+        },
+        set(nextVal) {
+          nativeValueDesc.set.call(this, nextVal);
+          syncTrigger();
+        }
+      });
+    }
+
+    if (nativeIdxDesc && nativeIdxDesc.get && nativeIdxDesc.set) {
+      Object.defineProperty(sel, "selectedIndex", {
+        configurable: true,
+        get() {
+          return nativeIdxDesc.get.call(this);
+        },
+        set(nextIdx) {
+          nativeIdxDesc.set.call(this, nextIdx);
+          syncTrigger();
+        }
+      });
+    }
+
+    const openMenu = (highlightMode = "selected") => {
+      if (sel.disabled || !sel.options.length || !trigger.isConnected) return;
+      if (activePortalSelect && activePortalSelect.select === sel) {
+        closeActiveSelectMenu(true);
+        return;
+      }
+      closeActiveSelectMenu(false);
+
+      const menu = document.createElement("div");
+      menu.id = menuId;
+      menu.className = `suot-select-menu${isCompact ? " is-compact" : ""}`;
+      menu.setAttribute("role", "listbox");
+      if (acc) menu.setAttribute(acc.attr, acc.val);
+
+      let optionButtons = [];
+      let highlightedIdx = -1;
+
+      const setHighlight = (idx, scrollIntoView = true) => {
+        optionButtons.forEach((btn, i) => {
+          btn.classList.toggle("is-highlighted", i === idx);
+        });
+        highlightedIdx = idx;
+        if (scrollIntoView && idx >= 0 && optionButtons[idx]) {
+          optionButtons[idx].scrollIntoView({ block: "nearest" });
+        }
+      };
+
+      const findEnabledIndex = (startIdx, step) => {
+        if (!optionButtons.length) return -1;
+        let idx = startIdx;
+        for (let count = 0; count < optionButtons.length; count += 1) {
+          if (idx < 0) idx = optionButtons.length - 1;
+          if (idx >= optionButtons.length) idx = 0;
+          if (optionButtons[idx].getAttribute("aria-disabled") !== "true") return idx;
+          idx += step;
+        }
+        return -1;
+      };
+
+      const renderOptions = () => {
+        menu.innerHTML = "";
+        optionButtons = [];
+        const options = Array.from(sel.options);
+        const currentVal = nativeValueDesc ? nativeValueDesc.get.call(sel) : sel.value;
+        const showDots = sel.hasAttribute("data-status-select") || options.some((opt) => !!getOptionTone(opt));
+
+        options.forEach((opt, index) => {
+          const optTone = getOptionTone(opt);
+          if (optTone === "coral" && index > 0) {
+            const sep = document.createElement("div");
+            sep.className = "suot-select-separator";
+            sep.setAttribute("role", "separator");
+            sep.setAttribute("aria-hidden", "true");
+            menu.appendChild(sep);
+          }
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "suot-select-option";
+          btn.setAttribute("role", "option");
+          btn.tabIndex = -1;
+          btn.setAttribute("data-value", opt.value);
+          btn.setAttribute("aria-selected", opt.value === currentVal ? "true" : "false");
+          if (opt.disabled) btn.setAttribute("aria-disabled", "true");
+          if (optTone) btn.setAttribute("data-tone", optTone);
+
+          const mainSpan = document.createElement("span");
+          mainSpan.className = "suot-select-option-main";
+          if (showDots && optTone) {
+            const dot = document.createElement("span");
+            dot.className = `suot-select-dot tone-${optTone}`;
+            dot.setAttribute("aria-hidden", "true");
+            mainSpan.appendChild(dot);
+          }
+          const txt = document.createElement("span");
+          txt.textContent = opt.textContent.trim();
+          mainSpan.appendChild(txt);
+          btn.appendChild(mainSpan);
+          btn.insertAdjacentHTML("beforeend", buildSelectSvgMarkup("check"));
+
+          const btnIndex = optionButtons.length;
+          btn.addEventListener("pointerenter", () => {
+            if (!opt.disabled) setHighlight(btnIndex, false);
+          });
+          btn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (opt.disabled) return;
+            commitOptionValue(opt.value);
+            close(true);
+          });
+
+          menu.appendChild(btn);
+          optionButtons.push(btn);
+        });
+
+        const selectedIdx = options.findIndex((o) => o.value === currentVal && !o.disabled);
+        const defaultIdx = selectedIdx >= 0 ? selectedIdx : findEnabledIndex(0, 1);
+        setHighlight(defaultIdx, false);
+      };
+
+      const onOutsidePointerDown = (ev) => {
+        if (trigger.contains(ev.target) || menu.contains(ev.target)) return;
+        close(false);
+      };
+
+      const onWindowScroll = (ev) => {
+        if (ev.target && ev.target !== document && menu.contains(ev.target)) return;
+        close(false);
+      };
+
+      const onResize = () => {
+        if (!trigger.isConnected) {
+          close(false);
+          return;
+        }
+        positionPortalMenu(menu, trigger, isCompact);
+      };
+
+      const onOpenKeyDown = (ev) => {
+        if (ev.key === "ArrowDown") {
+          ev.preventDefault();
+          const start = highlightedIdx >= 0 ? highlightedIdx + 1 : 0;
+          setHighlight(findEnabledIndex(start, 1));
+        } else if (ev.key === "ArrowUp") {
+          ev.preventDefault();
+          const start = highlightedIdx >= 0 ? highlightedIdx - 1 : optionButtons.length - 1;
+          setHighlight(findEnabledIndex(start, -1));
+        } else if (ev.key === "Home") {
+          ev.preventDefault();
+          setHighlight(findEnabledIndex(0, 1));
+        } else if (ev.key === "End") {
+          ev.preventDefault();
+          setHighlight(findEnabledIndex(optionButtons.length - 1, -1));
+        } else if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          const activeBtn = optionButtons[highlightedIdx];
+          if (activeBtn && activeBtn.getAttribute("aria-disabled") !== "true") {
+            commitOptionValue(activeBtn.getAttribute("data-value") || "");
+            close(true);
+          }
+        } else if (ev.key === "Escape") {
+          ev.preventDefault();
+          close(true);
+        } else if (ev.key === "Tab") {
+          close(false);
+        }
+      };
+
+      const close = (restoreFocus = false) => {
+        document.removeEventListener("pointerdown", onOutsidePointerDown, true);
+        window.removeEventListener("scroll", onWindowScroll, true);
+        window.removeEventListener("resize", onResize);
+        document.removeEventListener("keydown", onOpenKeyDown, true);
+        trigger.setAttribute("aria-expanded", "false");
+        if (menu.parentNode) menu.parentNode.removeChild(menu);
+        if (activePortalSelect && activePortalSelect.select === sel) {
+          activePortalSelect = null;
+        }
+        if (restoreFocus && trigger.isConnected) {
+          trigger.focus();
+        }
+      };
+
+      renderOptions();
+      document.body.appendChild(menu);
+      positionPortalMenu(menu, trigger, isCompact);
+      trigger.setAttribute("aria-expanded", "true");
+
+      activePortalSelect = { select: sel, trigger, menu, close, renderOptions };
+
+      if (highlightMode === "first") {
+        setHighlight(findEnabledIndex(0, 1));
+      } else if (highlightMode === "last") {
+        setHighlight(findEnabledIndex(optionButtons.length - 1, -1));
+      } else if (highlightedIdx >= 0 && optionButtons[highlightedIdx]) {
+        optionButtons[highlightedIdx].scrollIntoView({ block: "nearest" });
+      }
+
+      requestAnimationFrame(() => {
+        if (menu.isConnected) menu.classList.add("is-open");
+      });
+
+      document.addEventListener("pointerdown", onOutsidePointerDown, true);
+      window.addEventListener("scroll", onWindowScroll, true);
+      window.addEventListener("resize", onResize);
+      document.addEventListener("keydown", onOpenKeyDown, true);
+    };
+
+    trigger.addEventListener("click", () => {
+      openMenu("selected");
+    });
+
+    trigger.addEventListener("keydown", (ev) => {
+      if (activePortalSelect && activePortalSelect.select === sel) return;
+      if (ev.key === "ArrowDown" || ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        openMenu("selected");
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        openMenu("last");
+      }
+    });
+
+    sel.addEventListener("focus", () => {
+      if (!sel.disabled && trigger.isConnected) trigger.focus();
+    });
+
+    sel.addEventListener("change", syncTrigger);
+
+    const observer = new MutationObserver(() => syncTrigger());
+    observer.observe(sel, { childList: true, subtree: true, attributes: true, characterData: true });
+
+    sel._suotSync = syncTrigger;
+    sel.dataset.suotSelectEnhanced = "1";
+    syncTrigger();
   }
 
   const SuotUI = {
@@ -991,6 +1410,7 @@
       initCoastalPageTransitions();
       renderHeader();
       renderFooter();
+      this.enhanceSelects(document);
       lastCartCount = window.SuotStore.getCartTotals().itemCount;
       renderCartDrawerContents();
       renderEmailDrawerContents();
@@ -1570,6 +1990,18 @@
       el.addEventListener("mouseleave", () => {
         hideTimer = setTimeout(dismiss, 1800);
       });
+    },
+
+    enhanceSelects(root = document) {
+      if (activePortalSelect && !activePortalSelect.trigger.isConnected) {
+        closeActiveSelectMenu(false);
+      }
+      if (root && root.nodeName === "SELECT" && root.classList.contains("form-select")) {
+        setupPortalSelect(root);
+        return;
+      }
+      const scope = root && typeof root.querySelectorAll === "function" ? root : document;
+      scope.querySelectorAll("select.form-select").forEach(setupPortalSelect);
     }
   };
 

@@ -15,7 +15,7 @@
     RETURNS: "suot_isla_returns_v1",
     EMAILS: "suot_isla_emails_v1",
     USERS: "suot_isla_users_v1",
-    CURRENT_USER: "suot_isla_current_user_v1"
+    CURRENT_USER: "suot_isla_current_user_v2"
   };
 
   function readJSON(key, fallback) {
@@ -37,7 +37,7 @@
   }
 
   function getUserStorageKey(user) {
-    const u = user || readJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
+    const u = arguments.length ? user : readJSON(KEYS.CURRENT_USER, null);
     if (u && u.id !== undefined && u.id !== null) return `uid-${u.id}`;
     if (u && u.email) return String(u.email).trim().toLowerCase();
     return "guest";
@@ -89,9 +89,6 @@
       });
       if (changedUsers) localStorage.setItem(KEYS.USERS, JSON.stringify(existingUsers));
     }
-    if (!localStorage.getItem(KEYS.CURRENT_USER)) {
-      writeJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
-    }
     if (!localStorage.getItem(KEYS.CARTS_BY_USER)) {
       const seedItem = [
         {
@@ -105,14 +102,9 @@
           qty: 1
         }
       ];
-      const legacyCart = readJSON(KEYS.CART, null);
-      const currKey = getUserStorageKey(readJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]));
       const cartsMap = {
-        "uid-1": Array.isArray(legacyCart) && currKey === "uid-1" ? legacyCart : seedItem
+        "uid-1": seedItem
       };
-      if (Array.isArray(legacyCart) && currKey !== "uid-1") {
-        cartsMap[currKey] = legacyCart;
-      }
       localStorage.setItem(KEYS.CARTS_BY_USER, JSON.stringify(cartsMap));
     }
     if (!localStorage.getItem(KEYS.ADDRESSES_BY_USER)) {
@@ -191,7 +183,7 @@
     withAssetVersion(src) {
       if (!src || typeof src !== "string") return src || "";
       if (src.startsWith("assets/images/") && !src.includes("?")) {
-        return `${src}?v=64`;
+        return `${src}?v=75`;
       }
       return src;
     },
@@ -344,15 +336,18 @@
 
     // -------------------- Per-Account Saved Addresses & Cart --------------------
     getSavedAddressesForCurrentUser() {
+      const curr = this.getCurrentUser();
+      if (!curr) return [];
       const map = readJSON(KEYS.ADDRESSES_BY_USER, {});
-      const key = getUserStorageKey();
+      const key = getUserStorageKey(curr);
       return Array.isArray(map[key]) ? map[key] : [];
     },
 
     saveAddressForCurrentUser(addr) {
-      if (!addr || !addr.street || !addr.city) return this.getSavedAddressesForCurrentUser();
+      const curr = this.getCurrentUser();
+      if (!curr || !addr || !addr.street || !addr.city) return this.getSavedAddressesForCurrentUser();
       const map = readJSON(KEYS.ADDRESSES_BY_USER, {});
-      const key = getUserStorageKey();
+      const key = getUserStorageKey(curr);
       const list = Array.isArray(map[key]) ? [...map[key]] : [];
       const cleanStreet = String(addr.street).trim();
       const cleanCity = String(addr.city).trim();
@@ -640,21 +635,91 @@
     },
 
     getCurrentUser() {
-      return readJSON(KEYS.CURRENT_USER, window.SUOT_ISLA_DATA.users[0]);
+      return readJSON(KEYS.CURRENT_USER, null);
+    },
+
+    _mergeGuestSessionIntoUser(user) {
+      if (!user) return { mergedCount: 0, clampedCount: 0 };
+      const userKey = getUserStorageKey(user);
+      if (userKey === "guest") return { mergedCount: 0, clampedCount: 0 };
+
+      const cartsMap = readJSON(KEYS.CARTS_BY_USER, {});
+      const guestCart = Array.isArray(cartsMap.guest) ? cartsMap.guest : [];
+      let mergedCount = 0;
+      let clampedCount = 0;
+
+      if (guestCart.length) {
+        const targetCart = Array.isArray(cartsMap[userKey]) ? cartsMap[userKey].map((i) => ({ ...i })) : [];
+        guestCart.forEach((gItem) => {
+          const prod = this.getProductById(gItem.productId);
+          if (!prod || prod.archived) {
+            clampedCount += Number(gItem.qty || 1);
+            return;
+          }
+          const stockCap = Math.max(0, parseInt(prod.stock, 10) || 0);
+          if (stockCap <= 0) {
+            clampedCount += Number(gItem.qty || 1);
+            return;
+          }
+          const inTarget = targetCart
+            .filter((it) => it.productId === prod.id)
+            .reduce((sum, it) => sum + Number(it.qty || 0), 0);
+          const availToAdd = Math.max(0, stockCap - inTarget);
+          const wanted = Math.max(1, parseInt(gItem.qty, 10) || 1);
+          const actualAdd = Math.min(availToAdd, wanted);
+          if (actualAdd < wanted) clampedCount += wanted - actualAdd;
+          if (actualAdd <= 0) return;
+
+          const existing = targetCart.find(
+            (it) => it.productId === prod.id && it.size === gItem.size && it.color === gItem.color
+          );
+          if (existing) {
+            existing.qty += actualAdd;
+          } else {
+            targetCart.push({
+              ...gItem,
+              qty: actualAdd
+            });
+          }
+          mergedCount += actualAdd;
+        });
+
+        cartsMap[userKey] = targetCart;
+        delete cartsMap.guest;
+        localStorage.setItem(KEYS.CARTS_BY_USER, JSON.stringify(cartsMap));
+      }
+
+      const couponsMap = readJSON(KEYS.COUPONS_BY_USER, {});
+      if (couponsMap.guest) {
+        if (!couponsMap[userKey]) {
+          couponsMap[userKey] = couponsMap.guest;
+        }
+        delete couponsMap.guest;
+        localStorage.setItem(KEYS.COUPONS_BY_USER, JSON.stringify(couponsMap));
+      }
+
+      return { mergedCount, clampedCount };
     },
 
     loginAsRole(role) {
       const users = this.getUsers();
       const matched = users.find((u) => u.role === role) || users[0];
+      const mergeInfo = this._mergeGuestSessionIntoUser(matched);
       writeJSON(KEYS.CURRENT_USER, matched);
-      return matched;
+      return { ...matched, mergedGuestItems: mergeInfo.mergedCount, clampedGuestItems: mergeInfo.clampedCount };
     },
 
     loginAsUserId(userId) {
       const users = this.getUsers();
       const matched = users.find((u) => Number(u.id) === Number(userId)) || users[0];
+      const mergeInfo = this._mergeGuestSessionIntoUser(matched);
       writeJSON(KEYS.CURRENT_USER, matched);
-      return matched;
+      return { ...matched, mergedGuestItems: mergeInfo.mergedCount, clampedGuestItems: mergeInfo.clampedCount };
+    },
+
+    logout() {
+      writeJSON(KEYS.CURRENT_USER, null);
+      return { ok: true };
     },
 
     hashDemoPassword(raw) {
@@ -704,8 +769,14 @@
         found.passwordDigest = expectedDigest;
         writeJSON(KEYS.USERS, users);
       }
+      const mergeInfo = this._mergeGuestSessionIntoUser(found);
       writeJSON(KEYS.CURRENT_USER, found);
-      return { ok: true, user: found };
+      return {
+        ok: true,
+        user: found,
+        mergedGuestItems: mergeInfo.mergedCount,
+        clampedGuestItems: mergeInfo.clampedCount
+      };
     },
 
     registerUser(data) {
@@ -738,8 +809,14 @@
       };
       users.push(newUser);
       writeJSON(KEYS.USERS, users);
+      const mergeInfo = this._mergeGuestSessionIntoUser(newUser);
       writeJSON(KEYS.CURRENT_USER, newUser);
-      return { ok: true, user: newUser };
+      return {
+        ok: true,
+        user: newUser,
+        mergedGuestItems: mergeInfo.mergedCount,
+        clampedGuestItems: mergeInfo.clampedCount
+      };
     },
 
     updateUserRole(userId, newRole) {
@@ -803,7 +880,7 @@
       const emails = this.getEmails();
       const entry = {
         id: "EM-" + Math.floor(100 + Math.random() * 899),
-        to: to || "mateo.alonzo@student.pcu.edu.ph",
+        to: to || "",
         type,
         orderNumber,
         subject,
@@ -816,6 +893,14 @@
     },
 
     placeOrder(checkoutForm) {
+      const curr = this.getCurrentUser();
+      if (!curr) {
+        return {
+          ok: false,
+          reason: "auth_required",
+          message: "Please sign in or create a customer account before placing your order."
+        };
+      }
       const cart = this.getCart();
       if (!cart.length) {
         return { ok: false, reason: "empty", message: "Your island bag is empty." };
@@ -856,7 +941,6 @@
         this.adjustProductMetrics(item.productId, -item.qty, item.qty);
       });
 
-      const curr = this.getCurrentUser();
       const verifiedPhone = this.normalizePhMobile(checkoutForm.phone) || this.normalizePhMobile(curr.phone) || checkoutForm.phone;
 
       const newOrder = {

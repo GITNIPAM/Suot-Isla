@@ -26,7 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmTitleEl = document.getElementById("admin-confirm-title");
   const confirmBodyEl = document.getElementById("admin-confirm-body");
   const confirmProceedBtn = document.getElementById("admin-confirm-proceed-btn");
+  const confirmCancelBtn = document.getElementById("admin-confirm-cancel-btn");
   let pendingConfirmHandler = null;
+  let lastConfirmTriggerEl = null;
 
   const refundModal = document.getElementById("admin-refund-modal");
   const refundForm = document.getElementById("admin-refund-form");
@@ -38,9 +40,234 @@ document.addEventListener("DOMContentLoaded", () => {
   const refundVerifyChk = document.getElementById("refund-verify-checkbox");
   const refundAlertEl = document.getElementById("refund-form-alert");
 
+  const params = new URLSearchParams(window.location.search);
+  const isDemoMode = params.get("demo") === "1";
   const currUser = window.SuotStore.getCurrentUser();
-  let activeRole = ["admin", "staff", "courier"].includes(currUser.role) ? currUser.role : "admin";
+  const topbarRoleBadge = document.getElementById("topbar-role-badge");
+  const adminSignOutBtn = document.getElementById("admin-signout-btn");
+  const adminEmailsTopBtn = document.getElementById("admin-open-emails-btn");
+
+  if (adminSignOutBtn) {
+    adminSignOutBtn.style.display = currUser ? "" : "none";
+    adminSignOutBtn.addEventListener("click", () => {
+      window.SuotStore.logout();
+      window.location.href = isDemoMode ? "admin.html?demo=1" : "admin.html";
+    });
+  }
+
+  if (!currUser || !["admin", "staff", "courier"].includes(currUser.role)) {
+    if (topbarRoleBadge) {
+      topbarRoleBadge.textContent = currUser ? `ROLE: ${currUser.role.toUpperCase()} (RESTRICTED)` : "OPERATOR SIGN IN";
+    }
+    if (roleSelectEl) roleSelectEl.disabled = true;
+    if (roleDescEl) {
+      roleDescEl.textContent = "Sign in with Admin, Staff, or Courier credentials to unlock operations.";
+    }
+    document.querySelectorAll("[data-admin-tab]").forEach((btn) => {
+      btn.disabled = true;
+      btn.style.opacity = "0.45";
+    });
+    if (adminEmailsTopBtn) adminEmailsTopBtn.disabled = true;
+    const adminEmailBadge = document.getElementById("admin-email-count");
+    if (adminEmailBadge) adminEmailBadge.textContent = "0";
+
+    if (workspaceEl) {
+      workspaceEl.innerHTML = `
+        <section class="admin-gate-card" id="admin-auth-gate" aria-label="Operations Console Sign In">
+          <h2>Operator Sign In</h2>
+          <p class="admin-gate-sub">
+            ${
+              currUser
+                ? `Signed in as <strong>${currUser.name}</strong> (Customer). Enter authorized <strong>Admin</strong>, <strong>Staff</strong>, or <strong>Courier</strong> credentials to open back-office operations.`
+                : `Restricted to authorized Suot Isla Store Owners, Catalog Staff, and Island Couriers. Sign in with your operator credentials below.`
+            }
+          </p>
+
+          <form id="admin-login-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="admin-login-email">Operator Email *</label>
+              <input type="email" id="admin-login-email" class="form-input" required autocomplete="email" placeholder="admin@suotisla.ph" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="admin-login-password">Password *</label>
+              <div class="admin-pass-wrap">
+                <input type="password" id="admin-login-password" class="form-input" required autocomplete="current-password" placeholder="Enter operator password" />
+                <button type="button" class="admin-pass-toggle" id="admin-pass-toggle" aria-label="Show password">Show</button>
+              </div>
+            </div>
+
+            <div id="admin-login-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:rgba(242,125,99,0.14);border:1px solid var(--color-coral);color:#9f3217;font-size:0.8rem;font-weight:600;"></div>
+
+            <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:center;">
+              <button type="submit" class="btn btn-primary" style="flex:1;white-space:nowrap;">
+                Sign In →
+              </button>
+              <a href="index.html" class="btn btn-outline" style="white-space:nowrap;">← Storefront</a>
+            </div>
+            ${
+              currUser
+                ? `<div style="margin-top:0.75rem;"><button type="button" class="btn btn-ghost btn-sm" id="admin-gate-cust-signout">Sign out customer account (${currUser.email})</button></div>`
+                : ""
+            }
+          </form>
+
+          <div class="auth-demo-box" id="admin-demo-creds">
+            <div class="auth-demo-title">Operator demo accounts (fictional data — click row to prefill)</div>
+            <div class="auth-demo-list">
+              <button type="button" class="auth-demo-item" data-admin-fill-email="admin@suotisla.ph">
+                <span class="auth-demo-role">Admin</span>
+                <span class="auth-demo-cred">admin@suotisla.ph / SuotIsla2026!</span>
+              </button>
+              <button type="button" class="auth-demo-item" data-admin-fill-email="staff@suotisla.ph">
+                <span class="auth-demo-role">Staff</span>
+                <span class="auth-demo-cred">staff@suotisla.ph / SuotIsla2026!</span>
+              </button>
+              <button type="button" class="auth-demo-item" data-admin-fill-email="courier@suotisla.ph">
+                <span class="auth-demo-role">Courier</span>
+                <span class="auth-demo-cred">courier@suotisla.ph / SuotIsla2026!</span>
+              </button>
+            </div>
+          </div>
+          ${
+            isDemoMode
+              ? `
+                <div class="admin-demo-bar" id="admin-demo-bar">
+                  <span class="admin-demo-bar-label">1-Click Demo Shortcuts (?demo=1)</span>
+                  <div class="admin-demo-btns">
+                    <button type="button" class="btn btn-outline btn-sm" data-admin-demo-role="admin">Store Admin</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-admin-demo-role="staff">Catalog Staff</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-admin-demo-role="courier">Island Courier</button>
+                  </div>
+                </div>
+              `
+              : ""
+          }
+        </section>
+      `;
+
+      const gateForm = document.getElementById("admin-login-form");
+      const gateEmail = document.getElementById("admin-login-email");
+      const gatePass = document.getElementById("admin-login-password");
+      const gateToggle = document.getElementById("admin-pass-toggle");
+      const gateAlert = document.getElementById("admin-login-alert");
+      const custSignOut = document.getElementById("admin-gate-cust-signout");
+
+      workspaceEl.querySelectorAll("[data-admin-fill-email]").forEach((rowBtn) => {
+        rowBtn.addEventListener("click", () => {
+          if (gateEmail) {
+            gateEmail.value = rowBtn.getAttribute("data-admin-fill-email") || "";
+            gateEmail.classList.remove("is-invalid-field");
+          }
+          if (gatePass) {
+            gatePass.value = "SuotIsla2026!";
+            gatePass.classList.remove("is-invalid-field");
+          }
+          if (gateAlert) gateAlert.style.display = "none";
+          window.SuotUI.toast("Operator credentials filled — click Sign In to verify.", "Demo Ready");
+        });
+      });
+
+      if (gateToggle && gatePass) {
+        gateToggle.addEventListener("click", () => {
+          const showing = gatePass.type === "text";
+          gatePass.type = showing ? "password" : "text";
+          gateToggle.textContent = showing ? "Show" : "Hide";
+        });
+      }
+
+      [gateEmail, gatePass].forEach((inp) => {
+        if (!inp) return;
+        inp.addEventListener("input", () => {
+          inp.classList.remove("is-invalid-field");
+          if (gateAlert) {
+            gateAlert.style.display = "none";
+            gateAlert.textContent = "";
+          }
+        });
+      });
+
+      if (custSignOut) {
+        custSignOut.addEventListener("click", () => {
+          window.SuotStore.logout();
+          window.location.reload();
+        });
+      }
+
+      if (gateForm) {
+        gateForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const emailVal = gateEmail ? gateEmail.value.trim() : "";
+          const passVal = gatePass ? gatePass.value : "";
+          if (!emailVal || (gateEmail && !gateEmail.checkValidity())) {
+            if (gateAlert) {
+              gateAlert.textContent = "Enter a valid operator email address.";
+              gateAlert.style.display = "block";
+            }
+            if (gateEmail) {
+              gateEmail.classList.add("is-invalid-field");
+              gateEmail.focus();
+            }
+            return;
+          }
+          if (!passVal) {
+            if (gateAlert) {
+              gateAlert.textContent = "Enter your operator password.";
+              gateAlert.style.display = "block";
+            }
+            if (gatePass) {
+              gatePass.classList.add("is-invalid-field");
+              gatePass.focus();
+            }
+            return;
+          }
+
+          const res = window.SuotStore.loginWithCredentials(emailVal, passVal);
+          if (!res.ok) {
+            if (gateAlert) {
+              gateAlert.textContent = res.message;
+              gateAlert.style.display = "block";
+            }
+            const tgt = res.field === "email" ? gateEmail : gatePass;
+            if (tgt) {
+              tgt.classList.add("is-invalid-field");
+              tgt.focus();
+            }
+            return;
+          }
+
+          if (!["admin", "staff", "courier"].includes(res.user.role)) {
+            window.SuotStore.logout();
+            if (gateAlert) {
+              gateAlert.textContent = `Access denied: ${res.user.email} is a Customer account and does not have back-office operator permissions.`;
+              gateAlert.style.display = "block";
+            }
+            return;
+          }
+
+          window.location.reload();
+        });
+      }
+
+      workspaceEl.querySelectorAll("[data-admin-demo-role]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          window.SuotStore.loginAsRole(btn.getAttribute("data-admin-demo-role"));
+          window.location.reload();
+        });
+      });
+    }
+    return;
+  }
+
+  const signedInRole = currUser.role;
+  let activeRole = signedInRole;
   roleSelectEl.value = activeRole;
+  if (signedInRole === "courier") {
+    roleSelectEl.disabled = true;
+  } else if (signedInRole === "staff") {
+    const adminOpt = roleSelectEl.querySelector('option[value="admin"]');
+    if (adminOpt) adminOpt.disabled = true;
+  }
 
   const roleDescriptions = {
     admin: "Full analytics, catalog control, returns, and team RBAC.",
@@ -53,16 +280,55 @@ document.addEventListener("DOMContentLoaded", () => {
     return window.SuotStore.renderProductVisual(product, color || (product.colors && product.colors[0]));
   }
 
-  function closeConfirmDialog() {
+  function closeConfirmDialog(restoreFocus = false) {
     if (confirmModal) confirmModal.classList.remove("open");
     pendingConfirmHandler = null;
+    if (restoreFocus && lastConfirmTriggerEl && lastConfirmTriggerEl.isConnected) {
+      lastConfirmTriggerEl.focus();
+    }
+    lastConfirmTriggerEl = null;
   }
 
-  function openConfirmDialog({ badge = "CONFIRM", badgeClass = "pill-coral", title, bodyHtml, confirmLabel = "Confirm", confirmBtnClass = "btn-coral", onConfirm }) {
+  function countActiveOrdersForProduct(productId) {
+    return window.SuotStore.getOrders().filter((ord) => {
+      if (ord.status === "Cancelled" || ord.status === "Delivered" || ord.status === "Returned") return false;
+      return (ord.items || []).some((item) => item.productId === productId || item.id === productId);
+    }).length;
+  }
+
+  function renderProductConfirmBody(prod, stockColor, impactItems, impactClass = "") {
+    const unitLabel = Number(prod.stock) === 1 ? "unit" : "units";
+    const listItems = impactItems.map((line) => `<li>${line}</li>`).join("");
+    return `
+      <div class="admin-confirm-summary" style="display:flex;align-items:center;gap:0.85rem;">
+        <div class="admin-thumb-sm" style="width:52px;height:64px;">${getProductThumb(prod)}</div>
+        <div style="min-width:0;">
+          <div class="mono" style="font-size:0.74rem;color:var(--text-muted);">${prod.sku} · ${prod.series} Series</div>
+          <strong style="display:block;font-size:0.95rem;">${prod.name}</strong>
+          <div style="font-size:0.78rem;color:${stockColor};margin-top:3px;">
+            ${prod.stock} ${unitLabel} in stock · ${window.SuotStore.formatPrice(prod.price)}
+          </div>
+        </div>
+      </div>
+      <ul class="admin-confirm-impact${impactClass ? ` ${impactClass}` : ""}">${listItems}</ul>
+    `;
+  }
+
+  function openConfirmDialog({
+    badge = "CONFIRM",
+    badgeClass = "pill-coral",
+    title,
+    bodyHtml,
+    confirmLabel = "Confirm",
+    confirmBtnClass = "btn-coral",
+    triggerEl = null,
+    onConfirm
+  }) {
     if (!confirmModal) {
       if (typeof onConfirm === "function") onConfirm();
       return;
     }
+    lastConfirmTriggerEl = triggerEl || document.activeElement;
     confirmBadgeEl.className = `pill ${badgeClass}`;
     confirmBadgeEl.textContent = badge;
     confirmTitleEl.textContent = title;
@@ -71,17 +337,28 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmProceedBtn.textContent = confirmLabel;
     pendingConfirmHandler = onConfirm || null;
     confirmModal.classList.add("open");
+    requestAnimationFrame(() => {
+      if (confirmCancelBtn) confirmCancelBtn.focus();
+    });
   }
 
   if (confirmModal) {
-    document.getElementById("close-confirm-modal-btn").addEventListener("click", closeConfirmDialog);
-    document.getElementById("admin-confirm-cancel-btn").addEventListener("click", closeConfirmDialog);
+    document.getElementById("close-confirm-modal-btn").addEventListener("click", () => closeConfirmDialog(true));
+    if (confirmCancelBtn) {
+      confirmCancelBtn.addEventListener("click", () => closeConfirmDialog(true));
+    }
     confirmModal.addEventListener("click", (e) => {
-      if (e.target === confirmModal) closeConfirmDialog();
+      if (e.target === confirmModal) closeConfirmDialog(true);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && confirmModal.classList.contains("open")) {
+        e.preventDefault();
+        closeConfirmDialog(true);
+      }
     });
     confirmProceedBtn.addEventListener("click", () => {
       const fn = pendingConfirmHandler;
-      closeConfirmDialog();
+      closeConfirmDialog(false);
       if (typeof fn === "function") fn();
     });
   }
@@ -113,6 +390,9 @@ document.addEventListener("DOMContentLoaded", () => {
     refundAlertEl.style.display = "none";
     refundAlertEl.textContent = "";
     refundModal.classList.add("open");
+    if (window.SuotUI && typeof window.SuotUI.enhanceSelects === "function") {
+      window.SuotUI.enhanceSelects(refundModal);
+    }
     setTimeout(() => refundTxnInput.focus(), 60);
   }
 
@@ -232,7 +512,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function syncRolePermissions() {
-    roleDescEl.textContent = roleDescriptions[activeRole] || "";
+    roleDescEl.textContent = `${roleDescriptions[activeRole] || ""} Signed in: ${currUser.name}.`;
     const roleBadgeEl = document.getElementById("topbar-role-badge");
     if (roleBadgeEl) roleBadgeEl.textContent = `ROLE: ${activeRole.toUpperCase()}`;
 
@@ -263,6 +543,9 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `${awaitingPack} due`
       : String(orders.length);
     document.getElementById("nav-return-count").textContent = actionReturns;
+    if (window.SuotUI && typeof window.SuotUI.enhanceSelects === "function") {
+      window.SuotUI.enhanceSelects(roleSelectEl);
+    }
   }
 
   function navigateAdminTab(nextTab, opts = {}) {
@@ -285,6 +568,9 @@ document.addEventListener("DOMContentLoaded", () => {
       workspaceEl.classList.remove("admin-workspace-stage");
       void workspaceEl.offsetWidth;
       workspaceEl.classList.add("admin-workspace-stage");
+    }
+    if (window.SuotUI && typeof window.SuotUI.enhanceSelects === "function") {
+      window.SuotUI.enhanceSelects(workspaceEl);
     }
     if (window.SuotMotion && typeof window.SuotMotion.initDocks === "function") {
       window.SuotMotion.initDocks(workspaceEl);
@@ -815,11 +1101,65 @@ document.addEventListener("DOMContentLoaded", () => {
     workspaceEl.querySelectorAll("[data-archive-prod]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const pid = btn.getAttribute("data-archive-prod");
-        const item = window.SuotStore.toggleArchiveProduct(pid);
-        window.SuotUI.toast(`${item.name} ${item.archived ? "archived from storefront" : "restored to storefront"}.`, "Catalog Updated");
-        syncRolePermissions();
-        renderInventoryTab();
-        flashAdminRow(pid);
+        const prod = window.SuotStore.getProductById(pid);
+        if (!prod) return;
+
+        const isRestore = !!prod.archived;
+        const unitLabel = Number(prod.stock) === 1 ? "unit" : "units";
+        if (isRestore) {
+          const stockColor = prod.stock <= 0 ? "var(--color-coral-deep)" : "var(--color-palm)";
+          const stockNote =
+            prod.stock <= 0
+              ? "Stock is currently <strong>0 units</strong> — customers will see it as sold out until restocked."
+              : prod.stock <= 5
+              ? `Low stock alert: only <strong>${prod.stock} ${unitLabel}</strong> left for immediate purchase.`
+              : `Re-enables storefront purchasing with <strong>${prod.stock} ${unitLabel}</strong> ready in inventory.`;
+
+          openConfirmDialog({
+            badge: "RESTORE · LIVE",
+            badgeClass: "pill-palm",
+            title: `Restore "${prod.name}"?`,
+            confirmLabel: "Restore to Storefront",
+            confirmBtnClass: "btn-primary",
+            triggerEl: btn,
+            bodyHtml: renderProductConfirmBody(prod, stockColor, [
+              "Publishes item back onto Catalog, Search, and Series shelves.",
+              stockNote
+            ]),
+            onConfirm: () => {
+              const item = window.SuotStore.toggleArchiveProduct(pid);
+              window.SuotUI.toast(`${item.name} restored to storefront.`, "Catalog Updated");
+              syncRolePermissions();
+              renderInventoryTab();
+              flashAdminRow(pid);
+            }
+          });
+          return;
+        }
+
+        const activeOrders = countActiveOrdersForProduct(pid);
+        openConfirmDialog({
+          badge: "REVERSIBLE HIDE",
+          badgeClass: "pill-sand",
+          title: `Archive "${prod.name}"?`,
+          confirmLabel: "Archive Product",
+          confirmBtnClass: "btn-primary",
+          triggerEl: btn,
+          bodyHtml: renderProductConfirmBody(prod, "var(--color-lagoon-ink)", [
+            "Hides item from Catalog, Search, and active shopping bags.",
+            `Keeps <strong>${prod.stock} ${unitLabel}</strong> in inventory and preserves sales records.`,
+            activeOrders > 0
+              ? `<strong>${activeOrders} open order${activeOrders === 1 ? "" : "s"}</strong> continue fulfilling normally — restore anytime.`
+              : "Reversible anytime using <strong>Restore</strong> in Catalog &amp; Inventory."
+          ]),
+          onConfirm: () => {
+            const item = window.SuotStore.toggleArchiveProduct(pid);
+            window.SuotUI.toast(`${item.name} archived from storefront.`, "Catalog Updated");
+            syncRolePermissions();
+            renderInventoryTab();
+            flashAdminRow(pid);
+          }
+        });
       });
     });
 
@@ -834,21 +1174,16 @@ document.addEventListener("DOMContentLoaded", () => {
           title: `Delete "${prod.name}"?`,
           confirmLabel: "Permanently Delete",
           confirmBtnClass: "btn-coral",
-          bodyHtml: `
-            <div class="admin-confirm-summary" style="display:flex;align-items:center;gap:0.85rem;">
-              <div class="admin-thumb-sm" style="width:52px;height:64px;">${getProductThumb(prod)}</div>
-              <div style="min-width:0;">
-                <div class="mono" style="font-size:0.74rem;color:var(--text-muted);">${prod.sku} · ${prod.series} Series</div>
-                <strong style="display:block;font-size:0.95rem;">${prod.name}</strong>
-                <div style="font-size:0.78rem;color:var(--color-coral-deep);margin-top:3px;">
-                  ${prod.stock} units in stock · ${window.SuotStore.formatPrice(prod.price)}
-                </div>
-              </div>
-            </div>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin:var(--space-3) 0 0;">
-              This permanently removes the item from Catalog and Admin Inventory. Consider using <strong>Archive</strong> instead if this seasonal piece may return later.
-            </p>
-          `,
+          triggerEl: btn,
+          bodyHtml: renderProductConfirmBody(
+            prod,
+            "var(--color-coral-deep)",
+            [
+              "Permanently removes this item from Catalog and Admin Inventory.",
+              "Consider using <strong>Archive</strong> instead if this seasonal piece may return later."
+            ],
+            "is-danger"
+          ),
           onConfirm: () => {
             window.SuotStore.deleteProduct(pid);
             window.SuotUI.toast(`Deleted ${prod.name} (${prod.sku}) from catalog.`, "Product Deleted");
@@ -887,6 +1222,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     crudModal.classList.add("open");
+    if (window.SuotUI && typeof window.SuotUI.enhanceSelects === "function") {
+      window.SuotUI.enhanceSelects(crudModal);
+    }
   }
 
   imageFileInput.addEventListener("change", () => {
@@ -1538,10 +1876,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   roleSelectEl.addEventListener("change", () => {
-    activeRole = roleSelectEl.value;
-    window.SuotStore.loginAsRole(activeRole);
+    const requested = roleSelectEl.value;
+    if (signedInRole === "courier" && requested !== "courier") {
+      roleSelectEl.value = "courier";
+      return;
+    }
+    if (signedInRole === "staff" && requested === "admin") {
+      roleSelectEl.value = activeRole;
+      window.SuotUI.toast("Staff accounts cannot elevate to full Admin access.", "Role Restricted");
+      return;
+    }
+    activeRole = requested;
     navigateAdminTab(activeRole === "courier" ? "courier" : activeTab);
-    window.SuotUI.toast(`Switched portal view to ${activeRole.toUpperCase()} permission level.`, "RBAC Role Active");
+    window.SuotUI.toast(`Viewing ${activeRole.toUpperCase()} workspace permissions.`, "RBAC Preview");
   });
 
   document.querySelectorAll("[data-admin-tab]").forEach((btn) => {

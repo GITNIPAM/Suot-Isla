@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orders &amp; Island Club — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
-  <link rel="stylesheet" href="assets/css/base.css?v=64" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=64" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=75" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=75" />
+  <link rel="stylesheet" href="assets/css/base.css?v=75" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=75" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=75" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -39,7 +39,7 @@
             <button type="button" class="account-hero-btn" id="acct-open-emails-btn">
               Order Emails
             </button>
-            <a href="auth.html" class="account-hero-btn">Switch Account</a>
+            <button type="button" class="account-hero-btn" id="acct-signout-btn">Sign Out</button>
             <a href="catalog.html" class="btn btn-coral btn-sm btn-pill">+ New Island Order</a>
           </div>
         </div>
@@ -202,10 +202,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=64"></script>
-  <script src="assets/js/store.js?v=64"></script>
-  <script src="assets/js/components.js?v=64"></script>
-  <script src="assets/js/ocean-overdrive.js?v=64"></script>
+  <script src="assets/js/data.js?v=75"></script>
+  <script src="assets/js/store.js?v=75"></script>
+  <script src="assets/js/components.js?v=75"></script>
+  <script src="assets/js/ocean-overdrive.js?v=75"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const heroNameEl = document.getElementById("acct-hero-name");
@@ -257,9 +257,64 @@
         return "active";
       }
 
+      const signOutBtn = document.getElementById("acct-signout-btn");
+      if (signOutBtn) {
+        signOutBtn.addEventListener("click", () => {
+          window.SuotStore.logout();
+          window.SuotUI.toast("Signed out. Browsing as Guest.", "Signed Out");
+          window.SuotUI.navigateTo("index.html");
+        });
+      }
+
       function renderAccountPage() {
         if (!document.body.contains(ordersListEl)) return;
         const user = window.SuotStore.getCurrentUser();
+        const tabsEl = document.getElementById("account-workspace-tabs");
+        const emailsBtn = document.getElementById("acct-open-emails-btn");
+        let authGateEl = document.getElementById("account-auth-gate");
+
+        if (!user) {
+          if (heroNameEl) heroNameEl.textContent = "Sign In.";
+          if (userMetaEl) {
+            userMetaEl.innerHTML = `<span class="pill pill-sand">GUEST SESSION</span><span>Sign in to view orders, tracking milestones &amp; saved addresses</span>`;
+          }
+          if (tabsEl) tabsEl.style.display = "none";
+          if (emailsBtn) emailsBtn.style.display = "none";
+          if (signOutBtn) signOutBtn.style.display = "none";
+          panelOrders.style.display = "none";
+          panelReturns.style.display = "none";
+          panelAddresses.style.display = "none";
+          const workspace = document.querySelector(".account-workspace");
+          if (workspace && !authGateEl) {
+            authGateEl = document.createElement("div");
+            authGateEl.id = "account-auth-gate";
+            authGateEl.className = "surface-card";
+            authGateEl.style.cssText = "max-width:680px;margin:0 auto;text-align:center;padding:var(--space-10);";
+            authGateEl.innerHTML = `
+              <span class="pill pill-lagoon" style="margin-bottom:var(--space-3);">Account Required</span>
+              <h2 style="margin-top:0;">Sign In to View Your Orders &amp; Dispatches</h2>
+              <p style="color:var(--text-secondary);max-width:48ch;margin:var(--space-2) auto var(--space-6);">
+                Sign in or create a customer account to track your Philippine deliveries, inspect official E-Receipts, and manage saved shipping addresses.
+              </p>
+              <div style="display:flex;justify-content:center;gap:var(--space-3);flex-wrap:wrap;">
+                <a href="auth.html?redirect=account.html" class="btn btn-primary btn-pill">Sign In to Account →</a>
+                <a href="auth.html?redirect=account.html&mode=register" class="btn btn-coral btn-pill">Create Customer Account →</a>
+                <a href="catalog.html" class="btn btn-outline btn-pill">Continue Browsing</a>
+              </div>
+            `;
+            workspace.appendChild(authGateEl);
+          } else if (authGateEl) {
+            authGateEl.style.display = "block";
+          }
+          return;
+        }
+
+        if (authGateEl) authGateEl.style.display = "none";
+        if (tabsEl) tabsEl.style.display = "";
+        if (emailsBtn) emailsBtn.style.display = "";
+        if (signOutBtn) signOutBtn.style.display = "";
+        setWorkspaceTab(activeSection);
+
         const firstName = user.name.split(" ")[0];
         if (heroNameEl) heroNameEl.textContent = `${firstName}.`;
         if (userMetaEl) {
@@ -689,6 +744,7 @@
           renderAccountPage();
         }
         const curr = window.SuotStore.getCurrentUser();
+        if (!curr) return;
         const targetCard = ordersListEl.querySelector(`[data-order-card="${CSS.escape(trackedOrder)}"]`);
         if (targetCard) {
           targetCard.classList.remove("order-highlight-pulse");

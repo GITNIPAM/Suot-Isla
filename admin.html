@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin, Staff &amp; Courier Operations Portal — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=64" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=64" />
-  <link rel="stylesheet" href="assets/css/base.css?v=64" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=64" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=64" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=75" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=75" />
+  <link rel="stylesheet" href="assets/css/base.css?v=75" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=75" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=75" />
 </head>
 <body class="admin-portal">
   <!-- Dedicated Back-Office Operations Top Bar (Distinct from Customer Storefront) -->
   <header class="admin-topbar">
     <div class="admin-topbar-left">
       <a href="admin.html" class="admin-brand">
-        <img src="assets/images/logo-stamp.svg?v=64" alt="Suot Isla Stamp" class="admin-brand-stamp" />
+        <img src="assets/images/logo-stamp.svg?v=75" alt="Suot Isla Stamp" class="admin-brand-stamp" />
         <div class="admin-brand-wordmark">
           <div class="admin-brand-title-row">
             <span class="admin-brand-name">SUOT</span>
@@ -34,7 +34,7 @@
         <span class="badge-count" id="admin-email-count">3</span>
       </button>
       <a href="diagrams.html" class="admin-top-btn">ERD &amp; Use Case</a>
-      <a href="auth.html" class="admin-top-btn">Switch Operator</a>
+      <button type="button" class="admin-top-btn" id="admin-signout-btn">Sign Out</button>
       <a href="index.html" class="admin-top-btn admin-top-btn-accent">← Customer Storefront</a>
     </div>
   </header>
@@ -179,7 +179,7 @@
           <input type="file" id="crud-image-file" name="product_image" accept="image/*" class="form-input" />
           <span class="form-hint">Supports JPG, PNG, WebP, or SVG upload (`enctype="multipart/form-data"`).</span>
           <div id="crud-image-preview" style="margin-top:8px;display:none;align-items:center;gap:12px;">
-            <img id="crud-preview-img" src="assets/images/logo-stamp.svg?v=64" alt="Product Upload Preview" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border-strong);" />
+            <img id="crud-preview-img" src="assets/images/logo-stamp.svg?v=75" alt="Product Upload Preview" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border-strong);" />
             <span style="font-size:var(--text-xs);color:var(--color-palm);font-weight:700;">✓ Image Ready for Catalog</span>
           </div>
         </div>
@@ -197,20 +197,22 @@
     </div>
   </div>
 
-  <!-- Reusable Confirmation Dialog Modal (Product Delete, Order Cancellation, Return Approval) -->
+  <!-- Reusable Confirmation Dialog Modal (Archive / Restore, Product Delete, Order Cancellation, Return Approval) -->
   <div class="modal-backdrop" id="admin-confirm-modal">
     <div class="modal-dialog admin-modal-sm" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
-      <div class="modal-header">
-        <div style="display:flex;align-items:center;gap:0.55rem;">
-          <span class="pill pill-coral" id="admin-confirm-badge">CONFIRM ACTION</span>
-          <h3 id="admin-confirm-title" style="margin:0;">Confirm Action</h3>
-        </div>
-        <button type="button" class="btn btn-ghost btn-sm" id="close-confirm-modal-btn" aria-label="Close confirmation">✕</button>
+      <div class="modal-header admin-confirm-header">
+        <h3 id="admin-confirm-title" style="margin:0;">Confirm Action</h3>
+        <button type="button" class="btn btn-ghost btn-sm admin-modal-close-btn" id="close-confirm-modal-btn" aria-label="Close confirmation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
       <div id="admin-confirm-body"></div>
-      <div style="display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-5);">
-        <button type="button" class="btn btn-outline btn-pill" id="admin-confirm-cancel-btn">Cancel</button>
-        <button type="button" class="btn btn-coral btn-pill" id="admin-confirm-proceed-btn">Confirm</button>
+      <div class="admin-confirm-footer">
+        <span class="pill pill-coral" id="admin-confirm-badge">CONFIRM ACTION</span>
+        <div class="admin-confirm-actions">
+          <button type="button" class="btn btn-outline btn-pill" id="admin-confirm-cancel-btn">Cancel</button>
+          <button type="button" class="btn btn-coral btn-pill" id="admin-confirm-proceed-btn">Confirm</button>
+        </div>
       </div>
     </div>
   </div>
@@ -271,10 +273,10 @@
     </div>
   </div>
 
-  <script src="assets/js/data.js?v=64"></script>
-  <script src="assets/js/store.js?v=64"></script>
-  <script src="assets/js/components.js?v=64"></script>
-  <script src="assets/js/ocean-overdrive.js?v=64"></script>
-  <script src="assets/js/admin.js?v=64"></script>
+  <script src="assets/js/data.js?v=75"></script>
+  <script src="assets/js/store.js?v=75"></script>
+  <script src="assets/js/components.js?v=75"></script>
+  <script src="assets/js/ocean-overdrive.js?v=75"></script>
+  <script src="assets/js/admin.js?v=75"></script>
 </body>
 </html>
