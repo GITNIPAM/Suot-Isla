@@ -148,9 +148,7 @@ input[type="number"] {
 }
 
 /* Cross-Document + SPA Zero-Reload View Transitions & Shimmer */
-@view-transition {
-  navigation: auto;
-}
+
 
 .dispatch-mobile-only {
   display: none;

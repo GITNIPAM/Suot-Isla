@@ -64,15 +64,15 @@
     return file.toLowerCase();
   }
 
+  let headerEvents;
   function renderHeader() {
+    headerEvents?.abort();
+    headerEvents = new AbortController();
     const mount = document.getElementById("site-header-mount");
     if (!mount) return;
 
     const activePage = getActivePage();
     const activeSeries = new URLSearchParams(window.location.search).get("series") || "";
-    const totals = window.SuotStore.getCartTotals();
-    const emails = window.SuotStore.getEmailsForCurrentUser();
-    const user = window.SuotStore.getCurrentUser();
     const isCatalogAll = activePage === "catalog.html" && !activeSeries;
 
     mount.innerHTML = `
@@ -102,7 +102,7 @@
           <nav class="primary-nav" aria-label="Primary Navigation">
             <a href="index.html" class="nav-link ${activePage === "index.html" ? "active" : ""}">Home</a>
             <a href="catalog.html" class="nav-link ${activePage === "catalog.html" ? "active" : ""}">Catalog</a>
-            <a href="${user ? "account.html" : "auth.html?redirect=account.html"}" class="nav-link ${activePage === "account.html" ? "active" : ""}" id="header-orders-nav-link">Orders</a>
+            <a href="auth.html?redirect=account.html" class="nav-link ${activePage === "account.html" ? "active" : ""}" id="header-orders-nav-link">Orders</a>
           </nav>
 
           <div class="header-actions">
@@ -119,15 +119,15 @@
                 <path d="m3 7 9 6 9-6"/>
               </svg>
               <span class="header-action-label">Emails</span>
-              <span class="badge-count" id="header-email-count">${emails.length}</span>
+              <span class="badge-count" id="header-email-count">0</span>
             </button>
 
-            <a href="${user ? "account.html" : "auth.html"}" class="icon-btn header-auth-desktop" id="header-auth-link" title="${user ? "Account & Order History" : "Sign In or Create Account"}">
+            <a href="auth.html" class="icon-btn header-auth-desktop" id="header-auth-link" title="Sign In or Create Account">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="8" r="4"/>
                 <path d="M4 20c1.8-3.6 5-5.5 8-5.5s6.2 1.9 8 5.5"/>
               </svg>
-              <span class="header-action-label" id="header-user-name">${user ? user.name.split(" ")[0] : "Sign In"}</span>
+              <span class="header-action-label" id="header-user-name">Sign In</span>
             </a>
 
             <button type="button" class="icon-btn icon-btn-bag" id="open-cart-drawer-btn" title="Open Island Shopping Bag">
@@ -137,7 +137,7 @@
                 <path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
               <span>Bag</span>
-              <span class="badge-count" id="header-cart-count">${totals.itemCount}</span>
+              <span class="badge-count" id="header-cart-count">0</span>
             </button>
           </div>
         </div>
@@ -161,6 +161,28 @@
         </div>
       </header>
     `;
+
+    async function refreshHeader() {
+      const read = async route => {
+        const response = await fetch("api/" + route + ".php",{cache:"no-store"});
+        if (!response.ok) throw new Error("Header data unavailable.");
+        return response.json();
+      };
+      const {user} = await read("account");
+      syncMobileBottomNav(user);
+      if (!user) return;
+      document.getElementById("header-user-name").textContent = user.name.split(" ")[0];
+      const account = document.getElementById("header-auth-link");
+      account.href = user.role === "customer" ? "account.html" : "admin.html";
+      account.title = "Account";
+      document.getElementById("header-orders-nav-link").href = account.href;
+      if (user.role !== "customer") return;
+      const [cart,data] = await Promise.all([read("checkout"),read("customer-data")]);
+      document.getElementById("header-cart-count").textContent = cart.items.reduce((n,item)=>n+Number(item.quantity),0);
+      document.getElementById("header-email-count").textContent = data.emails.length;
+    }
+    refreshHeader().catch(()=>{});
+    window.addEventListener("suotisla:bag-update",()=>refreshHeader().catch(()=>{}), {signal:headerEvents.signal});
 
     const cartBtn = document.getElementById("open-cart-drawer-btn");
     if (cartBtn) cartBtn.addEventListener("click", () => SuotUI.openDrawer("cart"));
@@ -270,7 +292,7 @@
                 <a href="catalog.html">Full 16-Piece Catalog</a>
                 <a href="cart.html">Shopping Bag &amp; Vouchers</a>
                 <a href="account.html">Orders, Tracking &amp; Returns</a>
-                <a href="auth.html">Sign In / Island Club</a>
+                <a href="auth.html">Sign In / Switch Account</a>
                 <a href="mailto:ola@suotisla.ph">ola@suotisla.ph</a>
               </nav>
 
@@ -313,6 +335,8 @@
             <span>© 2026 Suot Isla — Island-Born Surf &amp; Beachwear</span>
             <div class="footer-bottom-meta">
               <button type="button" class="footer-top-btn" id="footer-scroll-top" aria-label="Scroll back to top">↑ Back to Top</button>
+              <span aria-hidden="true">·</span>
+              <a href="admin.html" class="footer-portal-link">Admin &amp; Operations Portal →</a>
             </div>
           </div>
         </div>
@@ -420,14 +444,16 @@
     syncMobileBottomNav();
   }
 
-  function syncMobileBottomNav() {
+  function syncMobileBottomNav(user = null) {
     const nav = document.getElementById("suot-mobile-bottom-nav");
     if (!nav) return;
     const activePage = getActivePage();
-    const user = window.SuotStore ? window.SuotStore.getCurrentUser() : null;
+
     const ordersLink = document.getElementById("mobile-nav-orders-link");
+    const accountLink = document.getElementById("mobile-nav-account-link");
+    if (accountLink) accountLink.href = user ? (user.role === "customer" ? "account-settings.html" : "admin.html") : "auth.html";
     if (ordersLink) {
-      ordersLink.setAttribute("href", user ? "account.html" : "auth.html?redirect=account.html");
+      ordersLink.setAttribute("href", user ? (user.role === "customer" ? "account.html" : "admin.html") : "auth.html?redirect=account.html");
     }
     const accountLabel = document.getElementById("mobile-nav-account-label");
     if (accountLabel) {
@@ -442,22 +468,13 @@
     });
   }
 
-  const SPA_PAGES = new Set([
-    "",
-    "index.html",
-    "catalog.html",
-    "product.html",
-    "cart.html",
-    "checkout.html",
-    "account.html",
-    "auth.html"
-  ]);
+  const SPA_PAGES = new Set(["index.html"]);
   const externalScriptCache = new Map();
   let activeNavController = null;
 
   function isStorefrontSpaRoute(url) {
     if (!url || !window.location.protocol.startsWith("http")) return false;
-    if (!document.getElementById("site-header-mount")) return false;
+    if (!document.getElementById("site-header-mount") || document.querySelector("[data-shop-page], #login-form")) return false;
     if (url.origin !== window.location.origin) return false;
     const file = (url.pathname.split("/").pop() || "index.html").toLowerCase();
     return SPA_PAGES.has(file);
@@ -587,7 +604,6 @@
 
     if (signal.aborted) return;
 
-    SuotUI.closeDrawers();
     const searchPanel = document.getElementById("header-quick-search");
     if (searchPanel) searchPanel.classList.remove("open");
 
@@ -646,11 +662,8 @@
         }
       });
 
-      closeActiveSelectMenu(false);
       renderHeader();
-      ensureMobileBottomNav();
       executePreparedScripts(scriptSources);
-      SuotUI.enhanceSelects(document);
 
       if (sourceVisual && destFile === "product.html") {
         const pdpTarget = document.querySelector(".pdp-gallery .studio-product-img, .pdp-gallery .product-svg-stage");
@@ -785,299 +798,6 @@
       e.preventDefault();
       performSpaMorph(destUrl, form, true);
     });
-  }
-
-  function renderCartDrawerContents() {
-    const bodyEl = document.getElementById("suot-cart-drawer-body");
-    const footEl = document.getElementById("suot-cart-drawer-footer");
-    if (!bodyEl || !footEl) return;
-
-    const cart = window.SuotStore.getCart();
-    const totals = window.SuotStore.getCartTotals();
-
-    if (!cart.length) {
-      bodyEl.innerHTML = `
-        <div style="text-align:center;padding:var(--space-10) var(--space-4);">
-          <h4>Your Island Bag is Empty</h4>
-          <p style="font-size:var(--text-sm);margin:var(--space-2) auto var(--space-6);">
-            Explore our 16 coastal pieces across Siargao, Boracay, El Nido, and La Union.
-          </p>
-          <a href="catalog.html" class="btn btn-primary">Browse All 16 Products</a>
-        </div>
-      `;
-      footEl.innerHTML = "";
-      return;
-    }
-
-    const stockCheck = window.SuotStore.validateCartStock();
-    const issueByIndex = new Map(stockCheck.issues.map((iss) => [iss.index, iss]));
-
-    bodyEl.innerHTML =
-      SuotUI.renderShippingMeterHTML(totals.subtotal) +
-      (!stockCheck.ok
-        ? `<div class="stock-recovery-panel is-compact" style="margin-bottom:var(--space-3);">
-            <strong>Stock Notice:</strong> Some items exceed available warehouse units. Review quantities or swap in-stock pieces below.
-          </div>`
-        : "") +
-      cart
-        .map((item, idx) => {
-          const prod = window.SuotStore.getProductById(item.productId);
-          const availStock = prod && !prod.archived ? Math.max(0, parseInt(prod.stock, 10) || 0) : 0;
-          const totalInCart = window.SuotStore.getCartQtyForProduct(item.productId);
-          const iss = issueByIndex.get(idx);
-          const incDisabled = availStock <= 0 || totalInCart >= availStock;
-          const stockTag =
-            availStock <= 0
-              ? `<span class="pill pill-coral" style="margin-left:4px;">Out of Stock</span>`
-              : totalInCart > availStock
-              ? `<span class="pill pill-coral" style="margin-left:4px;">Only ${availStock} left</span>`
-              : availStock <= 5
-              ? `<span class="pill pill-sand" style="margin-left:4px;">${availStock} left</span>`
-              : "";
-
-          return `
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3);padding-block:var(--space-3);border-bottom:1px solid var(--border-subtle);${iss ? "background:rgba(242,125,99,0.06);padding-inline:8px;border-radius:var(--radius-sm);" : ""}">
-          <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="width:52px;height:64px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-subtle);background:var(--color-sand);flex-shrink:0;display:block;">
-            ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
-          </a>
-          <div style="flex:1;min-width:0;">
-            <span class="pill pill-lagoon" style="margin-bottom:4px;">${item.series} Series</span>${stockTag}
-            <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);">
-              <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="color:inherit;text-decoration:none;">${item.name}</a>
-            </div>
-            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-              <span>Size: <strong>${item.size}</strong> ·</span>
-              <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(item.color)};"></span>
-              <span><strong>${item.color}</strong></span>
-            </div>
-            <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);">
-              <button type="button" class="btn btn-outline btn-sm" data-cart-dec="${idx}" style="padding:2px 8px;">−</button>
-              <span class="tabular" style="font-size:var(--text-xs);font-weight:700;">${item.qty}</span>
-              <button type="button" class="btn btn-outline btn-sm" data-cart-inc="${idx}" ${incDisabled ? "disabled title='Maximum available stock reached'" : ""} style="padding:2px 8px;">+</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-cart-rem="${idx}" style="color:var(--color-coral-deep);margin-left:auto;">Remove</button>
-            </div>
-          </div>
-          <div class="price" style="font-weight:700;font-size:var(--text-sm);flex-shrink:0;">
-            ${window.SuotStore.formatPrice(item.price * item.qty)}
-          </div>
-        </div>
-      `;
-        })
-        .join("") +
-      (!stockCheck.ok ? SuotUI.renderStockRecoveryHTML(stockCheck.issues, { compact: true }) : "");
-
-    footEl.innerHTML = `
-      <div class="summary-row">
-        <span>Subtotal (${totals.itemCount} item/s)</span>
-        <strong class="price">${window.SuotStore.formatPrice(totals.subtotal)}</strong>
-      </div>
-      <div class="summary-row">
-        <span>Est. Island Delivery</span>
-        <strong class="price">${totals.deliveryFee === 0 ? "FREE" : window.SuotStore.formatPrice(totals.deliveryFee)}</strong>
-      </div>
-      ${
-        totals.discount > 0
-          ? `<div class="summary-row" style="color:var(--color-palm);">
-              <span>Promo Discount (${totals.coupon.code})</span>
-              <strong class="price">−${window.SuotStore.formatPrice(totals.discount)}</strong>
-            </div>`
-          : ""
-      }
-      <div class="summary-row total">
-        <span>Estimated Total</span>
-        <span class="price">${window.SuotStore.formatPrice(totals.total)}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-4);">
-        <a href="cart.html" class="btn btn-outline">View Full Bag</a>
-        ${
-          !stockCheck.ok
-            ? `<a href="cart.html" class="btn btn-coral">Resolve Stock</a>`
-            : window.SuotStore.getCurrentUser()
-            ? `<a href="checkout.html" class="btn btn-primary">Checkout</a>`
-            : `<a href="auth.html?redirect=checkout.html" class="btn btn-primary">Sign In &amp; Checkout →</a>`
-        }
-      </div>
-      ${
-        stockCheck.ok && !window.SuotStore.getCurrentUser()
-          ? `<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">Browsing as Guest · Sign in or create an account to keep your bag &amp; check out.</div>`
-          : ""
-      }
-    `;
-
-    bodyEl.querySelectorAll("[data-cart-dec]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-cart-dec"));
-        window.SuotStore.updateCartQty(i, cart[i].qty - 1);
-      });
-    });
-    bodyEl.querySelectorAll("[data-cart-inc]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-cart-inc"));
-        const res = window.SuotStore.updateCartQty(i, cart[i].qty + 1);
-        if (res && res.clamped && res.message) {
-          SuotUI.toast(res.message, "Stock Limit Reached");
-        }
-      });
-    });
-    bodyEl.querySelectorAll("[data-cart-rem]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-cart-rem"));
-        const snap = cart[i] ? { ...cart[i] } : null;
-        window.SuotStore.removeFromCart(i);
-        if (snap) {
-          SuotUI.toast(`Removed ${snap.name} from bag.`, "Bag Updated", {
-            actionLabel: "Undo",
-            onAction: () => {
-              const undoRes = window.SuotStore.addToCart(snap.productId, snap.size, snap.color, snap.qty);
-              if (undoRes.ok) SuotUI.animateCartBadge();
-              else SuotUI.toast(undoRes.message, "Stock Unavailable");
-            }
-          });
-        }
-      });
-    });
-    SuotUI.bindStockRecoveryActions(bodyEl);
-  }
-
-  function renderEmailDrawerContents() {
-    const bodyEl = document.getElementById("suot-email-drawer-body");
-    if (!bodyEl) return;
-
-    const isStorefront = Boolean(document.getElementById("site-header-mount"));
-    const emails = isStorefront
-      ? window.SuotStore.getEmailsForCurrentUser()
-      : window.SuotStore.getEmails();
-    if (!emails.length) {
-      const user = window.SuotStore.getCurrentUser();
-      bodyEl.innerHTML = user
-        ? `<p style="font-size:var(--text-sm);">No order emails yet for <strong>${user.email}</strong>.</p>`
-        : `
-          <div style="padding:var(--space-4) 0;">
-            <p style="font-size:var(--text-sm);margin-bottom:var(--space-3);">Sign in or create a customer account to view confirmation and island shipping emails for your orders.</p>
-            <a href="auth.html" class="btn btn-primary btn-sm">Sign In / Create Account →</a>
-          </div>
-        `;
-      return;
-    }
-
-    bodyEl.innerHTML = emails
-      .map((em) => {
-        const cleanOrder = String(em.orderNumber || "").trim().replace(/^#/, "");
-        const hasOrder = Boolean(cleanOrder);
-        const goLabel = isStorefront ? `Track #${cleanOrder} →` : `Inspect #${cleanOrder} →`;
-        return `
-          <article class="email-card ${hasOrder ? "is-clickable" : ""}" ${hasOrder ? `data-email-order="${cleanOrder}"` : ""}>
-            <div class="email-meta">
-              <span class="pill ${
-                em.type.includes("Cancel")
-                  ? "pill-coral-soft"
-                  : em.type.includes("Ship")
-                  ? "pill-delivery"
-                  : "pill-lagoon"
-              }">${em.type}</span>
-              <span class="mono">${em.sentAt}</span>
-            </div>
-            <div class="email-subject">${em.subject}</div>
-            <div style="font-size:var(--text-xs);color:var(--text-muted);">
-              From: <strong>ola@suotisla.ph</strong> • To: <strong>${em.to}</strong>
-            </div>
-            <div class="email-body-preview">${em.body}</div>
-            ${
-              hasOrder
-                ? `<div class="email-card-actions">
-                    <button type="button" class="btn btn-primary btn-sm btn-pill" data-email-goto="${cleanOrder}">
-                      ${goLabel}
-                    </button>
-                    <button type="button" class="btn btn-outline btn-sm btn-pill" data-email-receipt="${cleanOrder}">
-                      E-Receipt
-                    </button>
-                  </div>`
-                : ""
-            }
-          </article>
-        `;
-      })
-      .join("");
-
-    function navigateToOrderFromEmail(orderNum) {
-      if (!orderNum) return;
-      SuotUI.closeDrawers();
-      if (!isStorefront) {
-        window.dispatchEvent(new CustomEvent("suotisla:adminfocusorder", { detail: { orderNumber: orderNum } }));
-        return;
-      }
-      const onAccountPage = window.location.pathname.toLowerCase().endsWith("account.html");
-      if (onAccountPage) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("order", orderNum);
-        window.history.replaceState({}, "", url.toString());
-        window.dispatchEvent(new CustomEvent("suotisla:focusorder", { detail: { orderNumber: orderNum } }));
-      } else {
-        SuotUI.navigateTo(`account.html?order=${encodeURIComponent(orderNum)}`);
-      }
-    }
-
-    bodyEl.querySelectorAll("[data-email-order]").forEach((card) => {
-      card.addEventListener("click", (e) => {
-        if (e.target.closest("button, a")) return;
-        navigateToOrderFromEmail(card.getAttribute("data-email-order"));
-      });
-    });
-
-    bodyEl.querySelectorAll("[data-email-goto]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        navigateToOrderFromEmail(btn.getAttribute("data-email-goto"));
-      });
-    });
-
-    bodyEl.querySelectorAll("[data-email-receipt]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const ord = btn.getAttribute("data-email-receipt");
-        SuotUI.closeDrawers();
-        SuotUI.openReceiptModal(ord);
-      });
-    });
-  }
-
-  let lastCartCount = null;
-
-  function syncHeaderCounts() {
-    const cartBadge = document.getElementById("header-cart-count");
-    const emailBadge = document.getElementById("header-email-count");
-    const userNameEl = document.getElementById("header-user-name");
-    const totals = window.SuotStore.getCartTotals();
-    const isStorefront = Boolean(document.getElementById("site-header-mount"));
-    const emails = isStorefront
-      ? window.SuotStore.getEmailsForCurrentUser()
-      : window.SuotStore.getEmails();
-    const user = window.SuotStore.getCurrentUser();
-
-    if (cartBadge) {
-      const prev = lastCartCount;
-      cartBadge.textContent = String(totals.itemCount);
-      if (prev !== null && totals.itemCount !== prev) {
-        SuotUI.animateCartBadge();
-      }
-      lastCartCount = totals.itemCount;
-    }
-    if (emailBadge) {
-      emailBadge.textContent = String(emails.length);
-    }
-    if (userNameEl) {
-      userNameEl.textContent = user ? user.name.split(" ")[0] : "Sign In";
-    }
-    const authLinkEl = document.getElementById("header-auth-link");
-    if (authLinkEl) {
-      authLinkEl.setAttribute("href", user ? "account.html" : "auth.html");
-      authLinkEl.setAttribute("title", user ? "Account & Order History" : "Sign In or Create Account");
-    }
-    const ordersNavEl = document.getElementById("header-orders-nav-link");
-    if (ordersNavEl) {
-      ordersNavEl.setAttribute("href", user ? "account.html" : "auth.html?redirect=account.html");
-    }
-    syncMobileBottomNav();
   }
 
   const SELECT_TONE_MAP = Object.freeze({
@@ -1476,33 +1196,192 @@
     syncTrigger();
   }
 
+  const escapeDrawerText = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  async function drawerRequest(endpoint, data) {
+    const response = await fetch("api/"+endpoint+".php",data ? {
+      method:"POST",headers:{"Content-Type":"application/json","X-Suot-Request":"shop"},body:JSON.stringify(data)
+    } : {cache:"no-store"});
+    const result = await response.json();
+    if (!response.ok) throw Object.assign(new Error(result.message || "Could not load this drawer."),{status:response.status});
+    return result;
+  }
+
+  async function renderDrawer(type) {
+    const body = document.getElementById("suot-"+type+"-drawer-body");
+    const footer = document.getElementById("suot-cart-drawer-footer");
+    body.textContent = "Loading…";
+    if (type === "cart") footer.replaceChildren();
+    try {
+      if (type === "cart") {
+        const {items} = await drawerRequest("checkout");
+        const products = items.length ? await drawerRequest("catalog").catch(() => ({variants:[]})) : {variants:[]};
+        const variantById = new Map(products.variants.map(row => [Number(row.variant_id),row]));
+        const cart = items.map(row => {
+          const product = window.SuotStore.getProductById(row.slug);
+          const variant = variantById.get(Number(row.variant_id));
+          const image = /^assets\/images\/[a-zA-Z0-9_.\/-]+$/.test(variant?.image_url) && product?.image !== variant.image_url ? variant.image_url : "";
+          return {productId:row.slug,name:row.name,size:row.size_label,color:row.color_name,image,
+            series:variant?.series || product?.series || "Island",qty:Number(row.quantity),variantId:Number(row.variant_id),
+            stock:Number(row.is_archived) ? 0 : Number(row.stock_qty),price:Number(row.unit_price),
+            unitCents:Math.round(Number(row.unit_price)*100)};
+        });
+        const code = document.querySelector("[data-shop-page]")?.dataset.activeCoupon;
+        const quote = code && cart.length ? await drawerRequest("checkout",{action:"validate",coupon:code}).catch(() => null) : null;
+        renderCartDrawerContents(cart,body,footer,quote ? {code,totals:quote.totals} : null);
+      } else {
+        const [{emails},{orders}] = await Promise.all([drawerRequest("customer-data"),drawerRequest("orders")]);
+        renderEmailDrawerContents(emails,orders,body);
+      }
+    } catch(error) {
+      body.textContent = error.status === 401 || error.status === 403 ? "Sign in to view your "+(type === "cart" ? "shopping bag." : "order emails.") : "Could not load this drawer. Please try again.";
+      if (error.status === 401 || error.status === 403) {
+        const link = document.createElement("a");
+        link.href = "auth.html?redirect="+(type === "cart" ? "cart.html" : "account.html");
+        link.className = "btn btn-primary btn-sm";
+        link.textContent = "Sign In / Create Account";
+        body.append(document.createElement("p"),link);
+      }
+    }
+  }
+
+  function renderCartDrawerContents(cart, bodyEl, footEl, promo) {
+    const subtotal = cart.reduce((sum, row) => sum + row.unitCents * row.qty, 0);
+    const shipping = subtotal >= 350000 ? 0 : 15000;
+    const totals = {subtotal:subtotal/100, deliveryFee:shipping/100, total:(subtotal+shipping)/100,
+      itemCount:cart.reduce((sum, row)=>sum+row.qty,0)};
+    if (promo) Object.assign(totals,{deliveryFee:promo.totals.delivery_fee,total:promo.totals.total,discount:promo.totals.discount});
+    if (!cart.length) {
+      bodyEl.innerHTML = `
+        <div style="text-align:center;padding:var(--space-10) var(--space-4);">
+          <h4>Your Island Bag is Empty</h4>
+          <p style="font-size:var(--text-sm);margin:var(--space-2) auto var(--space-6);">
+            Explore our 16 coastal pieces across Siargao, Boracay, El Nido, and La Union.
+          </p>
+          <a href="catalog.html" class="btn btn-primary">Browse All 16 Products</a>
+        </div>
+      `;
+      footEl.innerHTML = "";
+      return;
+    }
+
+    const hasStockIssues = cart.some(item => item.qty > item.stock);
+
+    bodyEl.innerHTML =
+      SuotUI.renderShippingMeterHTML(totals.subtotal) +
+      (hasStockIssues
+        ? `<div class="stock-recovery-panel is-compact" style="margin-bottom:var(--space-3);">
+            <strong>Stock Notice:</strong> Some items exceed available warehouse units. Reduce the quantity or remove unavailable items.
+          </div>`
+        : "") +
+      cart
+        .map((item, idx) => {
+          const prod = window.SuotStore.getProductById(item.productId);
+          const availStock = item.stock;
+          const totalInCart = item.qty;
+          const iss = totalInCart > availStock;
+          const incDisabled = totalInCart >= availStock;
+          const stockTag =
+            availStock <= 0
+              ? `<span class="pill pill-coral" style="margin-left:4px;">Out of Stock</span>`
+              : totalInCart > availStock
+              ? `<span class="pill pill-coral" style="margin-left:4px;">Only ${availStock} left</span>`
+              : availStock <= 5
+              ? `<span class="pill pill-sand" style="margin-left:4px;">${availStock} left</span>`
+              : "";
+
+          return `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3);padding-block:var(--space-3);border-bottom:1px solid var(--border-subtle);${iss ? "background:rgba(242,125,99,0.06);padding-inline:8px;border-radius:var(--radius-sm);" : ""}">
+          <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="width:52px;height:64px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-subtle);background:var(--color-sand);flex-shrink:0;display:block;">
+            ${item.image ? `<img src="${item.image}" alt="" style="width:100%;height:100%;object-fit:cover;">` : prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
+          </a>
+          <div style="flex:1;min-width:0;">
+            <span class="pill pill-lagoon" style="margin-bottom:4px;">${escapeDrawerText(item.series)} Series</span>${stockTag}
+            <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);">
+              <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="color:inherit;text-decoration:none;">${escapeDrawerText(item.name)}</a>
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+              <span>Size: <strong>${escapeDrawerText(item.size)}</strong> ·</span>
+              <span class="inline-color-dot" style="background-color:${window.SuotStore.getColorHex(item.color)};"></span>
+              <span><strong>${escapeDrawerText(item.color)}</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);">
+              <button type="button" class="btn btn-outline btn-sm" data-cart-dec="${idx}" aria-label="Decrease quantity" ${item.stock === 0 && item.qty > 1 ? "disabled" : ""} style="padding:2px 8px;">−</button>
+              <span class="tabular" style="font-size:var(--text-xs);font-weight:700;">${item.qty}</span>
+              <button type="button" class="btn btn-outline btn-sm" data-cart-inc="${idx}" aria-label="Increase quantity" ${incDisabled ? "disabled title='Maximum available stock reached'" : ""} style="padding:2px 8px;">+</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-cart-rem="${idx}" style="color:var(--color-coral-deep);margin-left:auto;">Remove</button>
+            </div>
+          </div>
+          <div class="price" style="font-weight:700;font-size:var(--text-sm);flex-shrink:0;">
+            ${window.SuotStore.formatPrice(item.price * item.qty)}
+          </div>
+        </div>
+      `;
+        })
+        .join("");
+
+    footEl.innerHTML = `
+      <div class="summary-row">
+        <span>Subtotal (${totals.itemCount} item/s)</span>
+        <strong class="price">${window.SuotStore.formatPrice(totals.subtotal)}</strong>
+      </div>
+      <div class="summary-row">
+        <span>Est. Island Delivery</span>
+        <strong class="price">${totals.deliveryFee === 0 ? "FREE" : window.SuotStore.formatPrice(totals.deliveryFee)}</strong>
+      </div>
+      ${totals.discount > 0 ? `<div class="summary-row"><span>Promo Discount (${escapeDrawerText(promo.code)})</span><strong class="price">−${window.SuotStore.formatPrice(totals.discount)}</strong></div>` : ""}
+      <div class="summary-row total">
+        <span>Estimated Total</span>
+        <span class="price">${window.SuotStore.formatPrice(totals.total)}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-4);">
+        <a href="cart.html" class="btn btn-outline">View Full Bag</a>
+        ${
+          hasStockIssues
+            ? `<a href="cart.html" class="btn btn-coral">Resolve Stock</a>`
+            : `<a href="checkout.html${promo ? "?coupon="+encodeURIComponent(promo.code) : ""}" class="btn btn-primary">Checkout</a>`
+        }
+      </div>
+    `;
+
+    bodyEl.querySelectorAll("[data-cart-dec], [data-cart-inc], [data-cart-rem]").forEach(button => {
+      button.onclick = async () => {
+        const {cartDec, cartInc, cartRem} = button.dataset;
+        const item = cart[Number(cartDec ?? cartInc ?? cartRem)];
+        const quantity = cartRem !== undefined ? 0 : cartInc !== undefined ? item.qty + 1 : Math.min(item.qty - 1,item.stock);
+        [...bodyEl.querySelectorAll("button")].forEach(control => control.disabled = true);
+        try {
+          await drawerRequest("checkout",{action:"set",variant_id:item.variantId,quantity});
+          window.dispatchEvent(new CustomEvent("suotisla:bag-update",{detail:{source:"drawer"}}));
+        } catch(error) {
+          SuotUI.toast(escapeDrawerText(error.message),"Shopping Bag");
+        }
+        if (document.getElementById("suot-cart-drawer").classList.contains("open")) renderDrawer("cart");
+      };
+    });
+  }
+
+  function renderEmailDrawerContents(emails, orders, body) {
+    const numbers = new Map(orders.map(order => [Number(order.order_id),order.order_number]));
+    body.innerHTML = emails.map(email => {
+      const order = numbers.get(Number(email.order_id));
+      const link = order ? "account.html?order="+encodeURIComponent(order) : "";
+      const status = /cancel/i.test(email.email_type) ? "pill-coral-soft" : /ship/i.test(email.email_type) ? "pill-delivery" : "pill-lagoon";
+      const esc = escapeDrawerText;
+      return `<article class="email-card">
+        <div class="email-meta"><span class="pill ${status}">${esc(email.email_type)}</span><span class="mono">${esc(email.sent_at || "Logged")}</span></div>
+        <div class="email-subject">${esc(email.subject)}</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);">To <strong>${esc(email.recipient_email)}</strong></div>
+        <div class="email-body-preview">${esc(email.body_preview)}</div>
+        ${link ? `<div class="email-card-actions">
+          <a href="${link}" class="btn btn-primary btn-sm btn-pill">Track #${esc(order)} →</a>
+          <a href="${link}&amp;receipt=1" class="btn btn-outline btn-sm btn-pill">E-Receipt</a>
+        </div>` : ""}
+      </article>`;
+    }).join("") || "<p>No order notifications yet.</p>";
+  }
+
   const SuotUI = {
-    init() {
-      ensureDrawersMounted();
-      initCoastalPageTransitions();
-      renderHeader();
-      renderFooter();
-      this.enhanceSelects(document);
-      lastCartCount = window.SuotStore.getCartTotals().itemCount;
-      renderCartDrawerContents();
-      renderEmailDrawerContents();
-
-      window.addEventListener(
-        "scroll",
-        () => {
-          const hdr = document.getElementById("suot-site-header");
-          if (hdr) hdr.classList.toggle("is-scrolled", window.scrollY > 18);
-        },
-        { passive: true }
-      );
-
-      window.addEventListener("suotisla:statechange", () => {
-        syncHeaderCounts();
-        renderCartDrawerContents();
-        renderEmailDrawerContents();
-      });
-    },
-
     renderShippingMeterHTML(subtotal) {
       const threshold = 3500;
       const pct = Math.min(100, Math.round((Number(subtotal || 0) / threshold) * 100));
@@ -1525,144 +1404,46 @@
       `;
     },
 
-    renderStockRecoveryHTML(issues, options = {}) {
-      if (!Array.isArray(issues) || !issues.length) return "";
-      const compact = Boolean(options.compact);
-      const escape = window.SuotStore.escapeHtml ? window.SuotStore.escapeHtml : (s) => String(s || "");
 
-      return `
-        <div class="stock-recovery-panel" data-stock-recovery-root style="${compact ? "padding:12px;margin-top:12px;" : "margin-bottom:18px;"}">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-            <strong style="color:var(--color-coral-text, #a63418);font-size:var(--text-sm);">
-              ⚠ Stock Availability Check (${issues.length} ${issues.length === 1 ? "item needs attention" : "items need attention"})
-            </strong>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:${compact ? "10px" : "14px"};">
-            ${issues
-              .map((iss) => {
-                const avail = Number(iss.available || 0);
-                const itemName = iss.item ? iss.item.name : "Item";
-                const statusCopy =
-                  avail <= 0
-                    ? "Currently sold out (0 left in warehouse)."
-                    : `Only ${avail} in stock (bag requests ${iss.requestedTotal} total for this SKU).`;
-                const alts = Array.isArray(iss.alternatives) ? iss.alternatives : [];
-                return `
-                  <div style="padding-top:8px;border-top:1px dashed rgba(242,125,99,0.35);">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-                      <div>
-                        <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);">${escape(itemName)}</div>
-                        <div style="font-size:var(--text-xs);color:var(--color-coral-text, #a63418);">${escape(statusCopy)}</div>
-                      </div>
-                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        ${
-                          avail > 0
-                            ? `<button type="button" class="btn btn-outline btn-sm" data-stock-fix="${iss.index}" data-stock-max="${avail}">Fix to ${avail}</button>`
-                            : ""
-                        }
-                        <button type="button" class="btn btn-ghost btn-sm" data-stock-remove="${iss.index}">Remove</button>
-                      </div>
-                    </div>
-                    ${
-                      alts.length
-                        ? `
-                          <div style="margin-top:8px;">
-                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:6px;">
-                              Similar Options In Stock
-                            </div>
-                            <div class="stock-alt-grid" style="${compact ? "grid-template-columns:1fr;" : ""}">
-                              ${alts
-                                .slice(0, compact ? 2 : 3)
-                                .map((alt) => {
-                                  const firstColor = (alt.colors && alt.colors[0]) || "Sand";
-                                  return `
-                                    <div class="stock-alt-card">
-                                      <div class="stock-alt-thumb">
-                                        ${window.SuotStore.renderProductVisual(alt, firstColor)}
-                                      </div>
-                                      <div style="min-width:0;flex:1;">
-                                        <div style="font-size:var(--text-xs);font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escape(alt.name)}</div>
-                                        <div style="font-size:11px;color:var(--text-muted);">${escape(alt.series)} · ${alt.stock} left · ${window.SuotStore.formatPrice(alt.price)}</div>
-                                      </div>
-                                      <button type="button" class="btn btn-primary btn-sm" data-stock-swap-idx="${iss.index}" data-stock-swap-id="${alt.id}">
-                                        Swap →
-                                      </button>
-                                    </div>
-                                  `;
-                                })
-                                .join("")}
-                            </div>
-                          </div>
-                        `
-                        : ""
-                    }
-                  </div>
-                `;
-              })
-              .join("")}
-          </div>
-        </div>
-      `;
-    },
-
-    bindStockRecoveryActions(containerEl, onUpdated) {
-      if (!containerEl) return;
-      containerEl.querySelectorAll("[data-stock-remove]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const idx = Number(btn.getAttribute("data-stock-remove"));
-          window.SuotStore.removeFromCart(idx);
-          SuotUI.toast("Removed unavailable item from your bag.", "Bag Updated");
-          if (typeof onUpdated === "function") onUpdated();
-        });
-      });
-      containerEl.querySelectorAll("[data-stock-fix]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const idx = Number(btn.getAttribute("data-stock-fix"));
-          const maxQty = Math.max(1, Number(btn.getAttribute("data-stock-max") || 1));
-          const res = window.SuotStore.updateCartQty(idx, maxQty);
-          SuotUI.toast(
-            (res && res.message) || `Adjusted item quantity to ${maxQty} available.`,
-            "Quantity Updated"
-          );
-          if (typeof onUpdated === "function") onUpdated();
-        });
-      });
-      containerEl.querySelectorAll("[data-stock-swap-idx][data-stock-swap-id]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const idx = Number(btn.getAttribute("data-stock-swap-idx"));
-          const altId = Number(btn.getAttribute("data-stock-swap-id"));
-          const res = window.SuotStore.swapCartItem(idx, altId);
-          SuotUI.toast(res.message, res.ok ? "Swapped to In-Stock Gear" : "Swap Notice");
-          if (res.ok) SuotUI.animateCartBadge();
-          if (res.ok && typeof onUpdated === "function") onUpdated();
-        });
-      });
-    },
-
-    animateCartBadge() {
-      const badge = document.getElementById("header-cart-count");
-      if (!badge) return;
-      badge.classList.remove("is-popping");
-      void badge.offsetWidth;
-      badge.classList.add("is-popping");
-      setTimeout(() => badge.classList.remove("is-popping"), 480);
-    },
-
-    flashButtonAdded(btn, tempText = "✓ Added to Bag", restoreDelay = 1150) {
-      if (!btn) return;
-      if (!btn.dataset.origHtml) {
-        btn.dataset.origHtml = btn.innerHTML;
+    openDrawer(type) {
+      ensureDrawersMounted();
+      renderDrawer(type);
+      document.getElementById("suot-drawer-backdrop").classList.add("open");
+      if (type === "cart") {
+        document.getElementById("suot-email-drawer").classList.remove("open");
+        document.getElementById("suot-cart-drawer").classList.add("open");
+      } else if (type === "email") {
+        document.getElementById("suot-cart-drawer").classList.remove("open");
+        document.getElementById("suot-email-drawer").classList.add("open");
       }
-      if (btn._addedTimer) clearTimeout(btn._addedTimer);
-      btn.classList.add("is-added");
-      btn.textContent = tempText;
-      btn._addedTimer = setTimeout(() => {
-        btn.classList.remove("is-added");
-        if (btn.dataset.origHtml) {
-          btn.innerHTML = btn.dataset.origHtml;
-          delete btn.dataset.origHtml;
-        }
-      }, restoreDelay);
+    },
+
+    closeDrawers() {
+      const backdrop = document.getElementById("suot-drawer-backdrop");
+      if (backdrop) backdrop.classList.remove("open");
+      document.querySelectorAll(".slide-drawer").forEach((d) => d.classList.remove("open"));
+    },
+
+
+    enhanceSelects(root) {
+      if (activePortalSelect && !activePortalSelect.trigger.isConnected) closeActiveSelectMenu(false);
+      root.querySelectorAll("select.form-select").forEach(setupPortalSelect);
+    },
+
+    init() {
+      ensureDrawersMounted();
+      initCoastalPageTransitions();
+      renderHeader();
+      renderFooter();
+      window.addEventListener(
+        "scroll",
+        () => {
+          const hdr = document.getElementById("suot-site-header");
+          if (hdr) hdr.classList.toggle("is-scrolled", window.scrollY > 18);
+        },
+        { passive: true }
+      );
+
     },
 
     navigateTo(url) {
@@ -1680,32 +1461,6 @@
       }
     },
 
-    openDrawer(type) {
-      ensureDrawersMounted();
-      renderCartDrawerContents();
-      renderEmailDrawerContents();
-      document.getElementById("suot-drawer-backdrop").classList.add("open");
-      if (type === "cart") {
-        document.getElementById("suot-email-drawer").classList.remove("open");
-        document.getElementById("suot-cart-drawer").classList.add("open");
-      } else if (type === "email") {
-        document.getElementById("suot-cart-drawer").classList.remove("open");
-        document.getElementById("suot-email-drawer").classList.add("open");
-      }
-    },
-
-    closeDrawers() {
-      const backdrop = document.getElementById("suot-drawer-backdrop");
-      if (backdrop) backdrop.classList.remove("open");
-      document.querySelectorAll(".slide-drawer").forEach((d) => d.classList.remove("open"));
-    },
-
-    _resolveOrder(orderOrNumber) {
-      if (orderOrNumber && typeof orderOrNumber === "object") return orderOrNumber;
-      const key = String(orderOrNumber || "").replace(/^#/, "");
-      return window.SuotStore.getOrders().find((o) => o.orderNumber === key) || null;
-    },
-
     _computeReceiptFinancials(order) {
       const items = order.items || [];
       const itemsSum = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
@@ -1713,9 +1468,7 @@
       const discount = Number(order.discount || 0);
       const deliveryFee = order.deliveryFee != null ? Number(order.deliveryFee) : 0;
       const total = order.total != null ? Number(order.total) : Math.max(0, subtotal - discount + deliveryFee);
-      const vatableSales = Math.round(total / 1.12);
-      const vatAmount = Math.max(0, total - vatableSales);
-      return { subtotal, discount, deliveryFee, total, vatableSales, vatAmount };
+      return { subtotal, discount, deliveryFee, total };
     },
 
     _renderBarcodeSvg(seedText) {
@@ -1732,7 +1485,7 @@
         x += w + gap;
         if (x >= 216) break;
       }
-      return `<svg class="receipt-barcode-svg" viewBox="0 0 220 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Order verification barcode">${bars.join("")}</svg>`;
+      return `<svg class="receipt-barcode-svg" viewBox="0 0 220 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Order reference design">${bars.join("")}</svg>`;
     },
 
     _renderReceiptMarkup(order, options = {}) {
@@ -1741,7 +1494,7 @@
       const isRefunded = order.paymentStatus === "Refunded";
       const isRefundPending = order.paymentStatus === "Refund Pending";
       const isCancelled = order.status === "Cancelled";
-      const isPaid = !isRefunded && !isRefundPending && !isCancelled && (order.paymentStatus === "Paid" || order.status === "Delivered");
+      const isPaid = !isRefunded && !isRefundPending && !isCancelled && (order.paymentStatus === "Paid");
       const badgeClass = isRefunded || isCancelled ? "pill-coral" : isPaid ? "pill-delivery" : "pill-sand";
       const badgeLabel = isRefunded
         ? "REFUNDED"
@@ -1757,10 +1510,11 @@
 
       const itemRows = (order.items || [])
         .map((item) => {
-          const prod = window.SuotStore.getProductById(item.productId);
+          const product = window.SuotStore.getProductById(item.productId);
+          const image = product && product.image === item.image ? window.SuotStore.getProductImageForColor(product, item.color) : item.image;
           const thumbHtml = options.forDownload
             ? ""
-            : `<div class="receipt-item-thumb">${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}</div>`;
+            : `<div class="receipt-item-thumb">${image ? `<img src="${image}" alt="">` : ""}</div>`;
           const dotColor = window.SuotStore.getColorHex(item.color);
           return `
             <div class="receipt-item-row">
@@ -1812,7 +1566,7 @@
             </div>
             <div>
               <span class="receipt-meta-label">Payment Method</span>
-              <div class="receipt-meta-val">${order.paymentMethod || "GCash"}</div>
+              <div class="receipt-meta-val">${order.paymentMethod || "—"}</div>
               <div class="mono" style="font-size:0.7rem;color:var(--text-muted);">${order.paymentRef || ""}</div>
               ${
                 order.refundRef
@@ -1847,23 +1601,15 @@
               <span>Island Express Shipping</span>
               <span class="price">${fin.deliveryFee === 0 ? "FREE" : window.SuotStore.formatPrice(fin.deliveryFee)}</span>
             </div>
-            <div class="receipt-total-row is-subtle">
-              <span>VATable Sales (PH 12% Included)</span>
-              <span class="price">${window.SuotStore.formatPrice(fin.vatableSales)}</span>
-            </div>
-            <div class="receipt-total-row is-subtle">
-              <span>12% VAT Amount</span>
-              <span class="price">${window.SuotStore.formatPrice(fin.vatAmount)}</span>
-            </div>
             <div class="receipt-total-row is-grand">
-              <span>${order.paymentMethod === "COD" && !isPaid ? "Total Due on Delivery" : "Total Paid"}</span>
+              <span>${isRefunded ? "Order Total (Refunded)" : isCancelled || isRefundPending ? "Original Order Total" : isPaid ? "Total Paid" : order.paymentMethod === "COD" ? "Total Due on Delivery" : "Total Due"}</span>
               <span class="price">${window.SuotStore.formatPrice(fin.total)}</span>
             </div>
           </div>
 
           <div class="receipt-barcode-wrap">
             ${this._renderBarcodeSvg(order.orderNumber + (order.trackingNumber || ""))}
-            <div class="receipt-barcode-caption">${order.orderNumber} · ${order.trackingNumber || "SUOT-ISLA"} · VAT-INCLUSIVE</div>
+            <div class="receipt-barcode-caption">${order.orderNumber} · ${order.trackingNumber || "SUOT-ISLA"}</div>
           </div>
 
           ${
@@ -1889,28 +1635,19 @@
       `;
     },
 
-    _bindReceiptActions(scopeEl) {
-      if (!scopeEl) return;
-      scopeEl.querySelectorAll("[data-receipt-print]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          this.printOrderReceipt(btn.getAttribute("data-receipt-print"));
-        });
-      });
-      scopeEl.querySelectorAll("[data-receipt-download]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          this.downloadOrderReceipt(btn.getAttribute("data-receipt-download"));
-        });
-      });
-      scopeEl.querySelectorAll("[data-receipt-close]").forEach((btn) => {
-        btn.addEventListener("click", () => this.closeReceiptModal());
-      });
+    _bindReceiptActions(scope, order) {
+      scope.querySelector("[data-receipt-print]").onclick = () => {
+        if (!scope.closest(".receipt-modal-dialog")) this.openReceiptModal(order);
+        this.printOrderReceipt();
+      };
+      scope.querySelector("[data-receipt-download]").onclick = () => this.downloadOrderReceipt(order);
+      const close = scope.querySelector("[data-receipt-close]");
+      if (close) close.onclick = () => this.closeReceiptModal();
     },
 
-    renderReceiptSheet(orderOrNumber, mountEl) {
-      const order = this._resolveOrder(orderOrNumber);
-      if (!order || !mountEl) return;
-      mountEl.innerHTML = this._renderReceiptMarkup(order, { embedded: true });
-      this._bindReceiptActions(mountEl);
+    renderReceiptSheet(order, mount) {
+      mount.innerHTML = this._renderReceiptMarkup(order, {embedded:true});
+      this._bindReceiptActions(mount, order);
     },
 
     _ensureReceiptModal() {
@@ -1932,32 +1669,36 @@
         if (e.key === "Escape" && backdrop.classList.contains("open")) {
           this.closeReceiptModal();
         }
+        if (e.key !== "Tab" || !backdrop.classList.contains("open")) return;
+        const buttons = [...backdrop.querySelectorAll("button")];
+        const index = buttons.indexOf(document.activeElement);
+        if (index < 0 || index === (e.shiftKey ? 0 : buttons.length - 1)) {
+          e.preventDefault();
+          buttons[e.shiftKey ? buttons.length - 1 : 0].focus();
+        }
       });
       return backdrop;
     },
 
-    openReceiptModal(orderOrNumber) {
-      const order = this._resolveOrder(orderOrNumber);
-      if (!order) {
-        this.toast("Order receipt record not found.", "Receipt Unavailable");
-        return;
-      }
+    openReceiptModal(order) {
       const backdrop = this._ensureReceiptModal();
       const body = document.getElementById("suot-receipt-modal-body");
-      body.innerHTML = this._renderReceiptMarkup(order, { embedded: false });
-      this._bindReceiptActions(body);
+      body.innerHTML = this._renderReceiptMarkup(order);
+      this._bindReceiptActions(body, order);
+      this.receiptTrigger = document.activeElement;
       backdrop.classList.add("open");
+      body.querySelector("[data-receipt-close]").focus();
     },
 
     closeReceiptModal() {
       const backdrop = document.getElementById("suot-receipt-modal-backdrop");
-      if (backdrop) backdrop.classList.remove("open");
+      if (!backdrop?.classList.contains("open")) return;
+      backdrop.classList.remove("open");
+      this.receiptTrigger?.focus();
+      this.receiptTrigger = null;
     },
 
-    printOrderReceipt(orderOrNumber) {
-      const order = this._resolveOrder(orderOrNumber);
-      if (!order) return;
-      this.openReceiptModal(order);
+    printOrderReceipt() {
       document.body.classList.add("is-printing-receipt");
       const cleanup = () => document.body.classList.remove("is-printing-receipt");
       window.addEventListener("afterprint", cleanup, { once: true });
@@ -1967,9 +1708,7 @@
       }, 60);
     },
 
-    downloadOrderReceipt(orderOrNumber) {
-      const order = this._resolveOrder(orderOrNumber);
-      if (!order) return;
+    downloadOrderReceipt(order) {
       const bodyMarkup = this._renderReceiptMarkup(order, { forDownload: true });
       const htmlDoc = `<!DOCTYPE html>
 <html lang="en">
@@ -2062,18 +1801,6 @@
       el.addEventListener("mouseleave", () => {
         hideTimer = setTimeout(dismiss, 1800);
       });
-    },
-
-    enhanceSelects(root = document) {
-      if (activePortalSelect && !activePortalSelect.trigger.isConnected) {
-        closeActiveSelectMenu(false);
-      }
-      if (root && root.nodeName === "SELECT" && root.classList.contains("form-select")) {
-        setupPortalSelect(root);
-        return;
-      }
-      const scope = root && typeof root.querySelectorAll === "function" ? root : document;
-      scope.querySelectorAll("select.form-select").forEach(setupPortalSelect);
     }
   };
 

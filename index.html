@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Suot Isla — Island-Born Surf &amp; Beachwear</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
-  <link rel="stylesheet" href="assets/css/base.css?v=78" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/base.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=37679de-r1" />
 </head>
 <body>
+  <p style="margin:0" id="home-shop-status" role="status" aria-live="polite"></p>
   <div id="site-header-mount"></div>
 
   <main>
@@ -24,7 +25,7 @@
       <div class="hero-scrim" aria-hidden="true"></div>
       <canvas id="hero-ocean-canvas" class="hero-ocean-canvas" aria-hidden="true"></canvas>
       <img
-        src="assets/images/logo-stamp.svg?v=78"
+        src="assets/images/logo-stamp.svg?v=37679de-r1"
         alt="Suot Isla Stamp"
         class="hero-stamp-corner"
       />
@@ -71,7 +72,7 @@
 
           <div class="hero-lookbook-main">
             <a href="product.html?id=siargao-cloud9-boardshorts&color=Lagoon+Teal" class="hero-lookbook-thumb" id="hero-cap-link">
-              <img src="assets/images/products/siargao-cloud9-boardshorts.jpg?v=78" alt="Siargao Cloud 9 Boardshorts" id="hero-cap-img" />
+              <img src="assets/images/products/siargao-cloud9-boardshorts.jpg?v=37679de-r1" alt="Siargao Cloud 9 Boardshorts" id="hero-cap-img" />
             </a>
             <div class="hero-lookbook-details">
               <div class="hero-lookbook-title" id="hero-cap-title">Siargao Cloud 9 Boardshorts</div>
@@ -168,7 +169,7 @@
         <div class="journal-unified-grid" data-reveal>
           <div class="journal-photo-frame">
             <img
-              src="assets/images/series-boracay.jpg?v=78"
+              src="assets/images/series-boracay.jpg?v=37679de-r1"
               alt="Breezy sand-toned linen resortwear and woven buri tote on Boracay White Beach at golden hour"
               loading="lazy"
             />
@@ -265,12 +266,32 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=78"></script>
-  <script src="assets/js/store.js?v=78"></script>
-  <script src="assets/js/components.js?v=78"></script>
-  <script src="assets/js/ocean-overdrive.js?v=78"></script>
+  <script src="assets/js/data.js?v=37679de-r1"></script>
+  <script src="assets/js/store.js?v=37679de-r1"></script>
+  <script src="assets/js/components.js?v=37679de-r3"></script>
+  <script src="assets/js/ocean-overdrive.js?v=37679de-r1"></script>
+  <script src="assets/js/island-stock.js?v=37679de-r1"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
+      const status = document.getElementById("home-shop-status");
+      const live = await window.loadIslandStock(status);
+      if (!live) return;
+      const liveProduct = new Map(live.products.map(p => [p.id,p]));
+      const variantFor = (id,size,color) => liveProduct.get(id)?.variants.find(v => v.size_label===size && v.color_name===color);
+      async function addHomeItem(btn,id,size,color) {
+        if (!live.customer) { location.assign("auth.html?redirect=index.html"); return; }
+        const v = variantFor(id,size,color);
+        if (!v || btn.disabled) return;
+        btn.disabled = true;
+        try {
+          await live.get("checkout",{action:"add",variant_id:v.variant_id,quantity:1});
+          live.bag.set(Number(v.variant_id),1+(live.bag.get(Number(v.variant_id))||0));
+          window.dispatchEvent(new Event("suotisla:bag-update"));
+          window.SuotUI.toast("Added to your shopping bag.","Island Bag");
+        } catch(error) { window.SuotUI.toast(error.message,"Shopping Bag"); }
+        renderHeroCapsule(activeHeroProdId,activeHeroMetaText);
+        renderFeaturedCards();
+      }
       const seriesGrid = document.getElementById("home-series-grid");
       const featuredGrid = document.getElementById("home-featured-grid");
 
@@ -347,15 +368,17 @@
         capImgEl.src =
           window.SuotStore.getProductImageForColor(prod, heroCapColor) ||
           prod.image ||
-          "assets/images/products/siargao-cloud9-boardshorts.jpg?v=78";
+          "assets/images/products/siargao-cloud9-boardshorts.jpg?v=37679de-r1";
         capImgEl.alt = `${prod.name} in ${heroCapColor}`;
         capMetaEl.textContent = metaText;
         capTitleEl.textContent = prod.name;
         capPriceEl.textContent = window.SuotStore.formatPrice(prod.price);
         capAddBtn.setAttribute("data-hero-prod", prod.id);
 
-        const avail = Math.max(0, parseInt(prod.stock, 10) || 0);
-        const inBag = window.SuotStore.getCartQtyForProduct(prod.id);
+        const variant = variantFor(prod.id,heroCapSize,heroCapColor);
+        const avail = Number(variant?.stock_qty || 0);
+        const inBag = live.bag.get(Number(variant?.variant_id)) || 0;
+        if (variant) capPriceEl.textContent = window.SuotStore.formatPrice(variant.unit_price);
         const rem = Math.max(0, avail - inBag);
         if (avail <= 0) {
           capAddBtn.disabled = true;
@@ -365,7 +388,7 @@
           capAddBtn.textContent = `Max in Bag (${avail}) — Edit Bag`;
         } else {
           capAddBtn.disabled = false;
-          capAddBtn.textContent = `Quick Add · ${heroCapSize} — ${window.SuotStore.formatPrice(prod.price)}`;
+          capAddBtn.textContent = `Quick Add · ${heroCapSize} — ${capPriceEl.textContent}`;
         }
 
         capSizesEl.innerHTML = prod.sizes
@@ -438,46 +461,10 @@
         });
       });
 
-      capAddBtn.addEventListener("click", () => {
-        const pid = capAddBtn.getAttribute("data-hero-prod");
-        const prod = window.SuotStore.getProductById(pid);
-        if (prod) {
-          const chosenSize = heroCapSize || prod.sizes[0];
-          const chosenColor = heroCapColor || prod.colors[0];
-          suppressHomeStateRender = true;
-          const res = window.SuotStore.addToCart(prod.id, chosenSize, chosenColor, 1);
-          if (!res || !res.ok) {
-            suppressHomeStateRender = false;
-            const firstAlt = res && res.alternatives && res.alternatives[0];
-            window.SuotUI.toast(
-              (res && res.message) || `${prod.name} has reached its available stock limit.`,
-              "Stock Unavailable",
-              firstAlt
-                ? {
-                    actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
-                    onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
-                  }
-                : {}
-            );
-            renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
-            return;
-          }
-          window.SuotUI.flashButtonAdded(capAddBtn, "✓ Added to Bag");
-          window.SuotUI.animateCartBadge();
-          window.SuotUI.toast(
-            `Added ${prod.name} (${chosenSize}, ${chosenColor}) to your Island Bag!`,
-            "Added to Bag"
-          );
-          setTimeout(() => {
-            suppressHomeStateRender = false;
-            renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
-            renderFeaturedCards();
-          }, 1150);
-        }
-      });
+      capAddBtn.addEventListener("click", () => addHomeItem(capAddBtn,activeHeroProdId,heroCapSize,heroCapColor));
 
       // Render Interactive Expanding Editorial Accordion for the 4 Island Series
-      const allProducts = window.SuotStore.getProducts();
+      const allProducts = window.SuotStore.getProducts().filter(p => liveProduct.has(p.id)).map(p => ({...p, price:liveProduct.get(p.id).price}));
       seriesGrid.innerHTML = window.SUOT_ISLA_DATA.islandSeries
         .map((s, idx) => {
           const seriesItems = allProducts.filter((p) => p.series === s.id && p.image).slice(0, 2);
@@ -575,8 +562,9 @@
           .map((p) => {
             const activeColor = p._selectedColor || p.colors[0];
             const activeSize = p._selectedSize || p.sizes[0];
-            const avail = Math.max(0, parseInt(p.stock, 10) || 0);
-            const inBag = window.SuotStore.getCartQtyForProduct(p.id);
+            const variant = variantFor(p.id,activeSize,activeColor);
+            const avail = Number(variant?.stock_qty || 0);
+            const inBag = live.bag.get(Number(variant?.variant_id)) || 0;
             const rem = Math.max(0, avail - inBag);
             const isOutOfStock = avail <= 0;
             const isLowStock = avail > 0 && avail <= 5;
@@ -680,38 +668,8 @@
 
         featuredGrid.querySelectorAll("[data-quick-add]").forEach((btn) => {
           btn.addEventListener("click", () => {
-            const pid = btn.getAttribute("data-quick-add");
-            const prod = allProducts.find((item) => item.id === pid);
-            if (prod) {
-              const color = prod._selectedColor || prod.colors[0];
-              const size = prod._selectedSize || prod.sizes[0];
-              suppressHomeStateRender = true;
-              const res = window.SuotStore.addToCart(prod.id, size, color, 1);
-              if (!res || !res.ok) {
-                suppressHomeStateRender = false;
-                const firstAlt = res && res.alternatives && res.alternatives[0];
-                window.SuotUI.toast(
-                  (res && res.message) || `${prod.name} has no remaining stock available.`,
-                  "Stock Unavailable",
-                  firstAlt
-                    ? {
-                        actionLabel: `View ${firstAlt.name.split(" ").slice(0, 2).join(" ")}`,
-                        onAction: () => window.SuotUI.navigateTo(`product.html?id=${encodeURIComponent(firstAlt.id)}`)
-                      }
-                    : {}
-                );
-                renderFeaturedCards();
-                return;
-              }
-              window.SuotUI.flashButtonAdded(btn, `✓ Added · ${size}`);
-              window.SuotUI.animateCartBadge();
-              window.SuotUI.toast(`Added ${prod.name} (${size}, ${color}) to your Island Bag!`, "Added to Bag");
-              setTimeout(() => {
-                suppressHomeStateRender = false;
-                renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
-                renderFeaturedCards();
-              }, 1150);
-            }
+            const p = allProducts.find(item=> item.id === btn.dataset.quickAdd);
+            addHomeItem(btn,p.id,p._selectedSize||p.sizes[0],p._selectedColor||p.colors[0]);
           });
         });
       }
@@ -730,6 +688,22 @@
         });
       });
 
+
+
+      renderFeaturedCards();
+      let customerInfo = null;
+      let myOrders = [];
+      if (live.customer) {
+        try {
+          const [account,sales,lines] = await Promise.all([live.get("account"),live.get("orders"),live.get("account-items")]);
+          const safe = live.safe;
+          customerInfo = {email:safe(account.user.email)};
+          myOrders = sales.orders.map(o=>({orderNumber:safe(o.order_number),trackingNumber:safe(o.tracking_number),
+            status:safe(o.order_status),placedAt:safe(o.placed_at),courierName:safe(o.courier_service),shippingAddress:safe(o.shipping_address_snapshot),
+            total:Number(o.total_amount),paymentMethod:safe(o.payment_method),items:lines.items.filter(i=>i.order_id==o.order_id).map(i=>({
+              productId:safe(i.slug),color:safe(i.color_snapshot),size:safe(i.size_snapshot),name:safe(i.product_name_snapshot),qty:Number(i.quantity)}))}));
+        } catch(error) { status.textContent = error.message; }
+      }
       const trackForm = document.getElementById("home-order-track-form");
       const trackInput = document.getElementById("home-order-track-input");
       const trackResultEl = document.getElementById("home-order-track-result");
@@ -741,7 +715,7 @@
           trackResultEl.innerHTML = "";
           return;
         }
-        const userOrders = window.SuotStore.getOrdersForCurrentUser();
+        const userOrders = myOrders;
         const found = userOrders.find(
           (o) =>
             (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
@@ -753,13 +727,13 @@
             <div class="live-track-card">
               <div class="live-track-head">
                 <div class="live-track-id-group">
-                  <strong class="live-track-order-num">No match for "${query}"</strong>
+                  <strong class="live-track-order-num">No match for "${live.safe(query)}"</strong>
                   <span class="pill pill-sand">Scoped to Active Account</span>
                 </div>
                 <button type="button" class="live-track-close" id="home-track-close-btn">✕ Hide</button>
               </div>
               <p style="margin:0;font-size:0.875rem;color:var(--text-secondary);">
-                Only orders belonging to your signed-in account appear here. Select one of the sample orders above or open your <a href="account.html">Orders Dashboard</a>.
+                Only orders belonging to your signed-in account appear here. Select one of the orders above or open your <a href="account.html">Orders Dashboard</a>.
               </p>
             </div>
           `;
@@ -857,8 +831,8 @@
       const trackChipsEl = document.getElementById("home-track-chips");
 
       function renderHomeTrackerChips(preserveCurrent) {
-        const u = window.SuotStore.getCurrentUser();
-        const userOrders = window.SuotStore.getOrdersForCurrentUser();
+        const u = customerInfo;
+        const userOrders = myOrders;
         if (trackChipsEl) {
           if (userOrders.length) {
             trackChipsEl.innerHTML = userOrders
@@ -900,8 +874,7 @@
         trackForm.addEventListener("submit", (e) => {
           e.preventDefault();
           const code = trackInput.value.trim().replace(/^#/, "").toLowerCase();
-          const match = window.SuotStore
-            .getOrdersForCurrentUser()
+          const match = myOrders
             .find(
               (o) =>
                 o.orderNumber.toLowerCase() === code ||
@@ -922,17 +895,7 @@
         });
       }
 
-      let suppressHomeStateRender = false;
-
-      window.addEventListener("suotisla:statechange", () => {
-        if (suppressHomeStateRender) return;
-        renderHeroCapsule(activeHeroProdId, activeHeroMetaText);
-        renderFeaturedCards();
-        renderHomeTrackerChips(true);
-      });
-
       renderHomeTrackerChips(false);
-      renderFeaturedCards();
     });
   </script>
 </body>

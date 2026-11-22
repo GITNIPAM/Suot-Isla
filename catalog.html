@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Collection &amp; Catalog — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
-  <link rel="stylesheet" href="assets/css/base.css?v=78" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/base.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=37679de-r1" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -133,7 +133,7 @@
               style="width:100%;accent-color:var(--color-lagoon);"
             />
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
-              <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">₱750 – ₱2,600</span>
+              <span id="catalog-price-limits" class="mono" style="font-size:0.72rem;color:var(--text-muted);">₱750 – ₱2,600</span>
               <button type="button" class="btn btn-outline btn-sm btn-pill" id="reset-filters-btn">Reset All</button>
             </div>
           </div>
@@ -141,6 +141,7 @@
       </div>
 
       <!-- Live Count + Removable Active Filter Chips -->
+      <p id="catalog-status" role="status"></p>
       <div class="catalog-results-meta">
         <div>
           <strong id="catalog-count-label" class="tabular" style="font-size:0.95rem;">Showing 16 of 16 pieces</strong>
@@ -159,10 +160,11 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=78"></script>
-  <script src="assets/js/store.js?v=78"></script>
-  <script src="assets/js/components.js?v=78"></script>
-  <script src="assets/js/ocean-overdrive.js?v=78"></script>
-  <script src="assets/js/catalog.js?v=78"></script>
+  <script src="assets/js/data.js?v=37679de-r1"></script>
+  <script src="assets/js/store.js?v=37679de-r1"></script>
+  <script src="assets/js/components.js?v=37679de-r3"></script>
+  <script src="assets/js/ocean-overdrive.js?v=37679de-r1"></script>
+  <script src="assets/js/island-stock.js?v=37679de-r1"></script>
+  <script src="assets/js/catalog-dispatch.js?v=37679de-r1"></script>
 </body>
 </html>

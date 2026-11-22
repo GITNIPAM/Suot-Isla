@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ERD, Use Case Diagram &amp; FourSys Cloud Guide — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
-  <link rel="stylesheet" href="assets/css/base.css?v=78" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=78" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/tokens.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/storefront.css" />
+  <link rel="stylesheet" href="assets/css/admin.css" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -195,7 +195,7 @@
     <section style="margin-bottom:var(--space-12);" aria-label="Use Case Diagram">
       <h2>3. Use Case Diagram Across the Order Lifecycle (15 Points)</h2>
       <p style="margin-bottom:var(--space-4);">
-        Covers all <strong>5 Actors</strong> (Customer, Admin, Delivery Personnel / Courier, Payment Gateway, Email Service) across all <strong>7 Stages</strong> with explicit <code>&lt;&lt;include&gt;&gt;</code> and <code>&lt;&lt;extend&gt;&gt;</code> relationships.
+        Covers all <strong>5 Actors</strong> (Customer, Admin, Delivery Personnel / Courier, Mock Payment Gateway, Email Service) across all <strong>7 Stages</strong> with explicit <code>&lt;&lt;include&gt;&gt;</code> and <code>&lt;&lt;extend&gt;&gt;</code> relationships.
       </p>
 
       <div class="diagram-box">
@@ -217,7 +217,7 @@
             <text x="35" y="388" font-size="10" fill="#24494E">(Inventory &amp; Orders)</text>
           </g>
 
-          <!-- Right Actors: Courier, Payment Gateway, Email Service -->
+          <!-- Right Actors: Courier, Mock Payment Gateway, Email Service -->
           <g font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12" fill="#092C30">
             <rect x="940" y="80" width="160" height="70" rx="8" fill="#E5F3EB" stroke="#2E5A44" stroke-width="2"/>
             <text x="952" y="110">Actor: Payment GW</text>
@@ -383,12 +383,37 @@
         </div>
       </div>
     </section>
+  <section class="surface-card" aria-labelledby="schema-keys-title">
+      <h2 id="schema-keys-title">Database keys and cardinality</h2>
+      <p>A required foreign key points to exactly one parent. An optional foreign key points to zero or one parent. A parent has zero or more children unless the foreign key is unique, in which case it has at most one. Checkout creates one or more order items and exactly one payment and delivery per order.</p>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th scope="col">Entity</th><th scope="col">Primary key</th><th scope="col">Foreign keys and constraints</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>users</code></th><td><code>user_id</code></td><td>—</td></tr>
+          <tr><th scope="row"><code>user_addresses</code></th><td><code>address_id</code></td><td>user_id → users (required)</td></tr>
+          <tr><th scope="row"><code>categories</code></th><td><code>category_id</code></td><td>—</td></tr>
+          <tr><th scope="row"><code>island_series</code></th><td><code>series_id</code></td><td>—</td></tr>
+          <tr><th scope="row"><code>products</code></th><td><code>product_id</code></td><td>category_id → categories, series_id → island_series (both required)</td></tr>
+          <tr><th scope="row"><code>product_variants</code></th><td><code>variant_id</code></td><td>product_id → products (required)</td></tr>
+          <tr><th scope="row"><code>carts</code></th><td><code>cart_id</code></td><td>user_id → users (optional and unique, so a user can have at most one cart)</td></tr>
+          <tr><th scope="row"><code>cart_items</code></th><td><code>cart_item_id</code></td><td>cart_id → carts, variant_id → product_variants (both required, unique as a pair)</td></tr>
+          <tr><th scope="row"><code>coupons</code></th><td><code>coupon_id</code></td><td>—</td></tr>
+          <tr><th scope="row"><code>orders</code></th><td><code>order_id</code></td><td>user_id → users (required), shipping_address_id → user_addresses and coupon_id → coupons (optional)</td></tr>
+          <tr><th scope="row"><code>order_items</code></th><td><code>order_item_id</code></td><td>order_id → orders, variant_id → product_variants (both required)</td></tr>
+          <tr><th scope="row"><code>payments</code></th><td><code>payment_id</code></td><td>order_id → orders (required and unique)</td></tr>
+          <tr><th scope="row"><code>deliveries</code></th><td><code>delivery_id</code></td><td>order_id → orders (required and unique), courier_user_id → users (optional)</td></tr>
+          <tr><th scope="row"><code>return_requests</code></th><td><code>return_id</code></td><td>order_id → orders (required)</td></tr>
+          <tr><th scope="row"><code>email_logs</code></th><td><code>email_id</code></td><td>user_id → users, order_id → orders (both optional)</td></tr>
+          <tr><th scope="row"><code>shop_visits</code></th><td><code>visit_token</code></td><td>—. Session-level analytics record with visit and purchase timestamps.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
   </main>
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=78"></script>
-  <script src="assets/js/store.js?v=78"></script>
-  <script src="assets/js/components.js?v=78"></script>
+  <script src="assets/js/data.js?v=37679de-r1"></script>
+  <script src="assets/js/store.js?v=37679de-r1"></script>
+  <script src="assets/js/components.js?v=37679de-r3"></script>
 </body>
 </html>

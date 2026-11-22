@@ -4,22 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Island Club Sign In — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
-  <link rel="stylesheet" href="assets/css/base.css?v=78" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/base.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/account-auth.css?v=37679de-r1" />
 </head>
 <body>
   <div id="site-header-mount"></div>
 
   <main class="container">
     <div id="auth-redirect-notice" style="display:none;max-width:960px;margin:var(--space-5) auto 0;padding:0.85rem 1.1rem;border-radius:12px;background:rgba(14,107,116,0.09);border:1px solid rgba(14,107,116,0.28);color:var(--color-lagoon-ink);font-size:var(--text-sm);font-weight:600;"></div>
-
     <div class="auth-showcase-wrap">
       <!-- Left Editorial Island Visual -->
       <div class="auth-editorial-frame">
         <img
-          src="assets/images/auth-editorial-flatlay.jpg?v=78"
+          src="assets/images/auth-editorial-flatlay.jpg?v=37679de-r1"
           alt="Sunlit coastal flat-lay featuring Suot Isla lagoon teal boardshorts, warm sand linen shirt, woven buri tote, seafoam waffle towel, and seashells"
           loading="eager"
         />
@@ -27,10 +27,14 @@
 
       <!-- Focused Sign In / Create Account Card -->
       <section class="auth-card-shell" aria-label="Customer Sign In and Registration">
-        <div id="active-session-box"></div>
+        <div id="auth-session" class="auth-signedin-bar" hidden>
+          <p id="active-session-box"></p>
+          <a id="account-continue" class="btn btn-primary btn-sm" href="account.html">Continue</a>
+          <button id="account-sign-out" class="btn btn-outline btn-sm" type="button">Sign out</button>
+        </div>
 
         <!-- Sign In Form -->
-        <form id="login-form" class="auth-form-stage" action="api/auth-login.php" method="POST" novalidate>
+        <form id="login-form" class="auth-form-stage" action="api/auth-login.php" method="POST">
           <h1 class="auth-card-title">SIGN IN</h1>
           <p class="auth-card-sub">
             Sign in to check out and see your orders.
@@ -50,7 +54,6 @@
           </div>
 
           <div id="login-auth-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.55);color:var(--color-coral-deep);font-size:0.8rem;font-weight:600;"></div>
-
           <button type="submit" class="btn btn-primary btn-block btn-lg">
             Sign in
           </button>
@@ -62,7 +65,7 @@
         </form>
 
         <!-- Create Customer Account Form -->
-        <form id="register-form" class="auth-form-stage" action="api/auth-register.php" method="POST" style="display:none;" novalidate>
+        <form id="register-form" class="auth-form-stage" action="api/auth-register.php" method="POST" style="display:none;">
           <h1 class="auth-card-title">CREATE ACCOUNT</h1>
           <p class="auth-card-sub">
             Save Philippine delivery ports and track your island orders.
@@ -107,7 +110,6 @@
           </div>
 
           <div id="register-auth-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.55);color:var(--color-coral-deep);font-size:0.8rem;font-weight:600;"></div>
-
           <button type="submit" class="btn btn-primary btn-block btn-lg">
             Create account
           </button>
@@ -118,32 +120,7 @@
           </p>
         </form>
 
-        <!-- Demo Credentials Box (Customer accounts shown for demo; Operator roles shown only with ?demo=1) -->
-        <div class="auth-demo-box" id="auth-demo-switcher-wrap">
-          <div class="auth-demo-title">Demo accounts (fictional data — click row to prefill)</div>
-          <div class="auth-demo-list" id="auth-switcher-list">
-            <button type="button" class="auth-demo-item" data-fill-email="mateo.alonzo@student.pcu.edu.ph">
-              <span class="auth-demo-role">Customer</span>
-              <span class="auth-demo-cred">mateo.alonzo@student.pcu.edu.ph / SuotIsla2026!</span>
-            </button>
-            <button type="button" class="auth-demo-item" data-fill-email="bianca.delacruz@student.pcu.edu.ph">
-              <span class="auth-demo-role">Customer</span>
-              <span class="auth-demo-cred">bianca.delacruz@student.pcu.edu.ph / SuotIsla2026!</span>
-            </button>
-            <button type="button" class="auth-demo-item" data-fill-email="admin@suotisla.ph" data-demo-operator="1" style="display:none;">
-              <span class="auth-demo-role">Admin</span>
-              <span class="auth-demo-cred">admin@suotisla.ph / SuotIsla2026!</span>
-            </button>
-            <button type="button" class="auth-demo-item" data-fill-email="staff@suotisla.ph" data-demo-operator="1" style="display:none;">
-              <span class="auth-demo-role">Staff</span>
-              <span class="auth-demo-cred">staff@suotisla.ph / SuotIsla2026!</span>
-            </button>
-            <button type="button" class="auth-demo-item" data-fill-email="courier@suotisla.ph" data-demo-operator="1" style="display:none;">
-              <span class="auth-demo-role">Courier</span>
-              <span class="auth-demo-cred">courier@suotisla.ph / SuotIsla2026!</span>
-            </button>
-          </div>
-        </div>
+        <p id="account-message" role="status"></p>
 
         <p class="auth-switch-copy" style="margin-top:var(--space-3);font-size:0.76rem;color:var(--text-muted);">
           Store team, courier, or admin?
@@ -155,300 +132,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=78"></script>
-  <script src="assets/js/store.js?v=78"></script>
-  <script src="assets/js/components.js?v=78"></script>
-  <script src="assets/js/ocean-overdrive.js?v=78"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const loginForm = document.getElementById("login-form");
-      const registerForm = document.getElementById("register-form");
-      const switchToRegBtn = document.getElementById("switch-to-register-btn");
-      const switchToLoginBtn = document.getElementById("switch-to-login-btn");
-      const loginEmailInput = document.getElementById("login-email");
-      const loginPassInput = document.getElementById("login-password");
-      const regNameInput = document.getElementById("reg-name");
-      const regEmailInput = document.getElementById("reg-email");
-      const regPhoneInput = document.getElementById("reg-phone");
-      const regPhoneHint = document.getElementById("reg-phone-hint");
-      const regPassInput = document.getElementById("reg-password");
-      const regPassHint = document.getElementById("reg-pass-hint");
-      const sessionBox = document.getElementById("active-session-box");
-      const params = new URLSearchParams(window.location.search);
-      const explicitRedirect = params.get("redirect");
-
-      window.SuotStore.bindPhPhoneInput(regPhoneInput, regPhoneHint);
-
-      function getInitials(name) {
-        return String(name || "SI")
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((part) => part[0].toUpperCase())
-          .join("");
-      }
-
-      function getRoleDestination(role) {
-        const safeMap = {
-          "checkout.html": "checkout.html",
-          "account.html": "account.html",
-          "cart.html": "cart.html",
-          "admin.html": "admin.html",
-          "catalog.html": "catalog.html",
-          "index.html": "index.html"
-        };
-        const cleanRedirect = safeMap[String(explicitRedirect || "").trim()];
-        if (cleanRedirect) {
-          if (cleanRedirect === "admin.html" && role === "customer") return "account.html";
-          return cleanRedirect;
-        }
-        return role === "customer" ? "account.html" : "admin.html";
-      }
-
-      const authNoticeEl = document.getElementById("auth-redirect-notice");
-      function renderAuthRedirectNotice() {
-        if (!authNoticeEl) return;
-        const guestCount = window.SuotStore.getCurrentUser() ? 0 : window.SuotStore.getCartTotals().itemCount;
-        if (explicitRedirect === "checkout.html") {
-          authNoticeEl.style.display = "block";
-          authNoticeEl.innerHTML = guestCount
-            ? `Almost there! Your guest bag has <strong>${guestCount} item(s)</strong> — sign in or create an account to continue to Checkout.`
-            : `Please sign in or create a customer account to continue to Checkout.`;
-        } else if (explicitRedirect === "account.html") {
-          authNoticeEl.style.display = "block";
-          authNoticeEl.innerHTML = `Sign in or create an account to view your orders, parcel tracking milestones, and saved Philippine addresses.`;
-        } else if (explicitRedirect === "admin.html") {
-          authNoticeEl.style.display = "block";
-          authNoticeEl.innerHTML = `Back-office operator sign-in is handled directly on the Operations Portal. <a href="admin.html" style="text-decoration:underline;margin-left:6px;">Open Operator Login →</a>`;
-        } else if (guestCount > 0) {
-          authNoticeEl.style.display = "block";
-          authNoticeEl.innerHTML = `You currently have <strong>${guestCount} item(s)</strong> in your guest bag — signing in or creating an account merges them automatically.`;
-        } else {
-          authNoticeEl.style.display = "none";
-        }
-      }
-
-      function triggerFieldError(el, message) {
-        if (!el) return;
-        el.classList.remove("is-invalid-field");
-        void el.offsetWidth;
-        el.classList.add("is-invalid-field");
-        el.focus();
-        window.SuotUI.toast(message, "Check Input");
-      }
-
-      const loginAuthAlert = document.getElementById("login-auth-alert");
-      const registerAuthAlert = document.getElementById("register-auth-alert");
-
-      document.querySelectorAll("#login-form input, #register-form input").forEach((inp) => {
-        inp.addEventListener("input", () => {
-          inp.classList.remove("is-invalid-field");
-          if (loginAuthAlert && inp.closest("#login-form")) {
-            loginAuthAlert.style.display = "none";
-            loginAuthAlert.textContent = "";
-          }
-          if (registerAuthAlert && inp.closest("#register-form")) {
-            registerAuthAlert.style.display = "none";
-            registerAuthAlert.textContent = "";
-          }
-        });
-      });
-
-      document.querySelectorAll("[data-toggle-pass]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const target = document.getElementById(btn.getAttribute("data-toggle-pass"));
-          if (!target) return;
-          const showing = target.type === "text";
-          target.type = showing ? "password" : "text";
-          btn.textContent = showing ? "Show" : "Hide";
-          btn.setAttribute("aria-label", showing ? "Show password" : "Hide password");
-        });
-      });
-
-      function renderSessionBox() {
-        const u = window.SuotStore.getCurrentUser();
-        renderAuthRedirectNotice();
-
-        if (!u) {
-          sessionBox.innerHTML = "";
-          sessionBox.style.display = "none";
-          return;
-        }
-
-        const isCustomer = u.role === "customer";
-        const destUrl = getRoleDestination(u.role);
-        const destLabel = isCustomer ? "My Orders →" : "Portal →";
-
-        sessionBox.style.display = "block";
-        sessionBox.innerHTML = `
-          <div class="auth-signedin-bar">
-            <div style="min-width:0;">
-              <div style="font-size:0.72rem;color:var(--text-muted);">Signed in as</div>
-              <strong style="font-size:0.86rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.name}</strong>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-              <a href="${destUrl}" class="btn btn-outline btn-sm">${destLabel}</a>
-              <button type="button" class="btn btn-ghost btn-sm" id="auth-signout-btn">Sign Out</button>
-            </div>
-          </div>
-        `;
-
-        const signOutBtn = document.getElementById("auth-signout-btn");
-        if (signOutBtn) {
-          signOutBtn.addEventListener("click", () => {
-            window.SuotStore.logout();
-            renderSessionBox();
-            window.SuotUI.toast("Signed out. You are now browsing as a Guest.", "Signed Out");
-          });
-        }
-      }
-
-      function setMode(mode) {
-        const isLogin = mode === "login";
-        loginForm.style.display = isLogin ? "block" : "none";
-        registerForm.style.display = isLogin ? "none" : "block";
-        const activeForm = isLogin ? loginForm : registerForm;
-        activeForm.classList.remove("auth-form-stage");
-        void activeForm.offsetWidth;
-        activeForm.classList.add("auth-form-stage");
-      }
-
-      if (switchToRegBtn) switchToRegBtn.addEventListener("click", () => setMode("register"));
-      if (switchToLoginBtn) switchToLoginBtn.addEventListener("click", () => setMode("login"));
-
-      regPassInput.addEventListener("input", () => {
-        const len = regPassInput.value.length;
-        if (!len) {
-          regPassHint.textContent = "Enter at least 8 characters.";
-          regPassHint.style.color = "";
-        } else if (len < 8) {
-          regPassHint.textContent = `${8 - len} more character${8 - len === 1 ? "" : "s"} needed (8 minimum).`;
-          regPassHint.style.color = "var(--color-coral-dark)";
-        } else {
-          regPassHint.textContent = "✓ Password length verified";
-          regPassHint.style.color = "var(--color-palm)";
-        }
-      });
-
-      loginForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (loginAuthAlert) {
-          loginAuthAlert.style.display = "none";
-          loginAuthAlert.textContent = "";
-        }
-        if (!loginEmailInput.value.trim() || !loginEmailInput.checkValidity()) {
-          triggerFieldError(loginEmailInput, "Please enter a valid email address.");
-          return;
-        }
-        const passInput = document.getElementById("login-password");
-        if (!passInput.value) {
-          triggerFieldError(passInput, "Please enter your password.");
-          return;
-        }
-        const res = window.SuotStore.loginWithCredentials(loginEmailInput.value, passInput.value);
-        if (!res.ok) {
-          const targetField = res.field === "email" ? loginEmailInput : passInput;
-          if (loginAuthAlert) {
-            loginAuthAlert.textContent = res.message;
-            loginAuthAlert.style.display = "block";
-          }
-          triggerFieldError(targetField, res.message);
-          return;
-        }
-        const mergeNote = res.mergedGuestItems
-          ? ` (${res.mergedGuestItems} guest bag item${res.mergedGuestItems === 1 ? "" : "s"} merged!)`
-          : "";
-        window.SuotUI.toast(`Signed in as ${res.user.name} (${res.user.role.toUpperCase()})${mergeNote}`, "Authenticated");
-        window.SuotUI.navigateTo(getRoleDestination(res.user.role));
-      });
-
-      registerForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (registerAuthAlert) {
-          registerAuthAlert.style.display = "none";
-          registerAuthAlert.textContent = "";
-        }
-        if (!regNameInput.value.trim()) {
-          triggerFieldError(regNameInput, "Please enter your full name.");
-          return;
-        }
-        if (!regEmailInput.value.trim() || !regEmailInput.checkValidity()) {
-          triggerFieldError(regEmailInput, "Please enter a valid email address.");
-          return;
-        }
-        if (!window.SuotStore.isValidPhMobile(regPhoneInput.value)) {
-          triggerFieldError(regPhoneInput, "Mobile number must be 11 digits starting with 09 (e.g. 09171234567).");
-          return;
-        }
-        if (regPassInput.value.length < 8) {
-          triggerFieldError(regPassInput, "Password must be at least 8 characters.");
-          return;
-        }
-
-        const regRes = window.SuotStore.registerUser({
-          fullName: regNameInput.value.trim(),
-          email: regEmailInput.value.trim(),
-          phone: window.SuotStore.normalizePhMobile(regPhoneInput.value),
-          password: regPassInput.value,
-          role: "customer"
-        });
-        if (!regRes.ok) {
-          const targetEl = regRes.field === "password" ? regPassInput : regEmailInput;
-          if (registerAuthAlert) {
-            registerAuthAlert.textContent = regRes.message;
-            registerAuthAlert.style.display = "block";
-          }
-          triggerFieldError(targetEl, regRes.message);
-          return;
-        }
-        const mergeNote = regRes.mergedGuestItems
-          ? ` Your ${regRes.mergedGuestItems} guest bag item(s) are ready!`
-          : "";
-        window.SuotUI.toast(`Welcome, ${regRes.user.name}!${mergeNote}`, "Account Created");
-        window.SuotUI.navigateTo(getRoleDestination("customer"));
-      });
-
-      document.querySelectorAll("[data-fill-email]").forEach((rowBtn) => {
-        rowBtn.addEventListener("click", () => {
-          setMode("login");
-          if (loginEmailInput) {
-            loginEmailInput.value = rowBtn.getAttribute("data-fill-email") || "";
-            loginEmailInput.classList.remove("is-invalid-field");
-          }
-          if (loginPassInput) {
-            loginPassInput.value = "SuotIsla2026!";
-            loginPassInput.classList.remove("is-invalid-field");
-          }
-          if (loginAuthAlert) {
-            loginAuthAlert.style.display = "none";
-          }
-          window.SuotUI.toast("Filled demo credentials — click Sign in to verify.", "Demo Ready");
-        });
-      });
-
-      const isDemoMode = params.get("demo") === "1";
-      const demoSwitcherWrap = document.getElementById("auth-demo-switcher-wrap");
-      document.querySelectorAll("[data-demo-operator]").forEach((opRow) => {
-        opRow.style.display = isDemoMode ? "grid" : "none";
-      });
-      function syncDemoVisibility() {
-        if (demoSwitcherWrap) {
-          const onRegister = registerForm && registerForm.style.display !== "none";
-          demoSwitcherWrap.style.display = onRegister ? "none" : "block";
-        }
-      }
-      if (switchToRegBtn) {
-        switchToRegBtn.addEventListener("click", syncDemoVisibility);
-      }
-      if (switchToLoginBtn) {
-        switchToLoginBtn.addEventListener("click", syncDemoVisibility);
-      }
-      if (params.get("mode") === "register") {
-        setMode("register");
-      }
-      syncDemoVisibility();
-      renderSessionBox();
-    });
-  </script>
+  <script src="assets/js/data.js?v=37679de-r1"></script>
+  <script src="assets/js/store.js?v=37679de-r1"></script>
+  <script src="assets/js/components.js?v=37679de-r3"></script>
+  <script src="assets/js/ocean-overdrive.js?v=37679de-r1"></script>
+  <script src="assets/js/account-auth.js?v=37679de-r1"></script>
 </body>
 </html>
