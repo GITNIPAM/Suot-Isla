@@ -3718,7 +3718,8 @@
   transition: transform 260ms var(--ease-spring), opacity 220ms var(--ease-out);
 }
 
-.modal-backdrop.open .gcash-pay-modal-card {
+.modal-backdrop.open .gcash-pay-modal-card,
+dialog.gcash-pay-modal-card[open] {
   transform: translateY(0) scale(1);
   opacity: 1;
 }
