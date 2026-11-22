@@ -685,11 +685,6 @@
       addresses:addressesPanel, notifications:notificationsPanel}[selected];
   }
 
-  function returnCommand(r, action, label, extra = "") {
-    return form("returns", '<input type="hidden" name="action" value="' + action + '"><input type="hidden" name="return_id" value="' +
-      Number(r.return_id) + '">' + extra + button(label));
-  }
-
   function table(headings,rows) {
     return '<div class="data-table-wrap"><table class="data-table"><thead><tr>'+headings.map(h=>'<th>'+esc(h)+'</th>').join("")+
       '</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map((c,i)=>'<td data-label="'+esc(headings[i])+'">'+c+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
@@ -1016,6 +1011,273 @@
     });
   }
 
+  async function operatorReturns() {
+    const [claims,sales] = await Promise.all([api("returns"),api("orders")]);
+    const orders = new Map(sales.orders.map(order=>[Number(order.order_id),order]));
+    const rank = status => status === "Pending Review" ? 0 : status === "Approved · Awaiting Refund" ? 1 : 2;
+    const returnsList = claims.returns.map(row=>{
+      const order = orders.get(Number(row.order_id));
+      return {
+        id:Number(row.return_id),returnId:esc(row.return_code),orderNumber:esc(row.order_number),
+        type:esc(row.request_type.replaceAll("_"," ")),customerName:esc(order?.customer_name),
+        reason:esc(row.reason),notes:esc(row.customer_notes),
+        itemSummary:(order?.items || []).map(item=>Number(item.quantity)+"× "+esc(item.product_name_snapshot)).join(", ") || "Full order",
+        amount:Number(order?.total_amount || 0),qty:(order?.items || []).reduce((sum,item)=>sum+Number(item.quantity),0),
+        restocked:Boolean(Number(row.is_restocked)),refunded:Boolean(Number(row.is_refunded)),
+        refundRef:esc(row.refund_reference),refundedAt:esc(row.refunded_at),requestedAt:esc(row.requested_at),
+        status:esc(row.status),priority:rank(row.status),order
+      };
+    }).sort((a,b)=>a.priority-b.priority);
+
+    root.innerHTML = `
+      <div class="admin-header-bar">
+        <div>
+          <h1>Refund &amp; Return Processing (2-Stage Verification)</h1>
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0;">
+            Stage 1 approves item return &amp; restocks inventory; Stage 2 verifies the actual GCash or Cash payout transaction reference before marking Refunded.
+          </p>
+        </div>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Return ID</th>
+              <th>Order # &amp; Customer</th>
+              <th>Request Type &amp; Reason</th>
+              <th>Item &amp; Refund Amount</th>
+              <th>Stock &amp; Payout Verification</th>
+              <th>Status</th>
+              <th>2-Stage Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${returnsList.length ? returnsList
+              .map((r) => {
+                const isStage1 = r.status.includes("Pending Review");
+                const isStage2 = r.status === "Approved · Awaiting Refund";
+                const rowClass = isStage1 ? "admin-row-urgent" : isStage2 ? "admin-row-needs-action" : "";
+                return `
+                  <tr data-row-key="${r.returnId}" class="${rowClass}">
+                    <td class="mono" data-label="Return ID">
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <strong>${r.returnId}</strong>
+                        ${isStage1 ? `<span class="pill pill-coral">STAGE 1 · REVIEW</span>` : ""}
+                        ${isStage2 ? `<span class="pill pill-lagoon">STAGE 2 · PAYOUT DUE</span>` : ""}
+                      </div>
+                      <div style="color:var(--text-muted);font-size:0.72rem;margin-top:2px;">${r.requestedAt}</div>
+                    </td>
+                    <td data-label="Order # & Customer">
+                      <strong class="mono">#${r.orderNumber}</strong>
+                      <div style="font-size:var(--text-xs);">${r.customerName}</div>
+                    </td>
+                    <td data-label="Type & Reason">
+                      <span class="pill pill-sand">${r.type}</span>
+                      <div style="font-size:var(--text-xs);font-weight:700;margin-top:4px;">${r.reason}</div>
+                      <div style="font-size:var(--text-xs);color:var(--text-muted);">${r.notes || ""}</div>
+                    </td>
+                    <td data-label="Item & Refund">
+                      <div style="font-size:var(--text-xs);">${r.itemSummary}</div>
+                      <strong class="price">${window.SuotStore.formatPrice(r.amount)}</strong>
+                    </td>
+                    <td data-label="Stock & Payout" style="font-size:var(--text-xs);">
+                      <div>Restocked: <strong>${r.restocked ? `Yes (+${r.qty} units)` : "Not Yet"}</strong></div>
+                      <div>
+                        Payout TXN:
+                        <strong>${r.refunded ? `Verified (${r.refundRef})` : isStage2 ? "Awaiting TXN Ref" : "Not Started"}</strong>
+                      </div>
+                    </td>
+                    <td data-label="Status">
+                      <span class="pill ${
+                        r.status.includes("Refunded") || r.status.includes("Closed")
+                          ? "pill-delivery"
+                          : isStage2
+                          ? "pill-sand"
+                          : r.status.includes("Rejected")
+                          ? "pill-coral"
+                          : "pill-lagoon"
+                      }">${r.status}</span>
+                    </td>
+                    <td data-label="2-Stage Decision">
+                      ${
+                        isStage1
+                          ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+                              <button type="button" class="btn btn-primary btn-sm btn-pill" data-ret-decide="${r.returnId}" data-ret-val="Approved">
+                                Approve &amp; Restock
+                              </button>
+                              <button type="button" class="btn btn-outline btn-sm btn-pill" data-ret-decide="${r.returnId}" data-ret-val="Rejected" style="color:var(--color-coral-deep);">
+                                Reject
+                              </button>
+                            </div>`
+                          : isStage2
+                          ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+                              <button type="button" class="btn btn-coral btn-sm btn-pill" data-ret-verify-refund="${r.returnId}">
+                                Verify Refund TXN →
+                              </button>
+                              <button type="button" class="btn btn-outline btn-sm btn-pill" data-ret-receipt="${r.orderNumber}" ${r.order ? "" : "disabled"}>
+                                E-Receipt
+                              </button>
+                            </div>`
+                          : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                              <span style="font-size:var(--text-xs);color:var(--text-muted);">
+                                ${r.refundedAt ? `Settled ${r.refundedAt}` : "Completed"}
+                              </span>
+                              <button type="button" class="btn btn-outline btn-sm btn-pill" data-ret-receipt="${r.orderNumber}" ${r.order ? "" : "disabled"}>
+                                E-Receipt
+                              </button>
+                            </div>`
+                      }
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("") : `<tr><td colspan="7">No return requests.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    for (const control of root.querySelectorAll("[data-ret-decide]")) {
+      control.onclick=async()=>{
+        const request=returnsList.find(row=>row.returnId===esc(control.dataset.retDecide));
+        if (!request) return;
+        const action=control.dataset.retVal==="Approved" ? "approve" : "reject";
+        if (!await confirmOperationsChange({action})) return;
+        control.disabled=true;
+        try { await api("returns",{action,return_id:request.id}); await operatorReturns(); message("Return updated."); }
+        catch(error) { control.disabled=false; message(error.message); }
+      };
+    }
+    for (const control of root.querySelectorAll("[data-ret-receipt]")) {
+      control.onclick=()=>{
+        const order=sales.orders.find(row=>row.order_number===control.dataset.retReceipt);
+        if (order) operatorReceipt(order);
+      };
+    }
+    for (const control of root.querySelectorAll("[data-ret-verify-refund]")) {
+      control.onclick=()=>{
+        const request=returnsList.find(row=>row.returnId===esc(control.dataset.retVerifyRefund));
+        if (!request) return;
+        const dialog=document.getElementById("operator-refund-dialog");
+        dialog.querySelector(".admin-confirm-summary").innerHTML="<strong>#"+request.orderNumber+"</strong> · "+request.customerName+" · "+money(request.amount);
+        const refundForm=dialog.querySelector("form");
+        const alert=dialog.querySelector("[role=alert]");
+        refundForm.reset();
+        alert.textContent="";
+        refundForm.onsubmit=async event=>{
+          event.preventDefault();
+          const confirmButton=refundForm.querySelector("button[type=submit]");
+          confirmButton.disabled=true;
+          try {
+            const values=Object.fromEntries(new FormData(refundForm));
+            await api("returns",{action:"confirm_refund",return_id:request.id,refund_channel:values.refund_channel,refund_reference:values.refund_reference});
+            dialog.close();
+            await operatorReturns();
+            message("Refund recorded.");
+          } catch(error) { alert.textContent=error.message; }
+          finally { confirmButton.disabled=false; }
+        };
+        dialog.showModal();
+      };
+    }
+  }
+
+  async function operatorTeam() {
+    const data=await api("admin-team");
+    const users=data.users.map(row=>({...row,id:Number(row.user_id),name:row.full_name,joinedAt:row.created_at?.slice(0,10)}));
+    root.innerHTML = `
+      <div class="admin-header-bar">
+        <div>
+          <h1>Team &amp; Customer Access Control</h1>
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0;">
+            Inspect storefront customers and operations team roles, PH mobile contacts, and active permission levels.
+          </p>
+        </div>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Account ID</th>
+              <th>Member &amp; Email</th>
+              <th>Mobile &amp; Joined</th>
+              <th>Storefront Activity</th>
+              <th>Current Role</th>
+              <th>Assign Permission</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users
+              .map((u) => {
+                const ordersPlaced = Number(u.orders_placed || 0);
+                const phoneDisplay = esc(window.SuotStore.normalizePhMobile(u.phone) || u.phone || "—");
+                const initials = String(u.name || "SI")
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((p) => p[0].toUpperCase())
+                  .join("");
+                return `
+                  <tr data-row-key="usr-${u.id}">
+                    <td class="mono" data-label="Account ID">#USR-0${u.id}</td>
+                    <td data-label="Member & Email">
+                      <div style="display:flex;align-items:center;gap:0.6rem;">
+                        <span class="auth-avatar-badge" style="width:32px;height:32px;font-size:0.74rem;" aria-hidden="true">${esc(initials)}</span>
+                        <div>
+                          <strong>${esc(u.name)}</strong>
+                          <div style="font-size:var(--text-xs);color:var(--text-muted);">${esc(u.email)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td data-label="Mobile & Joined" style="font-size:var(--text-xs);">
+                      <div class="mono">${phoneDisplay}</div>
+                      <div style="color:var(--text-muted);">Joined ${esc(u.joinedAt || "—")}</div>
+                    </td>
+                    <td data-label="Activity" style="font-size:var(--text-xs);">
+                      ${ordersPlaced || u.role==="customer" ? `<strong>${ordersPlaced} orders placed</strong>` : "Operations Personnel"}
+                    </td>
+                    <td data-label="Current Role">
+                      <span class="pill ${u.role === "admin" ? "pill-coral" : u.role === "courier" ? "pill-delivery" : "pill-lagoon"}">
+                        ${u.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td data-label="Assign Permission">
+                      <select class="form-select" style="width:auto;padding:0.32rem 0.65rem;font-size:var(--text-xs);" aria-label="Assign permission to ${esc(u.name)}" data-user-role-id="${u.id}" ${u.email === user.email ? "disabled" : ""}>
+                        <option value="customer" ${u.role === "customer" ? "selected" : ""}>Customer</option>
+                        <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin (Full Access)</option>
+                        <option value="staff" ${u.role === "staff" ? "selected" : ""}>Staff (Catalog &amp; Orders)</option>
+                        <option value="courier" ${u.role === "courier" ? "selected" : ""}>Fulfillment / Courier Only</option>
+                      </select>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    for (const control of root.querySelectorAll("[data-user-role-id]:not(:disabled)")) {
+      control.onchange=async()=>{
+        const member=users.find(row=>Number(row.id)===Number(control.dataset.userRoleId));
+        if (!member || control.value===member.role) return;
+        const role=control.value;
+        if (!await confirmOperationsChange({action:"assign_role"})) {
+          control.value=member.role;
+          window.SuotUI.enhanceSelects(root);
+          return;
+        }
+        control.disabled=true;
+        try { await api("admin-team",{user_id:member.id,role}); await operatorTeam(); message("Role updated."); }
+        catch(error) { control.disabled=false;control.value=member.role;window.SuotUI.enhanceSelects(root);message(error.message); }
+      };
+    }
+    window.SuotUI.enhanceSelects(root);
+  }
+
   async function operations() {
     if (!["staff","admin","courier"].includes(user?.role)) {
       root.innerHTML=document.getElementById("operator-login").innerHTML;
@@ -1070,9 +1332,9 @@
       products:"Catalog & Inventory Control",team:"Team & Customer Access Control",returns:"Refund & Return Processing (2-Stage Verification)"};
     const descriptions = {
       report:"Review sales, warehouse stock, and orders that need attention.",
-      products:"Filter low-stock items, preview color variants, and manage product availability.",
-      orders:"Review order items, assign couriers, and open receipts.",
-      dispatch:"Track assigned deliveries and update their dispatch status.",
+      products:"Filter low-stock shortages, update island pricing, preview variant imagery, and manage product availability.",
+      orders:"Process awaiting dispatches, assign couriers, inspect e-receipts, and track order updates.",
+      dispatch:"Prioritized active dispatches across Philippine ports. Track packing, transit, and delivery.",
       returns:"Review returns and record refunds after payout.",
       team:"View registered members and assign store team permissions."
     };
@@ -1080,58 +1342,39 @@
       '<p class="operator-description">'+descriptions[tab]+'</p></div></div><div data-workspace></div>';
     const panel = root.querySelector("[data-workspace]");
     if (staff && tab === "report") { await operatorAnalytics(); return; }
-    if (staff && tab === "returns") {
-      const [claims,sales] = await Promise.all([api("returns"),api("orders")]);
-      const orderById = new Map(sales.orders.map(order => [Number(order.order_id),order]));
-      const priority = status => status === "Pending Review" ? 0 : status.includes("Awaiting Refund") ? 1 : 2;
-      claims.returns.sort((a,b) => priority(a.status) - priority(b.status));
-      panel.innerHTML = table(["Return ID","Order # & Customer","Request Type & Reason","Item & Refund Amount","Stock & Payout Verification","Status","2-Stage Decision"],claims.returns.map(r => {
-        const order = orderById.get(Number(r.order_id));
-        const decision = r.status === "Pending Review" ? returnCommand(r,"approve","Approve") + returnCommand(r,"reject","Reject") :
-          r.status === "Approved · Awaiting Refund" ? returnCommand(r,"confirm_refund","Record refund",
-            select("refund_channel",[["GCash","GCash"],["Cash","Cash"]],"Refund channel") +
-            input("refund_reference","Refund reference","","required minlength=6 maxlength=80")) : "—";
-        return ['<strong class="mono">'+esc(r.return_code)+'</strong><p>'+esc(r.requested_at)+'</p>','<strong>'+esc(r.order_number)+'</strong><p>'+esc(order?.customer_name)+'</p>',
-          '<span class="pill pill-sand">'+esc(r.request_type)+'</span><p>'+esc(r.reason)+'</p>',operatorItems(order)+(order ? '<p class="price">'+money(order.total_amount)+'</p>' : ""),
-          (Number(r.is_restocked) ? "Restocked" : "Awaiting restock")+'<p>'+esc(r.refund_reference || "")+'</p>',
-          operatorPill(r.status),decision];
-      })) + (claims.returns.length ? "" : "<p>No return requests.</p>");
-      return;
-    }
+    if (staff && tab === "returns") { await operatorReturns(); return; }
     if (staff && tab === "products") { await inventory(panel); return; }
-    if (user.role === "admin" && tab === "team") {
-      const {users} = await api("admin-team");
-      panel.innerHTML = table(["Account ID","Member & Email","Mobile & Joined","Storefront Activity","Current Role","Assign Permission"],users.map(member => {
-        const initials = member.full_name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join("");
-        const identity = '<div class="operator-member"><span class="auth-avatar-badge">'+esc(initials)+'</span><div><strong>'+esc(member.full_name)+'</strong><br>'+esc(member.email)+'</div></div>';
-        const permissions = user.email === member.email ? "Your account" : form("admin-team",
-          '<input type="hidden" name="user_id" value="'+Number(member.user_id)+'">'+
-          select("role",["customer","staff","courier","admin"].map(role=>[role,role]),"Role",member.role)+button("Save role"));
-        return ['<span class="mono">#USR-'+Number(member.user_id)+'</span>',identity,
-          esc(member.phone || "—")+'<p>Joined '+esc(member.created_at?.slice(0,10) || "—")+'</p>',
-          Number(member.orders_placed || 0)+' orders placed',operatorPill(member.role.toUpperCase()),permissions];
-      }));
-      return;
-    }
+    if (user.role === "admin" && tab === "team") { await operatorTeam(); return; }
     const [{orders}, team] = await Promise.all([api("orders"), staff ? api("admin-team") : {couriers:[]}]);
     const dispatch = tab === "dispatch";
-    const displayedOrders = dispatch ? orders.filter(order => ["Packed", "Out for Delivery", "Delivered"].includes(order.order_status)) : orders;
+    const displayedOrders = dispatch ? orders.filter(order => ["Pending","Confirmed","Packed","Out for Delivery","Delivered"].includes(order.order_status)) : orders;
     const orderActions = order => {
+      const transitions = [];
       let actions = "";
       if (staff && ["Pending","Confirmed"].includes(order.order_status)) {
         if (order.payment_method === "GCash" && order.payment_status === "Pending") actions += orderCommand(order,"confirm_mock_gcash","Confirm mock GCash");
-        else actions += orderCommand(order,"advance",order.order_status === "Pending" ? "Confirm order" : "Pack order");
+        else transitions.push(["advance",order.order_status === "Pending" ? "Confirmed" : "Packed"]);
       }
       if (staff && order.order_status === "Packed" && team.couriers.length) {
         actions += orderCommand(order,"assign_courier","Assign courier",
           select("courier_user_id",team.couriers.map(r => [r.user_id,r.full_name]),"Courier",order.courier_user_id));
       }
-      if (!staff && order.order_status === "Packed") actions += orderCommand(order,"dispatch","Dispatch order");
-      if (!staff && order.order_status === "Out for Delivery") {
-        actions += orderCommand(order,"deliver","Confirm delivery",order.payment_method === "COD" ?
-          '<label><input type="checkbox" name="collected" required> Cash collected</label>' : "");
+      if (!staff && order.order_status === "Packed") transitions.push(["dispatch","Out for Delivery"]);
+      if (!staff && order.order_status === "Out for Delivery") transitions.push(["deliver","Delivered"]);
+      if (staff && !["Delivered","Cancelled","Returned"].includes(order.order_status)) transitions.push(["cancel","Cancelled"]);
+      const cash = !staff && order.order_status === "Out for Delivery" && order.payment_method === "COD" ? '<label><input type="checkbox" name="collected" required> Cash collected</label>' : "";
+      if (dispatch) {
+        const transitionLabels={advance:order.order_status==="Pending"?"Confirm Order":"Mark Packed",dispatch:"Out for Delivery",deliver:"Confirm Delivered",cancel:"Cancel order"};
+        const available = new Set(transitions.map(([action])=>action));
+        for (const action of ["advance","dispatch","deliver","cancel"]) {
+          if (available.has(action)) actions+=orderCommand(order,action,transitionLabels[action],action==="deliver"?cash:"");
+          else if (action!=="cancel") actions+='<button type="button" class="btn btn-outline btn-sm btn-pill" disabled title="Unavailable for this role or status">'+transitionLabels[action]+'</button>';
+        }
+      } else if (transitions.length) {
+        actions += form("orders",'<input type="hidden" name="order_id" value="'+Number(order.order_id)+'">'+
+          select("action",[["",order.order_status],...transitions],"Update status")+cash+button("Save & Email","data-save-status"),
+          'data-status-update');
       }
-      if (staff && !["Delivered","Cancelled","Returned"].includes(order.order_status)) actions += orderCommand(order,"cancel","Cancel order");
       return actions+'<button type="button" class="btn btn-outline btn-sm btn-pill" data-operator-receipt="'+Number(order.order_id)+'">Receipt</button>';
     };
     if (dispatch) {
@@ -1143,8 +1386,12 @@
         '<article class="surface-card dispatch-record"><div><div class="operator-dispatch-pills"><strong class="mono">#'+esc(order.order_number)+
         '</strong>'+operatorPill(order.tracking_number)+operatorPill(order.order_status)+'</div><strong>'+esc(order.customer_name)+
         '</strong><p>Drop-off: '+esc(order.shipping_address_snapshot)+'</p><div class="operator-dispatch-items">'+operatorItems(order)+
-        '</div></div><div>'+orderActions(order)+'</div></article>').join("") || "<p>No orders to show.</p>";
+        '</div></div><div class="operator-dispatch-actions">'+orderActions(order)+'</div></article>').join("") || "<p>No orders to show.</p>";
     } else {
+      if (staff) {
+        panel.previousElementSibling.insertAdjacentHTML("beforeend",'<button type="button" class="btn btn-outline btn-pill btn-sm" id="orders-open-email-drawer">Open Email Outbox</button>');
+        root.querySelector("#orders-open-email-drawer").onclick=()=>window.SuotUI.openDrawer("email");
+      }
       const filters = [["all","All orders"],["needs-action","Needs action"],["transit","In transit"],["delivered","Delivered"],["cancelled","Cancelled"]];
       const statuses = {"needs-action":["Pending","Confirmed","Packed"],transit:["Out for Delivery"],delivered:["Delivered"],cancelled:["Cancelled","Returned"]};
       const matches = (order,key) => key === "all" || statuses[key]?.includes(order.order_status);
@@ -1172,6 +1419,12 @@
             esc(order.courier_name || "Awaiting assignment")+'<br><span class="mono">'+esc(order.tracking_number)+'</span>',
             operatorPill(order.order_status),orderActions(order)
           ])) : "<p>No orders to show.</p>";
+        panel.querySelectorAll("form[data-status-update]").forEach(update=>{
+          const selector=update.elements.action;
+          const save=update.querySelector("[data-save-status]");
+          save.disabled=!selector.value;
+          selector.onchange=()=>{save.disabled=!selector.value;};
+        });
         enhanceSelects();
       }
       panel.querySelectorAll("[data-admin-ord-filter]").forEach(control=>control.onclick=()=>{filter=control.dataset.adminOrdFilter;drawOrders();});
@@ -1188,8 +1441,9 @@
 
   async function inventory(panel) {
     const data = await api("admin-products");
-    const categories = data.categories.map(r => [r.category_id,r.name]);
-    const series = data.series.map(r => [r.series_id,r.name]);
+    const categories = data.categories.map(r => [Number(r.category_id),r.name]);
+    const archivedCategories = new Set(data.categories.filter(row=>Number(row.is_archived)).map(row=>Number(row.category_id)));
+    const series = data.series.map(r => [Number(r.series_id),r.name]);
     const groups = new Map();
     for (const p of data.products) {
       if (!groups.has(p.product_id)) groups.set(p.product_id,[]);
@@ -1201,7 +1455,8 @@
         input("sku","Product SKU",p.sku) + input("slug","URL slug",p.slug) + input("name","Name",p.name) +
         input("description","Description",p.description) + input("price","Price",p.base_price,'type="number" min="0" step=".01" required') +
         select("category_id",categories,"Category",p.category_id) + select("series_id",series,"Island series",p.series_id) +
-        input("image","Product photo","","type=file accept=image/jpeg,image/png,image/webp") +
+        input("image","Product Image File Upload (with Live Preview)","","type=file accept=image/jpeg,image/png,image/webp") +
+        '<img class="operator-image-preview" alt="Product upload preview" hidden>' +
         '<details' + (p.product_id ? "" : " open") + '><summary>Add a size/color variant</summary>' +
         input("variant_sku","Variant SKU","","") + input("size_label","Size","","") + input("color_name","Color","","") +
         input("stock_qty","Starting stock",0,'type="number" min="0"') + '</details>' + button(p.product_id ? "Save changes" : "Create product"),
@@ -1219,23 +1474,27 @@
     const products = [...groups.values()];
     const seriesNames = new Map(series);
     const categoryNames = new Map(categories);
-    const stock = group => group.reduce((total,v) => total + (Number(v.variant_archived) ? 0 : Number(v.stock_qty)),0);
+    const availableVariants = group => group.filter(row=>row.variant_id && !Number(row.variant_archived));
+    const stock = group => availableVariants(group).reduce((total,row)=>total+Number(row.stock_qty),0);
+    const isActive = row => !Number(row.is_archived) && !archivedCategories.has(Number(row.category_id));
+    const selectedColors = new Map();
     const filters = [["all","All SKUs"],["low","Critical Stock"],...series];
-    const matches = (group,key) => key === "all" || (key === "low" ? !Number(group[0].is_archived) && stock(group)<=5 : String(group[0].series_id)===String(key));
+    const matches = (group,key) => key === "all" || (key === "low" ? isActive(group[0]) && stock(group)<=5 : String(group[0].series_id)===String(key));
     const toolbar = '<div class="admin-toolbar-row"><div class="featured-filter-dock" id="admin-inv-dock">'+filters.map(([id,label]) =>
       '<button type="button" class="featured-filter-btn" data-inv-filter="'+esc(id)+'">'+esc(label)+' <span class="featured-filter-count">('+products.filter(g=>matches(g,id)).length+')</span></button>').join("")+
       '</div><input type="search" class="admin-search-input" id="admin-inv-search" placeholder="Search SKU or product..." aria-label="Search inventory products"></div>';
     panel.innerHTML = toolbar+'<div data-inventory-rows></div><details class="surface-card"><summary>Manage categories</summary>'+categoryForm()+
       data.categories.map(row=>categoryForm(row)+archiveCommand("toggle_category","category_id",row.category_id,row.is_archived,"category")).join("")+'</details>'+
-      '<dialog class="modal-dialog inventory-editor"><div class="modal-header"><h2></h2><button type="button" class="btn btn-ghost btn-sm" aria-label="Close">✕</button></div><div class="modal-body"></div></dialog>';
+      '<dialog class="modal-dialog inventory-editor operator-native-dialog" aria-labelledby="inventory-editor-title"><div class="modal-header"><h2 id="inventory-editor-title"></h2><button type="button" class="btn btn-ghost btn-sm" aria-label="Close">✕</button></div><div class="modal-body"></div></dialog>';
     const dialog = panel.querySelector("dialog");
     const add = document.createElement("button");
     add.className = "btn btn-primary btn-pill";
+    add.id = "open-new-product-btn";
     add.textContent = "+ Add Product";
     panel.previousElementSibling.append(add);
     function editor(group) {
       const p = group?.[0];
-      dialog.querySelector("h2").textContent = p ? p.name : "Add Product";
+      dialog.querySelector("h2").textContent = p ? "Edit Product · "+p.name : "Add Product";
       dialog.querySelector(".modal-body").innerHTML = p ? (productForm(p) + (p.image_url ? inventoryCommand("remove_image","product_id",p.product_id,"Remove photo") : "") +
           form("admin-products", '<input type="hidden" name="product_id" value="' + Number(p.product_id) + '"><input type="hidden" name="action" value="' +
             (Number(p.is_archived) ? "restore" : "archive") + '">' + button(Number(p.is_archived) ? "Restore" : "Archive")) +
@@ -1247,6 +1506,19 @@
               Number(r.variant_id) + '">' + input("size_label","Size",r.size_label) + input("color_name","Color",r.color_name) +
               input("stock_qty","Stock on hand",r.stock_qty,'type="number" min="0" max="100000" required') + button("Save variant")) +
             archiveCommand("toggle_variant","variant_id",r.variant_id,r.variant_archived,"variant")).join("")) : productForm();
+      const photo = dialog.querySelector("input[type=file]");
+      const preview = dialog.querySelector(".operator-image-preview");
+      let objectUrl;
+      photo.onchange=()=>{
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        const file=photo.files[0];
+        preview.hidden=!file;
+        if (file) {
+          objectUrl=URL.createObjectURL(file);
+          preview.src=objectUrl;
+        } else preview.removeAttribute("src");
+      };
+      dialog.addEventListener("close",()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);},{once:true});
       dialog.showModal();
     }
     add.onclick = () => editor(null);
@@ -1258,23 +1530,77 @@
       const q = search.value.trim().toLowerCase();
       const list = products.filter(group => matches(group,filter) && group.some(v => [v.name,v.sku,v.variant_sku].some(value => String(value||"").toLowerCase().includes(q))));
       panel.querySelectorAll("[data-inv-filter]").forEach(b => {const active=b.dataset.invFilter===filter; b.classList.toggle("active",active); b.setAttribute("aria-pressed",active);});
-      panel.querySelector("[data-inventory-rows]").innerHTML = table(["Preview","SKU & Product Name","Series & Category","Variants & Color Preview","Price","Stock Control","Actions"],list.map(group => {
-        const p = group[0];
-        const colors = [...new Set(group.map(v=>v.color_name).filter(Boolean))];
-        const sizes = [...new Set(group.map(v=>v.size_label).filter(Boolean))];
+      const headings = ["Preview","SKU & Product Name","Series & Category","Variants & Color Preview","Price","Stock Control","Actions"];
+      const content = list.map(group=>{
+        const product = group[0];
+        const id = Number(product.product_id);
+        const variants = availableVariants(group);
+        const sizes = [...new Set(group.map(row=>row.size_label).filter(Boolean))];
+        const colors = [...new Set(group.map(row=>row.color_name).filter(Boolean))];
+        const activeColor = selectedColors.get(id) || colors[0];
         const units = stock(group);
-        return ['<div class="inv-thumb">'+image(p)+'</div>','<span class="mono">'+esc(p.sku)+'</span><p><strong>'+esc(p.name)+'</strong></p>'+
-          (Number(p.is_archived) ? '<span class="pill pill-sand">Archived</span>' : units<=5 ? '<span class="pill pill-coral">LOW STOCK</span>' : ""),
-          '<span class="pill pill-lagoon">'+esc(seriesNames.get(p.series_id))+'</span><p>'+esc(categoryNames.get(p.category_id))+'</p>',
-          esc(sizes.join(", "))+'<p>'+esc(colors.join(" · "))+'</p>',money(p.base_price),units+" units",
-          '<button class="btn btn-outline btn-sm" type="button" data-edit-product="'+Number(p.product_id)+'">Edit / Restock</button>'];
-      }))+(list.length ? "" : "<p>No matching products.</p>");
+        const low = isActive(product) && units<=5;
+        const editorial = window.SuotStore.getProductById(product.slug);
+        const photo = editorial && product.image_url===editorial.image ?
+          window.SuotStore.renderProductVisual(editorial,activeColor) : image(product);
+        const candidates = variants.filter(row=>row.color_name===activeColor);
+        const target = (candidates.length ? candidates : variants).slice().sort((a,b)=>Number(a.stock_qty)-Number(b.stock_qty))[0];
+        const decrement = (candidates.length ? candidates : variants).filter(row=>Number(row.stock_qty)>0)
+          .sort((a,b)=>Number(b.stock_qty)-Number(a.stock_qty))[0];
+        const stockButton = (variant,delta,label,style,description) =>
+          '<button type="button" class="btn btn-sm '+style+'" data-stock-variant="'+Number(variant?.variant_id || 0)+
+          '" data-stock-delta="'+delta+'" title="'+esc(variant ? description+" · "+variant.variant_sku : description)+'"'+
+          (isActive(product) && variant ? "" : " disabled")+'>'+label+'</button>';
+        const archiveLabel = Number(product.is_archived) ? "Restore" : "Archive";
+        return '<tr data-row-key="'+id+'" class="'+(low?"admin-row-urgent":"")+'">'+
+          '<td data-label="Preview"><div class="inv-thumb">'+photo+'</div></td>'+
+          '<td data-label="SKU & Product"><div class="operator-row-tools"><span class="mono">'+esc(product.sku)+'</span>'+
+          (low?'<span class="pill pill-coral">LOW STOCK</span>':"")+(!isActive(product)?'<span class="pill pill-coral-soft">Archived</span>':"")+
+          '</div><strong>'+esc(product.name)+'</strong></td>'+
+          '<td data-label="Series & Category"><span class="pill pill-lagoon">'+esc(seriesNames.get(Number(product.series_id)))+'</span>'+
+          '<div class="operator-cell-meta">'+esc(categoryNames.get(Number(product.category_id)))+'</div></td>'+
+          '<td data-label="Variants & Color"><div class="operator-cell-meta"><strong>Sizes:</strong> '+esc(sizes.join(", "))+'</div>'+
+          '<div class="admin-swatch-strip">'+colors.map(color=>'<button type="button" class="admin-swatch-btn'+(color===activeColor?' active':'')+
+          '" data-inventory-color="'+esc(color)+'" data-product-id="'+id+'" aria-pressed="'+(color===activeColor)+'">'+
+          '<span class="inline-color-dot" style="background-color:'+window.SuotStore.getColorHex(color)+'"></span>'+esc(color)+'</button>').join("")+'</div></td>'+
+          '<td class="price" data-label="Price"><strong>'+window.SuotStore.formatPrice(product.base_price)+'</strong></td>'+
+          '<td data-label="Stock Control"><div class="operator-row-tools">'+stockButton(decrement,-1,"−","btn-outline","Remove one unit")+
+          '<span class="pill tabular '+(low?"pill-coral":"pill-delivery")+'">'+units+'</span>'+stockButton(target,1,"+","btn-outline","Add one unit")+
+          (low?stockButton(target,10,"+10","btn-primary btn-pill","Add ten units"):"")+'</div></td>'+
+          '<td data-label="Actions"><div class="operator-row-tools"><button type="button" class="btn btn-outline btn-sm btn-pill" data-edit-product="'+id+'">Edit</button>'+
+          '<button type="button" class="btn btn-outline btn-sm btn-pill" data-archive-product="'+id+'" data-product-action="'+archiveLabel.toLowerCase()+'">'+archiveLabel+'</button></div></td></tr>';
+      }).join("");
+      panel.querySelector("[data-inventory-rows]").innerHTML = '<div class="data-table-wrap"><table class="data-table"><thead><tr>'+
+        headings.map(title=>'<th>'+esc(title)+'</th>').join("")+'</tr></thead><tbody>'+
+        (content || '<tr><td colspan="7">No products match this filter or search query.</td></tr>')+'</tbody></table></div>';
     }
-    panel.addEventListener("click",event => {
+    let saving=false;
+    panel.addEventListener("click",async event => {
       const f=event.target.closest("[data-inv-filter]");
-      if (f) {filter=f.dataset.invFilter;drawInventory();}
+      if (f) {filter=f.dataset.invFilter;drawInventory();return;}
       const editButton=event.target.closest("[data-edit-product]");
-      if(editButton) editor(products.find(g=>Number(g[0].product_id)===Number(editButton.dataset.editProduct)));
+      if (editButton) {editor(products.find(g=>Number(g[0].product_id)===Number(editButton.dataset.editProduct)));return;}
+      const swatch=event.target.closest("[data-inventory-color]");
+      if (swatch) {selectedColors.set(Number(swatch.dataset.productId),swatch.dataset.inventoryColor);drawInventory();return;}
+      const control=event.target.closest("[data-stock-variant], [data-archive-product]");
+      if (!control || saving) return;
+      const {stockVariant,stockDelta,archiveProduct,productAction}=control.dataset;
+      const action=stockVariant ? {action:"adjust_stock",variant_id:Number(stockVariant),delta:Number(stockDelta)} :
+        {action:productAction,product_id:Number(archiveProduct)};
+      saving=true;
+      control.disabled=true;
+      try {
+        if (!await confirmOperationsChange(action)) return;
+        await api("admin-products",action);
+        const refreshed=(await api("admin-products")).products;
+        for (const group of products) {
+          const rows=refreshed.filter(row=>Number(row.product_id)===Number(group[0].product_id));
+          if (rows.length) group.splice(0,group.length,...rows);
+        }
+        drawInventory();
+        message("Inventory updated.");
+      } catch(error) {message(error.message);}
+      finally {saving=false;control.disabled=false;}
     });
     search.addEventListener("input",drawInventory);
     drawInventory();
@@ -1292,7 +1618,8 @@
     confirm_refund: "Record the refund with this channel and reference?",
     archive: "Archive this product and hide it from the storefront?",
     restore: "Restore this product to the storefront?",
-    remove_image: "Remove this product photo?"
+    remove_image: "Remove this product photo?",
+    assign_role: "Change this account’s operator permissions?"
   };
 
   function confirmOperationsChange(formData) {

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/css/base.css?v=37679de-r1" />
   <link rel="stylesheet" href="assets/css/storefront.css?v=37679de-r1" />
   <link rel="stylesheet" href="assets/css/admin.css?v=37679de-r1" />
-  <link rel="stylesheet" href="assets/css/live-shop.css?v=37679de-r6" />
+  <link rel="stylesheet" href="assets/css/live-shop.css?v=37679de-r7" />
 </head>
 <body class="admin-portal">
   <!-- Dedicated Back-Office Operations Top Bar (Distinct from Customer Storefront) -->
@@ -61,7 +61,12 @@
 <a class="admin-tab-btn" href="admin.html?tab=team" data-admin-roles="admin" data-console-tab="team" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Team &amp; Customers</span>
-          </span><span class="mono">RBAC</span></a></nav></aside>
+          </span><span class="mono">RBAC</span></a></nav>
+      <div class="operator-sync-note">
+        <strong>Live Manila Hub Sync</strong>
+        Order, stock, and refund updates appear in the operations console and customer order history.
+      </div>
+    </aside>
     <main class="admin-main" id="admin-workspace-mount"><p class="live-status" data-shop-status role="status"></p><div data-shop-page="admin" aria-busy="true"><p>Loading…</p></div><template id="operator-login"><section class="admin-gate-card" id="admin-auth-gate"><h2>Operator Sign In</h2><p class="admin-gate-sub">Sign in with an authorized staff or courier account.</p>          <form id="admin-login-form">
             <div class="form-group">
               <label class="form-label" for="admin-login-email">Operator Email *</label>
@@ -86,6 +91,25 @@
             </div>
           </form></section></template></main>
   </div>
+  <dialog class="modal-dialog admin-modal-sm operator-native-dialog" id="operator-refund-dialog" aria-labelledby="operator-refund-title">
+    <div class="modal-header admin-confirm-header">
+      <div><p class="mono">Stage 2 · Payout Confirmation</p><h3 id="operator-refund-title">Verify Refund Transaction</h3></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('dialog').close()" aria-label="Close refund dialog">✕</button>
+    </div>
+    <form class="modal-body">
+      <div class="admin-confirm-summary"></div>
+      <div class="operator-fields">
+        <label>Payout Channel <select name="refund_channel" class="form-select" required><option value="GCash">GCash</option><option value="Cash">Cash</option></select></label>
+        <label>Transaction Reference # <input name="refund_reference" class="form-input" minlength="6" maxlength="80" required></label>
+      </div>
+      <label><input type="checkbox" required> I verified that the payout was sent.</label>
+      <p role="alert" class="live-status"></p>
+      <div class="admin-confirm-footer">
+        <button type="button" class="btn btn-outline btn-pill" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-pill">Verify &amp; Record Refund</button>
+      </div>
+    </form>
+  </dialog>
   <dialog class="modal-dialog live-admin-confirm" id="operations-confirm" aria-labelledby="operations-confirm-title">
     <form method="dialog">
       <div class="modal-header admin-confirm-header">
@@ -102,7 +126,7 @@
   </dialog>
   <script src="assets/js/data.js?v=37679de-r1"></script>
   <script src="assets/js/store.js?v=37679de-r1"></script>
-  <script src="assets/js/components.js?v=37679de-r5"></script>
-  <script src="assets/js/live-shop.js?v=37679de-r6"></script>
+  <script src="assets/js/components.js?v=37679de-r7"></script>
+  <script src="assets/js/live-shop.js?v=37679de-r7"></script>
 </body>
 </html>

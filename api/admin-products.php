@@ -48,6 +48,21 @@ shop(function (PDO $db, array $user, array $data, string $method): array {
             [field($data, 'size_label', 40), field($data, 'color_name', 60), whole($data, 'stock_qty', 0, 100000), $variant]);
         return ['variant_id' => $variant];
     }
+    if ($action === 'adjust_stock') {
+        $variant = whole($data, 'variant_id');
+        $delta = whole($data, 'delta', -1, 10);
+        if (!in_array($delta, [-1, 1, 10], true)) {
+            fail(422, 'Choose a valid stock adjustment.');
+        }
+        $updated = query($db, 'UPDATE product_variants v JOIN products p ON p.product_id = v.product_id
+            JOIN categories c ON c.category_id = p.category_id SET v.stock_qty = CAST(v.stock_qty AS SIGNED) + ?
+            WHERE v.variant_id = ? AND NOT v.is_archived AND NOT p.is_archived AND NOT c.is_archived
+            AND CAST(v.stock_qty AS SIGNED) + ? BETWEEN 0 AND 100000', [$delta, $variant, $delta])->rowCount();
+        if (!$updated) {
+            fail(409, 'This variant is archived or the stock adjustment is outside the allowed range.');
+        }
+        return ['variant_id' => $variant];
+    }
     if ($action === 'restock') {
         $variant = whole($data, 'variant_id');
         $quantity = whole($data, 'quantity', 1, 100000);

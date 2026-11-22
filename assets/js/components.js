@@ -206,35 +206,36 @@
     const searchResults = document.getElementById("header-search-results");
     const closeSearchBtn = document.getElementById("close-header-search-btn");
 
-    function renderQuickHits(query) {
+    let searchProducts;
+    async function renderQuickHits(query) {
       if (!searchResults) return;
-      const q = (query || "").trim().toLowerCase();
-      const all = window.SuotStore.getProducts();
-      const matches = (q
-        ? all.filter(
-            (p) =>
-              p.name.toLowerCase().includes(q) ||
-              p.series.toLowerCase().includes(q) ||
-              p.category.toLowerCase().includes(q)
-          )
-        : all.slice(0, 4)
-      ).slice(0, 4);
-
-      if (!matches.length) {
-        searchResults.innerHTML = `<div style="color:var(--color-seafoam);font-size:0.82rem;">No island pieces matched "${query}". Press Enter to browse the catalog.</div>`;
+      searchProducts ??= drawerRequest("catalog").then(({variants})=>{
+        const products = new Map();
+        for (const row of variants) {
+          const existing=products.get(row.slug);
+          if (existing) existing.price=Math.min(existing.price,Number(row.unit_price));
+          else products.set(row.slug,{id:row.slug,name:row.name,series:row.series,category:row.category,price:Number(row.unit_price)});
+        }
+        return [...products.values()];
+      }).catch(error=>{searchProducts=null;throw error;});
+      let all;
+      try { all=await searchProducts; }
+      catch {
+        if (searchInput.value===query) searchResults.textContent="Search is temporarily unavailable. Open the catalog to try again.";
         return;
       }
-
-      searchResults.innerHTML = matches
-        .map(
-          (p) => `
-          <a href="product.html?id=${encodeURIComponent(p.id)}" class="header-search-hit">
-            <span class="header-search-hit-name">${p.name}</span>
-            <span class="header-search-hit-meta">${p.series} · ${window.SuotStore.formatPrice(p.price)}</span>
-          </a>
-        `
-        )
-        .join("");
+      if (!searchResults.isConnected || searchInput.value!==query) return;
+      const q=query.trim().toLowerCase();
+      const matches=all.filter(product=>!q || [product.name,product.series,product.category]
+        .some(value=>String(value).toLowerCase().includes(q))).slice(0,4);
+      if (!matches.length) {
+        searchResults.textContent='No island pieces matched "'+query+'". Press Enter to browse the catalog.';
+        return;
+      }
+      searchResults.innerHTML=matches.map(product=>
+        '<a href="product.html?id='+encodeURIComponent(product.id)+'" class="header-search-hit">'+
+        '<span class="header-search-hit-name">'+escapeDrawerText(product.name)+'</span><span class="header-search-hit-meta">'+
+        escapeDrawerText(product.series)+' · '+window.SuotStore.formatPrice(product.price)+'</span></a>').join("");
     }
 
     if (searchBtn && searchPanel && searchInput) {

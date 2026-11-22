@@ -87,6 +87,7 @@ shop(function (PDO $db, array $user, array $data, string $method): array {
             fail(409, 'This order cannot advance yet.');
         }
         query($db, 'UPDATE orders SET order_status = ? WHERE order_id = ?', [$next, $orderId]);
+        notice($db, $owner, $orderId, 'Order update', 'Your order is ' . strtolower($next), 'Your order status is now ' . $next . '.');
         return ['status' => $next];
     }
 
