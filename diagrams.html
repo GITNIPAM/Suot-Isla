@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ERD, Use Case Diagram &amp; FourSys Cloud Guide — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=75" />
-  <link rel="stylesheet" href="assets/css/tokens.css" />
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/storefront.css" />
-  <link rel="stylesheet" href="assets/css/admin.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
+  <link rel="stylesheet" href="assets/css/base.css?v=78" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=78" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -28,7 +28,7 @@
           <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
             Combines <strong>Suot</strong> (Tagalog for "wear" or "attire") and <strong>Isla</strong> (Spanish/Tagalog for "island"), literally translating to <strong>"Island Wear."</strong> It celebrates Philippine surf and coastal towns—<strong>Siargao, Boracay, El Nido, and La Union</strong>—with breathable, durable, UPF 50+ sun-ready gear.
           </p>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3);">
+          <div class="diagrams-palette-grid">
             <div style="padding:var(--space-3);background:#0E6B74;color:#FAF6EE;border-radius:var(--radius-sm);">
               <strong>Deep Lagoon Teal</strong>
               <div class="mono">#0E6B74 • Primary Actions &amp; Headers</div>
@@ -308,46 +308,46 @@
           </thead>
           <tbody>
             <tr>
-              <td><strong>1. Browsing</strong></td>
-              <td>Customer</td>
-              <td>Browse catalog (16 products), search products, filter &amp; sort (Category, Island Series, Size, Color, Price), view product details</td>
-              <td><code>Filter &amp; Sort</code> dynamically queries <code>PRODUCTS</code> &amp; <code>PRODUCT_VARIANTS</code></td>
+              <td data-label="Stage"><strong>1. Browsing</strong></td>
+              <td data-label="Actors">Customer</td>
+              <td data-label="Core Use Cases">Browse catalog (16 products), search products, filter &amp; sort (Category, Island Series, Size, Color, Price), view product details</td>
+              <td data-label="Relationships"><code>Filter &amp; Sort</code> dynamically queries <code>PRODUCTS</code> &amp; <code>PRODUCT_VARIANTS</code></td>
             </tr>
             <tr>
-              <td><strong>2. Account</strong></td>
-              <td>Customer</td>
-              <td>Register account, log in (verify against hashed password), manage profile &amp; addresses, view order history</td>
-              <td><code>Log In</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Verify Hashed Password</code></td>
+              <td data-label="Stage"><strong>2. Account</strong></td>
+              <td data-label="Actors">Customer</td>
+              <td data-label="Core Use Cases">Register account, log in (verify against hashed password), manage profile &amp; addresses, view order history</td>
+              <td data-label="Relationships"><code>Log In</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Verify Hashed Password</code></td>
             </tr>
             <tr>
-              <td><strong>3. Buying</strong></td>
-              <td>Customer, Payment Gateway, Email Service</td>
-              <td>Add to cart, update cart, apply coupon, checkout, make payment</td>
-              <td><code>Checkout</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Validate Stock</code>, <code>Validate Address</code>, <code>Make Payment</code>; <code>Apply Coupon</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Checkout</code></td>
+              <td data-label="Stage"><strong>3. Buying</strong></td>
+              <td data-label="Actors">Customer, Payment Gateway, Email Service</td>
+              <td data-label="Core Use Cases">Add to cart, update cart, apply coupon, checkout, make payment</td>
+              <td data-label="Relationships"><code>Checkout</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Validate Stock</code>, <code>Validate Address</code>, <code>Make Payment</code>; <code>Apply Coupon</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Checkout</code></td>
             </tr>
             <tr>
-              <td><strong>4. Order Processing</strong></td>
-              <td>Admin / Staff, Email Service</td>
-              <td>Receive new order, confirm order, update inventory, pack order, update status</td>
-              <td><code>Confirm Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Update Inventory</code> &amp; <code>Send Confirmation Email</code></td>
+              <td data-label="Stage"><strong>4. Order Processing</strong></td>
+              <td data-label="Actors">Admin / Staff, Email Service</td>
+              <td data-label="Core Use Cases">Receive new order, confirm order, update inventory, pack order, update status</td>
+              <td data-label="Relationships"><code>Confirm Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Update Inventory</code> &amp; <code>Send Confirmation Email</code></td>
             </tr>
             <tr>
-              <td><strong>5. Delivery</strong></td>
-              <td>Admin, Delivery Personnel / Courier, Customer, Email Service</td>
-              <td>Assign courier, ship order, track order, confirm delivery</td>
-              <td><code>Ship Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Send Shipping Update Email</code></td>
+              <td data-label="Stage"><strong>5. Delivery</strong></td>
+              <td data-label="Actors">Admin, Delivery Personnel / Courier, Customer, Email Service</td>
+              <td data-label="Core Use Cases">Assign courier, ship order, track order, confirm delivery</td>
+              <td data-label="Relationships"><code>Ship Order</code> <code>&lt;&lt;include&gt;&gt;</code> <code>Send Shipping Update Email</code></td>
             </tr>
             <tr>
-              <td><strong>6. Returns &amp; Refunds</strong></td>
-              <td>Customer, Admin, Payment Gateway, Email Service</td>
-              <td>Request cancellation, request return, approve or reject return, restock item, process refund</td>
-              <td><code>Request Return / Cancel</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>View Order History</code>; <code>Restock Item</code> &amp; <code>Process Refund</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Approve Return</code></td>
+              <td data-label="Stage"><strong>6. Returns &amp; Refunds</strong></td>
+              <td data-label="Actors">Customer, Admin, Payment Gateway, Email Service</td>
+              <td data-label="Core Use Cases">Request cancellation, request return, approve or reject return, restock item, process refund</td>
+              <td data-label="Relationships"><code>Request Return / Cancel</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>View Order History</code>; <code>Restock Item</code> &amp; <code>Process Refund</code> <code>&lt;&lt;extend&gt;&gt;</code> <code>Approve Return</code></td>
             </tr>
             <tr>
-              <td><strong>7. Admin Management</strong></td>
-              <td>Admin</td>
-              <td>Manage products &amp; categories (CRUD + image upload), manage stock &amp; low-stock alerts, manage customers &amp; RBAC roles</td>
-              <td>Restricted via Role-Based Access Control (<code>admin</code>, <code>staff</code>, <code>courier</code>)</td>
+              <td data-label="Stage"><strong>7. Admin Management</strong></td>
+              <td data-label="Actors">Admin</td>
+              <td data-label="Core Use Cases">Manage products &amp; categories (CRUD + image upload), manage stock &amp; low-stock alerts, manage customers &amp; RBAC roles</td>
+              <td data-label="Relationships">Restricted via Role-Based Access Control (<code>admin</code>, <code>staff</code>, <code>courier</code>)</td>
             </tr>
           </tbody>
         </table>
@@ -387,8 +387,8 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/store.js"></script>
-  <script src="assets/js/components.js"></script>
+  <script src="assets/js/data.js?v=78"></script>
+  <script src="assets/js/store.js?v=78"></script>
+  <script src="assets/js/components.js?v=78"></script>
 </body>
 </html>

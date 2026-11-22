@@ -972,24 +972,24 @@ document.addEventListener("DOMContentLoaded", () => {
                           : p.colors[0];
                       return `
                         <tr data-row-key="${p.id}" class="${isLow ? "admin-row-urgent" : ""}" style="${p.archived ? "opacity:0.55;" : ""}">
-                          <td>
+                          <td data-label="Preview">
                             <div style="width:52px;height:64px;background:var(--color-sand);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);overflow:hidden;">
                               ${window.SuotStore.renderProductVisual(p, activeColor)}
                             </div>
                           </td>
-                          <td>
-                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                          <td data-label="SKU & Product">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
                               <span class="mono" style="color:var(--text-muted);font-size:0.75rem;">${p.sku}</span>
                               ${isLow ? `<span class="pill pill-coral">LOW STOCK</span>` : ""}
                               ${p.archived ? `<span class="pill pill-coral-soft">Archived</span>` : ""}
                             </div>
                             <strong>${p.name}</strong>
                           </td>
-                          <td>
+                          <td data-label="Series & Category">
                             <span class="pill pill-lagoon">${p.series}</span>
                             <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:3px;">${p.category}</div>
                           </td>
-                          <td style="font-size:var(--text-xs);">
+                          <td data-label="Variants & Color" style="font-size:var(--text-xs);">
                             <div><strong>Sizes:</strong> ${(p.sizes || []).join(", ")}</div>
                             <div class="admin-swatch-strip" aria-label="Preview color variants for ${p.name}">
                               ${(p.colors || [])
@@ -1010,8 +1010,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                 .join("")}
                             </div>
                           </td>
-                          <td class="price"><strong>${window.SuotStore.formatPrice(p.price)}</strong></td>
-                          <td>
+                          <td class="price" data-label="Price"><strong>${window.SuotStore.formatPrice(p.price)}</strong></td>
+                          <td data-label="Stock Control">
                             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                               <button type="button" class="btn btn-outline btn-sm" data-stock-delta="-1" data-stock-id="${p.id}" style="padding:2px 8px;">−</button>
                               <span class="pill ${isLow ? "pill-coral" : "pill-delivery"} tabular">${p.stock}</span>
@@ -1023,7 +1023,7 @@ document.addEventListener("DOMContentLoaded", () => {
                               }
                             </div>
                           </td>
-                          <td>
+                          <td data-label="Actions">
                             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                               <button type="button" class="btn btn-outline btn-sm btn-pill" data-edit-prod="${p.id}">Edit</button>
                               <button type="button" class="btn btn-outline btn-sm btn-pill" data-archive-prod="${p.id}">
@@ -1371,19 +1371,19 @@ document.addEventListener("DOMContentLoaded", () => {
                       const phoneDisplay = window.SuotStore.normalizePhMobile(o.customerPhone) || o.customerPhone;
                       return `
                         <tr data-row-key="${o.orderNumber}" class="${needsAction ? "admin-row-needs-action" : ""}">
-                          <td>
+                          <td data-label="Order # & Date">
                             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                               <strong class="mono">#${o.orderNumber}</strong>
                               ${needsAction ? `<span class="pill pill-lagoon">NEEDS PACK</span>` : ""}
                             </div>
                             <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;">${o.placedAt}</div>
                           </td>
-                          <td>
+                          <td data-label="Customer & Destination">
                             <strong>${o.customerName}</strong>
                             <div style="font-size:var(--text-xs);color:var(--text-muted);">${o.customerEmail} · ${phoneDisplay}</div>
                             <div style="font-size:var(--text-xs);max-width:260px;margin-top:2px;">${o.shippingAddress}</div>
                           </td>
-                          <td style="font-size:var(--text-xs);">
+                          <td data-label="Items" style="font-size:var(--text-xs);">
                             ${o.items
                               .map((i) => {
                                 const prod = window.SuotStore.getProductById(i.productId);
@@ -1399,15 +1399,15 @@ document.addEventListener("DOMContentLoaded", () => {
                               })
                               .join("")}
                           </td>
-                          <td>
+                          <td data-label="Total & Payment">
                             <strong class="price">${window.SuotStore.formatPrice(o.total)}</strong>
                             <div style="font-size:var(--text-xs);color:var(--text-muted);">${o.paymentMethod} (${o.paymentStatus})</div>
                           </td>
-                          <td style="font-size:var(--text-xs);">
+                          <td data-label="Courier & Tracking" style="font-size:var(--text-xs);">
                             <div>${o.courierName}</div>
                             <span class="mono" style="color:var(--color-lagoon);">${o.trackingNumber}</span>
                           </td>
-                          <td>
+                          <td data-label="Status">
                             <span class="pill ${
                               o.status === "Cancelled" || o.status === "Returned"
                                 ? "pill-coral"
@@ -1416,7 +1416,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 : "pill-delivery"
                             }">${o.status}</span>
                           </td>
-                          <td>
+                          <td data-label="Update & Receipt">
                             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                               <select class="form-select" style="width:auto;padding:0.32rem 0.55rem;font-size:var(--text-xs);" data-status-select="${o.orderNumber}">
                                 ${["Pending", "Confirmed", "Packed", "Out for Delivery", "Delivered", "Cancelled"]
@@ -1623,7 +1623,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const rowClass = isStage1 ? "admin-row-urgent" : isStage2 ? "admin-row-needs-action" : "";
                 return `
                   <tr data-row-key="${r.returnId}" class="${rowClass}">
-                    <td class="mono">
+                    <td class="mono" data-label="Return ID">
                       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                         <strong>${r.returnId}</strong>
                         ${isStage1 ? `<span class="pill pill-coral">STAGE 1 · REVIEW</span>` : ""}
@@ -1631,27 +1631,27 @@ document.addEventListener("DOMContentLoaded", () => {
                       </div>
                       <div style="color:var(--text-muted);font-size:0.72rem;margin-top:2px;">${r.requestedAt}</div>
                     </td>
-                    <td>
+                    <td data-label="Order # & Customer">
                       <strong class="mono">#${r.orderNumber}</strong>
                       <div style="font-size:var(--text-xs);">${r.customerName}</div>
                     </td>
-                    <td>
+                    <td data-label="Type & Reason">
                       <span class="pill pill-sand">${r.type}</span>
                       <div style="font-size:var(--text-xs);font-weight:700;margin-top:4px;">${r.reason}</div>
                       <div style="font-size:var(--text-xs);color:var(--text-muted);">${r.notes || ""}</div>
                     </td>
-                    <td>
+                    <td data-label="Item & Refund">
                       <div style="font-size:var(--text-xs);">${r.itemSummary}</div>
                       <strong class="price">${window.SuotStore.formatPrice(r.amount)}</strong>
                     </td>
-                    <td style="font-size:var(--text-xs);">
+                    <td data-label="Stock & Payout" style="font-size:var(--text-xs);">
                       <div>Restocked: <strong>${r.restocked ? `Yes (+${r.qty || 1} unit)` : "Not Yet"}</strong></div>
                       <div>
                         Payout TXN:
                         <strong>${r.refunded ? `Verified (${r.refundRef})` : isStage2 ? "Awaiting TXN Ref" : "Not Started"}</strong>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span class="pill ${
                         r.status.includes("Refunded") || r.status.includes("Closed")
                           ? "pill-delivery"
@@ -1662,7 +1662,7 @@ document.addEventListener("DOMContentLoaded", () => {
                           : "pill-lagoon"
                       }">${r.status}</span>
                     </td>
-                    <td>
+                    <td data-label="2-Stage Decision">
                       ${
                         isStage1
                           ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1814,8 +1814,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   .join("");
                 return `
                   <tr data-row-key="usr-${u.id}">
-                    <td class="mono">#USR-0${u.id}</td>
-                    <td>
+                    <td class="mono" data-label="Account ID">#USR-0${u.id}</td>
+                    <td data-label="Member & Email">
                       <div style="display:flex;align-items:center;gap:0.6rem;">
                         <span class="auth-avatar-badge" style="width:32px;height:32px;font-size:0.74rem;" aria-hidden="true">${initials}</span>
                         <div>
@@ -1824,19 +1824,19 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                       </div>
                     </td>
-                    <td style="font-size:var(--text-xs);">
+                    <td data-label="Mobile & Joined" style="font-size:var(--text-xs);">
                       <div class="mono">${phoneDisplay}</div>
                       <div style="color:var(--text-muted);">Joined ${u.joinedAt || "2026"}</div>
                     </td>
-                    <td style="font-size:var(--text-xs);">
+                    <td data-label="Activity" style="font-size:var(--text-xs);">
                       ${userOrders.length ? `<strong>${userOrders.length} orders placed</strong>` : "Operations Personnel"}
                     </td>
-                    <td>
+                    <td data-label="Current Role">
                       <span class="pill ${u.role === "admin" ? "pill-coral" : u.role === "courier" ? "pill-delivery" : "pill-lagoon"}">
                         ${u.role.toUpperCase()}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Assign Permission">
                       <select class="form-select" style="width:auto;padding:0.32rem 0.65rem;font-size:var(--text-xs);" data-user-role-id="${u.id}">
                         <option value="customer" ${u.role === "customer" ? "selected" : ""}>Customer</option>
                         <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin (Full Access)</option>

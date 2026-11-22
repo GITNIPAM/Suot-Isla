@@ -183,7 +183,7 @@
     withAssetVersion(src) {
       if (!src || typeof src !== "string") return src || "";
       if (src.startsWith("assets/images/") && !src.includes("?")) {
-        return `${src}?v=75`;
+        return `${src}?v=78`;
       }
       return src;
     },

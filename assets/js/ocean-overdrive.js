@@ -358,6 +358,7 @@
     if (typeof document.startViewTransition === "function" && !prefersReduced) {
       try {
         const vt = document.startViewTransition(updateFn);
+        if (vt && vt.updateCallbackDone) vt.updateCallbackDone.catch(() => {});
         if (vt && vt.finished) vt.finished.catch(() => {});
         if (vt && vt.ready) vt.ready.catch(() => {});
         return vt;

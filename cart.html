@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shopping Bag &amp; Totals — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=75" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=75" />
-  <link rel="stylesheet" href="assets/css/base.css?v=75" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=75" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=78" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=78" />
+  <link rel="stylesheet" href="assets/css/base.css?v=78" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=78" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -23,10 +23,10 @@
 
   <div id="site-footer-mount"></div>
 
-  <script src="assets/js/data.js?v=75"></script>
-  <script src="assets/js/store.js?v=75"></script>
-  <script src="assets/js/components.js?v=75"></script>
-  <script src="assets/js/ocean-overdrive.js?v=75"></script>
+  <script src="assets/js/data.js?v=78"></script>
+  <script src="assets/js/store.js?v=78"></script>
+  <script src="assets/js/components.js?v=78"></script>
+  <script src="assets/js/ocean-overdrive.js?v=78"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const mountEl = document.getElementById("cart-page-mount");
@@ -77,7 +77,7 @@
                       const prod = window.SuotStore.getProductById(item.productId);
                       return `
                         <tr>
-                          <td>
+                          <td class="cart-item-cell" data-label="Product">
                             <div style="display:flex;align-items:center;gap:var(--space-3);">
                               <a href="product.html?id=${encodeURIComponent(item.productId)}&color=${encodeURIComponent(item.color)}" style="width:56px;height:70px;background:var(--color-sand);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);overflow:hidden;display:block;flex-shrink:0;">
                                 ${prod ? window.SuotStore.renderProductVisual(prod, item.color) : ""}
@@ -95,16 +95,16 @@
                               </div>
                             </div>
                           </td>
-                          <td class="price">${window.SuotStore.formatPrice(item.price)}</td>
-                          <td>
+                          <td class="price" data-label="Unit Price">${window.SuotStore.formatPrice(item.price)}</td>
+                          <td data-label="Quantity">
                             <div class="qty-stepper">
                               <button type="button" data-page-dec="${idx}">−</button>
                               <input type="number" value="${item.qty}" min="1" max="25" readonly aria-label="Quantity for ${item.name}" />
                               <button type="button" data-page-inc="${idx}">+</button>
                             </div>
                           </td>
-                          <td class="price" style="font-weight:700;">${window.SuotStore.formatPrice(item.price * item.qty)}</td>
-                          <td>
+                          <td class="price" data-label="Line Subtotal" style="font-weight:700;">${window.SuotStore.formatPrice(item.price * item.qty)}</td>
+                          <td class="cart-remove-cell" data-label="Action">
                             <button type="button" class="btn btn-outline btn-sm" data-page-rem="${idx}" style="color:var(--color-coral-deep);">
                               Remove
                             </button>

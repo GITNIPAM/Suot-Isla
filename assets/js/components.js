@@ -79,14 +79,15 @@
       <div class="dispatch-bar">
         <div class="container dispatch-bar-inner">
           <div class="dispatch-Condition">
-            <span class="pill pill-delivery">PHL Island Dispatch</span>
-            <span>Free shipping over ₱3,500 • Use</span>
+            <span class="pill pill-delivery dispatch-desktop-only">PHL Island Dispatch</span>
+            <span class="dispatch-desktop-only">Free shipping over ₱3,500 • Use</span>
+            <span class="dispatch-mobile-only">Free ship ₱3,500+ ·</span>
             <button type="button" class="dispatch-code-pill" id="copy-promo-btn" title="Copy Promo Code ISLA10">
               <span>ISLA10</span>
               <span style="opacity:0.78;">· 10% OFF</span>
             </button>
           </div>
-          <div style="display:flex;align-items:center;gap:0.85rem;color:var(--color-seafoam);font-weight:600;">
+          <div class="dispatch-bar-secondary">
             <span>Manila → Siargao Express · 14-Day Easy Returns</span>
           </div>
         </div>
@@ -121,7 +122,7 @@
               <span class="badge-count" id="header-email-count">${emails.length}</span>
             </button>
 
-            <a href="${user ? "account.html" : "auth.html"}" class="icon-btn" id="header-auth-link" title="${user ? "Account & Order History" : "Sign In or Create Account"}">
+            <a href="${user ? "account.html" : "auth.html"}" class="icon-btn header-auth-desktop" id="header-auth-link" title="${user ? "Account & Order History" : "Sign In or Create Account"}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="8" r="4"/>
                 <path d="M4 20c1.8-3.6 5-5.5 8-5.5s6.2 1.9 8 5.5"/>
@@ -371,6 +372,74 @@
     root.querySelectorAll("[data-close-drawer]").forEach((btn) => {
       btn.addEventListener("click", () => SuotUI.closeDrawers());
     });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (document.querySelector(".slide-drawer.open")) SuotUI.closeDrawers();
+      const searchPanel = document.getElementById("header-quick-search");
+      const searchBtn = document.getElementById("open-header-search-btn");
+      if (searchPanel && searchPanel.classList.contains("open")) {
+        searchPanel.classList.remove("open");
+        if (searchBtn) searchBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+    ensureMobileBottomNav();
+  }
+
+  function ensureMobileBottomNav() {
+    if (!document.getElementById("site-header-mount")) {
+      document.body.classList.remove("has-mobile-bottom-nav");
+      return;
+    }
+    document.body.classList.add("has-mobile-bottom-nav");
+    let nav = document.getElementById("suot-mobile-bottom-nav");
+    if (!nav) {
+      nav = document.createElement("nav");
+      nav.id = "suot-mobile-bottom-nav";
+      nav.className = "suot-mobile-nav";
+      nav.setAttribute("aria-label", "Mobile Storefront Navigation");
+      nav.innerHTML = `
+        <a href="index.html" class="suot-mobile-nav-item" data-mnav="index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="catalog.html" class="suot-mobile-nav-item" data-mnav="catalog.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Catalog</span>
+        </a>
+        <a href="account.html" class="suot-mobile-nav-item" id="mobile-nav-orders-link" data-mnav="account.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          <span>Orders</span>
+        </a>
+        <a href="auth.html" class="suot-mobile-nav-item" id="mobile-nav-account-link" data-mnav="auth.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-3.6 5-5.5 8-5.5s6.2 1.9 8 5.5"/></svg>
+          <span id="mobile-nav-account-label">Account</span>
+        </a>
+      `;
+      document.body.appendChild(nav);
+    }
+    syncMobileBottomNav();
+  }
+
+  function syncMobileBottomNav() {
+    const nav = document.getElementById("suot-mobile-bottom-nav");
+    if (!nav) return;
+    const activePage = getActivePage();
+    const user = window.SuotStore ? window.SuotStore.getCurrentUser() : null;
+    const ordersLink = document.getElementById("mobile-nav-orders-link");
+    if (ordersLink) {
+      ordersLink.setAttribute("href", user ? "account.html" : "auth.html?redirect=account.html");
+    }
+    const accountLabel = document.getElementById("mobile-nav-account-label");
+    if (accountLabel) {
+      accountLabel.textContent = user ? user.name.split(" ")[0] : "Sign In";
+    }
+    nav.querySelectorAll("[data-mnav]").forEach((link) => {
+      const target = link.getAttribute("data-mnav");
+      const isMatch = target === activePage || (target === "catalog.html" && activePage === "product.html");
+      link.classList.toggle("is-active", isMatch);
+      if (isMatch) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
   }
 
   const SPA_PAGES = new Set([
@@ -564,7 +633,7 @@
       // Sync any page-specific supplemental nodes outside <main> (e.g. account.html return modal)
       document.querySelectorAll('[data-spa-extra="1"]').forEach((el) => el.remove());
       const footerMount = document.getElementById("site-footer-mount");
-      const skipIds = new Set(["site-header-mount", "site-footer-mount", "suot-drawers-root"]);
+      const skipIds = new Set(["site-header-mount", "site-footer-mount", "suot-drawers-root", "suot-mobile-bottom-nav"]);
       Array.from(doc.body.children).forEach((child) => {
         const tag = child.tagName;
         if (tag === "MAIN" || tag === "SCRIPT" || skipIds.has(child.id)) return;
@@ -579,6 +648,7 @@
 
       closeActiveSelectMenu(false);
       renderHeader();
+      ensureMobileBottomNav();
       executePreparedScripts(scriptSources);
       SuotUI.enhanceSelects(document);
 
@@ -613,6 +683,7 @@
     if (typeof document.startViewTransition === "function" && !prefersReduced) {
       try {
         const vt = document.startViewTransition(applyDomSwap);
+        if (vt && vt.updateCallbackDone) vt.updateCallbackDone.catch(() => {});
         if (vt && vt.ready) vt.ready.catch(() => {});
         if (vt && vt.finished) {
           vt.finished.catch(() => {}).finally(finishShimmer);
@@ -631,7 +702,7 @@
     const tideEl = document.getElementById("suot-tide-transition");
     if (!tideEl) return;
 
-    const skipIds = new Set(["site-header-mount", "site-footer-mount", "suot-drawers-root"]);
+    const skipIds = new Set(["site-header-mount", "site-footer-mount", "suot-drawers-root", "suot-mobile-bottom-nav"]);
     Array.from(document.body.children).forEach((child) => {
       const tag = child.tagName;
       if (tag !== "MAIN" && tag !== "SCRIPT" && !skipIds.has(child.id)) {
@@ -1006,6 +1077,7 @@
     if (ordersNavEl) {
       ordersNavEl.setAttribute("href", user ? "account.html" : "auth.html?redirect=account.html");
     }
+    syncMobileBottomNav();
   }
 
   const SELECT_TONE_MAP = Object.freeze({
