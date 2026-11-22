@@ -1831,6 +1831,72 @@ main {
 }
 
 /* ==========================================================================
+   Shared Modal Dialog Shell (Checkout Payment, Account Returns & Admin)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(9, 44, 48, 0.56);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  width: min(680px, 96vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-6);
+  transform: translateY(12px) scale(0.96);
+  opacity: 0;
+  transition: transform 260ms var(--ease-spring), opacity 220ms var(--ease-out);
+}
+
+.modal-backdrop.open .modal-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: var(--space-3);
+  }
+  .modal-dialog {
+    width: calc(100vw - 1.5rem);
+    max-height: 92dvh;
+    padding: var(--space-4);
+  }
+}
+
+/* ==========================================================================
    Suot Isla — Official E-Receipt Slip & Printable Modal
    ========================================================================== */
 .receipt-modal-backdrop {
