@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/css/tokens.css?v=37679de-r1" />
   <link rel="stylesheet" href="assets/css/base.css?v=78a454d-r2" />
   <link rel="stylesheet" href="assets/css/storefront.css?v=78a454d-r2" />
-  <link rel="stylesheet" href="assets/css/live-shop.css?v=37679de-r7" />
+  <link rel="stylesheet" href="assets/css/live-shop.css?v=stock-recovery-r1" />
 </head>
 <body>
   <div id="site-header-mount"></div>
@@ -17,7 +17,7 @@
     <div style="padding-top:var(--space-8);padding-bottom:var(--space-4);border-bottom:1px solid var(--border-subtle);">
       <h1 id="checkout-head-title" style="font-size:var(--text-3xl);margin-bottom:var(--space-2);">Island Checkout &amp; Dispatch</h1>
       <p id="checkout-head-desc">Enter your delivery details and choose GCash or Cash on Delivery.</p>
-    </div><p class="live-status" data-shop-status role="status"></p><div id="checkout-mount" data-shop-page="checkout" aria-busy="true"><p>Loading…</p></div></div>
+    </div><div class="live-status" data-shop-status role="status"></div><div id="checkout-mount" data-shop-page="checkout" aria-busy="true"><p>Loading…</p></div></div>
   <template id="checkout-layout"><form id="checkout-form" data-action="checkout" action="api/checkout.php" method="POST" class="surface-card">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-4);">
           <h2 style="margin:0;font-size:var(--text-xl);">1. Customer Billing Details</h2>
@@ -136,6 +136,6 @@
   <script src="assets/js/store.js?v=78a454d-r2"></script>
   <script src="assets/js/components.js?v=37679de-r7"></script>
   <script src="assets/js/ocean-overdrive.js?v=37679de-r1"></script>
-  <script src="assets/js/live-shop.js?v=37679de-r7"></script>
+  <script src="assets/js/live-shop.js?v=stock-recovery-r1"></script>
 </body>
 </html>

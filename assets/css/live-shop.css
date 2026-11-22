@@ -20,6 +20,8 @@
 .live-totals dd { text-align: end; }
 .live-status:not(:empty) { border: 1px solid #b9a47e; padding: .75rem; border-radius: .5rem; }
 .live-status a { text-decoration: underline; }
+.live-status[data-stock-recovery] { display: grid; justify-items: start; gap: .75rem; max-width: 42rem; margin-block: 1rem; }
+.live-status[data-stock-recovery] ul { padding-inline-start: 1.5rem; }
 .live-footer { border-top: 1px solid #b9a47e; padding-block: 1rem; }
 
 .account-hero-actions[hidden], .catalog-hero-dock[hidden],

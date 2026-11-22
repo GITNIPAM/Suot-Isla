@@ -40,6 +40,7 @@
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(result.message || "The store service is unavailable.");
+      error.status = response.status;
       error.alternatives = result.alternatives;
       throw error;
     }
@@ -47,6 +48,7 @@
   }
 
   function message(text, alternatives = []) {
+    delete status.dataset.stockRecovery;
     status.textContent = text;
     for (const row of alternatives || []) {
       const a = document.createElement("a");
@@ -56,9 +58,46 @@
     }
   }
 
+  function showStockRecovery(error) {
+    status.replaceChildren();
+    status.dataset.stockRecovery = "";
+
+    const explanation = document.createElement("p");
+    explanation.textContent = error.message + (page === "cart"
+      ? " Reduce the quantity or remove the unavailable item to continue."
+      : " Update your shopping bag and try again.");
+    status.append(explanation);
+
+    if (page === "checkout") {
+      const bag = document.createElement("a");
+      bag.className = "btn btn-outline btn-sm";
+      bag.href = "cart.html" + (coupon ? "?coupon=" + encodeURIComponent(coupon) : "");
+      bag.textContent = "Review shopping bag";
+      status.append(bag);
+    }
+
+    const products = new Map((error.alternatives || []).map(item => [item.slug, item.name]));
+    if (products.size) {
+      const alternatives = document.createElement("details");
+      const label = document.createElement("summary");
+      label.textContent = "Browse available alternatives";
+      const list = document.createElement("ul");
+      for (const [slug, name] of products) {
+        const item = document.createElement("li");
+        const product = document.createElement("a");
+        product.href = ownLink(slug);
+        product.textContent = name;
+        item.append(product);
+        list.append(item);
+      }
+      alternatives.append(label, list);
+      status.append(alternatives);
+    }
+  }
+
   let user;
   let catalog;
-  let coupon = page === "checkout" ? (params.get("coupon") || "") : "";
+  let coupon = ["cart", "checkout"].includes(page) ? (params.get("coupon") || "") : "";
   const fields = data => Object.fromEntries(data);
   const accountSections = {
     orders: "Orders & Tracking", returns: "Returns & Refunds", addresses: "Saved Addresses",
@@ -204,13 +243,14 @@
     const rows = items.map(row => ({
       productId:row.slug, name:esc(row.name), size:esc(row.size_label), color:esc(row.color_name),
       series:esc(window.SuotStore.getProductById(row.slug)?.series || "Island"),
-      price:Number(row.unit_price), qty:Number(row.quantity), stock:Number(row.stock_qty), variant:Number(row.variant_id)
+      price:Number(row.unit_price), qty:Number(row.quantity), stock:Number(row.is_archived) ? 0 : Number(row.stock_qty), variant:Number(row.variant_id)
     }));
     let summary, validationError;
     if (items.length) {
       try { summary = (await api("checkout",{action:"validate",coupon})).totals; }
       catch(error) { validationError = error; }
     }
+    if (status.hasAttribute("data-stock-recovery")) message("");
     const totals = {subtotal:summary?.subtotal,deliveryFee:summary?.delivery_fee,discount:summary?.discount,total:summary?.total,
       itemCount:rows.reduce((s,i)=>s+i.qty,0),coupon:coupon ? {code:esc(coupon),label:"Applied"} : null};
         if (!rows.length) {
@@ -275,10 +315,11 @@
                           <td class="price" data-label="Unit Price">${window.SuotStore.formatPrice(item.price)}</td>
                           <td data-label="Quantity">
                             <div class="qty-stepper">
-                              <button type="button" data-page-dec="${idx}">−</button>
-                              <input type="number" value="${item.qty}" min="1" max="${Number(item.stock)}" readonly aria-label="Quantity for ${item.name}" />
+                              <button type="button" data-page-dec="${idx}" ${item.qty <= 1 || item.stock <= 0 ? "disabled" : ""}>−</button>
+                              <input type="number" value="${item.qty}" min="1" readonly aria-label="Quantity for ${item.name}" />
                               <button type="button" data-page-inc="${idx}" ${item.qty>=item.stock ? "disabled" : ""}>+</button>
                             </div>
+                            ${item.qty > item.stock ? `<small>${item.stock > 0 ? `Only ${item.stock} available` : "No longer available"}</small>` : ""}
                           </td>
                           <td class="price" style="font-weight:700;" data-label="Line Subtotal">${window.SuotStore.formatPrice(item.price * item.qty)}</td>
                           <td class="cart-remove-cell" data-label="Action">
@@ -360,8 +401,6 @@
               <span class="price price-pulse" id="cart-grand-total">${window.SuotStore.formatPrice(totals.total)}</span>
             </div>
 
-            <div id="cart-stock-guard-slot"></div>
-
             <a href="checkout.html?coupon=${encodeURIComponent(coupon)}" id="cart-checkout-cta" class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-5);">
               Proceed to Structured Checkout →
             </a>
@@ -371,21 +410,24 @@
 
     if (validationError) {
       root.querySelector("#cart-checkout-cta").remove();
-      root.querySelector("#cart-stock-guard-slot").textContent = validationError.message;
       root.querySelectorAll(".summary-row, .shipping-meter").forEach(el=>el.hidden=true);
-      message(validationError.message,validationError.alternatives);
+      if (validationError.status === 409) showStockRecovery(validationError);
+      else message(validationError.message, validationError.alternatives);
     }
     async function change(fn) {
       root.inert = true;
       try { await fn(); await cartPage(); window.dispatchEvent(new Event("suotisla:bag-update")); }
-      catch(error) { message(error.message,error.alternatives); }
+      catch(error) {
+        if (error.status === 409) showStockRecovery(error);
+        else message(error.message,error.alternatives);
+      }
       finally { root.inert = false; }
     }
     const update = (i,quantity) => api("checkout",{action:"set",variant_id:rows[i].variant,quantity});
     root.querySelectorAll("[data-page-inc],[data-page-dec],[data-page-rem]").forEach(btn=>{
       btn.onclick=()=>change(()=>{
         const i=Number(btn.dataset.pageInc ?? btn.dataset.pageDec ?? btn.dataset.pageRem);
-        const quantity=btn.hasAttribute("data-page-rem") ? 0 : Math.max(1,rows[i].qty+(btn.hasAttribute("data-page-inc") ? 1 : -1));
+        const quantity=btn.hasAttribute("data-page-rem") ? 0 : Math.min(rows[i].stock, Math.max(1,rows[i].qty+(btn.hasAttribute("data-page-inc") ? 1 : -1)));
         return update(i,quantity);
       });
     });
@@ -457,7 +499,16 @@
 
   async function checkout() {
     root.dataset.activeCoupon = coupon;
-    const [summary,data] = await Promise.all([api("checkout",{action:"validate",coupon}),api("customer-data")]);
+    let summary, data;
+    try {
+      [summary,data] = await Promise.all([api("checkout",{action:"validate",coupon}),api("customer-data")]);
+    } catch (error) {
+      if (error.status !== 409) throw error;
+      root.replaceChildren();
+      showStockRecovery(error);
+      return;
+    }
+    if (status.hasAttribute("data-stock-recovery")) message("");
     root.innerHTML = '<div class="split-checkout-grid">'+document.getElementById("checkout-layout").innerHTML+
       '<aside class="surface-card" id="checkout-summary-panel"><h2>Checkout Summary</h2><div data-totals>'+checkoutSummary(summary)+'</div>'+
       form("coupon",input("coupon","Promo code",coupon,"")+button("Apply"))+'</aside></div>';
@@ -1729,7 +1780,8 @@
         editorAlert.textContent = error.message;
         editorAlert.scrollIntoView({block:"nearest"});
       } else {
-        message(error.message, error.alternatives);
+        if (page === "checkout" && ["checkout", "coupon"].includes(action) && error.status === 409) showStockRecovery(error);
+        else message(error.message, error.alternatives);
         status.scrollIntoView({block:"nearest"});
       }
     } finally {
@@ -1741,11 +1793,20 @@
     if (event.detail?.source !== "drawer") return;
     try {
       if (page === "cart") await cart();
-      if (page === "checkout" && root.querySelector("[data-totals]")) {
+      if (page === "checkout" && user?.role === "customer") {
+        const summary = root.querySelector("[data-totals]");
+        if (!summary) {
+          if (status.hasAttribute("data-stock-recovery")) { await checkout(); enhanceSelects(); }
+          return;
+        }
         const quote = await api("checkout",{action:"validate",coupon});
-        root.querySelector("[data-totals]").innerHTML = checkoutSummary(quote);
+        summary.innerHTML = checkoutSummary(quote);
+        if (status.hasAttribute("data-stock-recovery")) message("");
       }
-    } catch(error) { message(error.message,error.alternatives); }
+    } catch(error) {
+      if (page === "checkout" && error.status === 409) showStockRecovery(error);
+      else message(error.message,error.alternatives);
+    }
   });
   (async () => {
     try {
