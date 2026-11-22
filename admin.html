@@ -4,18 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin, Staff &amp; Courier Operations Portal — Suot Isla</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=80" />
-  <link rel="stylesheet" href="assets/css/tokens.css?v=80" />
-  <link rel="stylesheet" href="assets/css/base.css?v=80" />
-  <link rel="stylesheet" href="assets/css/storefront.css?v=80" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=80" />
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-stamp.svg?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/tokens.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/base.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/storefront.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=37679de-r1" />
+  <link rel="stylesheet" href="assets/css/live-shop.css?v=37679de-r8" />
 </head>
 <body class="admin-portal">
   <!-- Dedicated Back-Office Operations Top Bar (Distinct from Customer Storefront) -->
   <header class="admin-topbar">
     <div class="admin-topbar-left">
       <a href="admin.html" class="admin-brand">
-        <img src="assets/images/logo-stamp.svg?v=80" alt="Suot Isla Stamp" class="admin-brand-stamp" />
+        <img src="assets/images/logo-stamp.svg?v=37679de-r1" alt="Suot Isla Stamp" class="admin-brand-stamp" />
         <div class="admin-brand-wordmark">
           <div class="admin-brand-title-row">
             <span class="admin-brand-name">SUOT</span>
@@ -25,258 +26,107 @@
           <span class="admin-brand-env">OPERATIONS &amp; DISPATCH CONSOLE</span>
         </div>
       </a>
-      <span class="pill pill-delivery" id="topbar-role-badge">ROLE: ADMIN</span>
+      <span class="pill pill-delivery" id="topbar-role-badge" hidden></span>
     </div>
 
     <div class="admin-topbar-actions">
-      <button type="button" class="admin-top-btn" id="admin-open-emails-btn">
-        <span>Email Outbox</span>
-        <span class="badge-count" id="admin-email-count">3</span>
-      </button>
+      <button type="button" class="admin-top-btn" id="admin-open-emails-btn" hidden><span>Email Outbox</span><span class="badge-count" id="admin-email-count">0</span></button>
       <a href="diagrams.html" class="admin-top-btn">ERD &amp; Use Case</a>
-      <button type="button" class="admin-top-btn" id="admin-signout-btn">Sign Out</button>
+      <button type="button" class="admin-top-btn" id="admin-signout-btn" hidden>Sign Out</button>
       <a href="index.html" class="admin-top-btn admin-top-btn-accent">← Customer Storefront</a>
     </div>
   </header>
 
   <div class="admin-shell">
-    <!-- Left Operations Sidebar with Live RBAC Switcher -->
-    <aside class="admin-sidebar" aria-label="Admin Portal Navigation">
-      <div class="role-switcher-card">
-        <label for="rbac-role-select">Operator Permission</label>
-        <select id="rbac-role-select" class="form-select" style="font-weight:700;">
-          <option value="admin">Admin (Full System Access)</option>
-          <option value="staff">Staff (Catalog &amp; Orders)</option>
-          <option value="courier">Fulfillment / Courier Only</option>
-        </select>
-        <div id="rbac-role-desc" style="font-size:var(--text-xs);color:rgba(244,234,213,0.85);margin-top:6px;">
-          Full analytics, catalog control, returns, and team RBAC.
-        </div>
-      </div>
-
-      <nav class="admin-nav" id="admin-tab-nav">
-        <button type="button" class="admin-tab-btn active" data-admin-tab="analytics" data-roles="admin,staff">
-          <span class="admin-tab-label">
+    <aside class="admin-sidebar" aria-label="Operations navigation" hidden><div class="role-switcher-card"><label for="console-role-label">Operator Permission</label><output id="console-role-label" class="form-input operator-role"></output><div id="console-role-desc"></div></div><nav class="admin-nav"><a class="admin-tab-btn" href="admin.html?tab=report" data-admin-roles="admin,staff" data-console-tab="report" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-3 3"/></svg>
             <span>Store Analytics</span>
-          </span>
-          <span class="pill pill-delivery">Live</span>
-        </button>
-        <button type="button" class="admin-tab-btn" data-admin-tab="inventory" data-roles="admin,staff">
-          <span class="admin-tab-label">
+          </span><span class="pill pill-delivery">Live</span></a>
+<a class="admin-tab-btn" href="admin.html?tab=products" data-admin-roles="admin,staff" data-console-tab="products" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <span>Catalog &amp; Inventory</span>
-          </span>
-          <span class="mono" id="nav-prod-count">16</span>
-        </button>
-        <button type="button" class="admin-tab-btn" data-admin-tab="orders" data-roles="admin,staff,courier">
-          <span class="admin-tab-label">
+          </span><span class="mono" id="nav-prod-count"></span></a>
+<a class="admin-tab-btn" href="admin.html?tab=orders" data-admin-roles="admin,staff,courier" data-console-tab="orders" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
             <span>Order Fulfillment</span>
-          </span>
-          <span class="mono" id="nav-order-count">3</span>
-        </button>
-        <button type="button" class="admin-tab-btn" data-admin-tab="courier" data-roles="admin,staff,courier">
-          <span class="admin-tab-label">
+          </span><span class="mono" id="nav-order-count"></span></a>
+<a class="admin-tab-btn" href="admin.html?tab=dispatch" data-admin-roles="admin,staff,courier" data-console-tab="dispatch" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             <span>Courier Dispatch</span>
-          </span>
-          <span class="pill pill-lagoon">Courier</span>
-        </button>
-        <button type="button" class="admin-tab-btn" data-admin-tab="returns" data-roles="admin,staff">
-          <span class="admin-tab-label">
+          </span><span class="pill pill-lagoon">Courier</span></a>
+<a class="admin-tab-btn" href="admin.html?tab=returns" data-admin-roles="admin,staff" data-console-tab="returns" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
             <span>Returns &amp; Refunds</span>
-          </span>
-          <span class="badge-count" id="nav-return-count">1</span>
-        </button>
-        <button type="button" class="admin-tab-btn" data-admin-tab="users" data-roles="admin">
-          <span class="admin-tab-label">
+          </span><span class="badge-count" id="nav-return-count"></span></a>
+<a class="admin-tab-btn" href="admin.html?tab=team" data-admin-roles="admin" data-console-tab="team" hidden><span class="admin-tab-label">
             <svg class="admin-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Team &amp; Customers</span>
-          </span>
-          <span class="mono">RBAC</span>
-        </button>
-      </nav>
-
-      <div style="margin-top:auto;padding-top:var(--space-4);border-top:1px solid rgba(244,234,213,0.14);font-size:var(--text-xs);color:rgba(244,234,213,0.74);">
-        <strong style="color:var(--color-sand-light);display:block;margin-bottom:4px;">Live Manila Hub Sync</strong>
-        Order, stock, or refund updates dispatch instant customer emails and update live E-Receipts.
+          </span><span class="mono">RBAC</span></a></nav>
+      <div class="operator-sync-note">
+        <strong>Live Manila Hub Sync</strong>
+        Order, stock, and refund updates appear in the operations console and customer order history.
       </div>
     </aside>
+    <main class="admin-main" id="admin-workspace-mount"><p class="live-status" data-shop-status role="status"></p><div data-shop-page="admin" aria-busy="true"><p>Loading…</p></div><template id="operator-login"><section class="admin-gate-card" id="admin-auth-gate"><h2>Operator Sign In</h2><p class="admin-gate-sub">Sign in with an authorized staff or courier account.</p>          <form id="admin-login-form">
+            <div class="form-group">
+              <label class="form-label" for="admin-login-email">Operator Email *</label>
+              <input type="email" id="admin-login-email" name="email" class="form-input" required autocomplete="email" placeholder="admin@suotisla.ph" />
+            </div>
 
-    <!-- Main Operations Workspace -->
-    <main class="admin-main" id="admin-workspace-mount"></main>
+            <div class="form-group">
+              <label class="form-label" for="admin-login-password">Password *</label>
+              <div class="admin-pass-wrap">
+                <input type="password" id="admin-login-password" name="password" class="form-input" required autocomplete="current-password" placeholder="Enter operator password" />
+                <button type="button" class="admin-pass-toggle" id="admin-pass-toggle" aria-label="Show password">Show</button>
+              </div>
+            </div>
+
+            <div id="admin-login-alert" role="alert" style="display:none;margin-bottom:var(--space-4);padding:0.65rem 0.85rem;border-radius:var(--radius-sm);background:rgba(242,125,99,0.14);border:1px solid var(--color-coral);color:#9f3217;font-size:0.8rem;font-weight:600;"></div>
+
+            <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:center;">
+              <button type="submit" class="btn btn-primary" style="flex:1;white-space:nowrap;">
+                Sign In →
+              </button>
+              <a href="index.html" class="btn btn-outline" style="white-space:nowrap;">← Storefront</a>
+            </div>
+          </form></section></template></main>
   </div>
-
-  <!-- Product Create / Update Modal (with Image File Upload & Variant Matrix) -->
-  <div class="modal-backdrop" id="product-crud-modal">
-    <div class="modal-dialog" role="dialog" aria-labelledby="crud-modal-title">
-      <div class="modal-header">
-        <h3 id="crud-modal-title">Create / Update Island Product</h3>
-        <button type="button" class="btn btn-ghost btn-sm" id="close-crud-modal-btn">✕</button>
-      </div>
-
-      <form id="product-crud-form" action="api/admin-products.php" method="POST" enctype="multipart/form-data">
-        <input type="hidden" id="crud-id" name="product_id" />
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="crud-name">Product Name *</label>
-            <input type="text" id="crud-name" name="name" class="form-input" required placeholder="e.g. Siargao Cloud 9 Boardshorts" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="crud-sku">SKU Code *</label>
-            <input type="text" id="crud-sku" name="sku" class="form-input mono" required placeholder="SI-SRG-017" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="crud-series">Island Series *</label>
-            <select id="crud-series" name="series" class="form-select" required>
-              <option value="Siargao">Siargao Series</option>
-              <option value="Boracay">Boracay Series</option>
-              <option value="El Nido">El Nido Series</option>
-              <option value="La Union">La Union Series</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="crud-category">Catalog Category *</label>
-            <select id="crud-category" name="category" class="form-select" required>
-              <option value="Swim & Surf">Swim &amp; Surf</option>
-              <option value="Resort & Loungewear">Resort &amp; Loungewear</option>
-              <option value="Beach Towels & Ponchos">Beach Towels &amp; Ponchos</option>
-              <option value="Island Accessories">Island Accessories</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="crud-price">Price (PHP ₱) *</label>
-            <input type="number" id="crud-price" name="price" class="form-input" min="100" step="10" required value="1590" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="crud-stock">Stock Quantity *</label>
-            <input type="number" id="crud-stock" name="stock_qty" class="form-input" min="0" step="1" required value="15" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="crud-sizes">Size Variants (Comma-separated) *</label>
-            <input type="text" id="crud-sizes" name="sizes" class="form-input" required value="S, M, L, XL" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="crud-colors">Color Variants (Comma-separated) *</label>
-            <input type="text" id="crud-colors" name="colors" class="form-input" required value="Lagoon Teal, Sunset Coral" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="crud-image-file">Product Image File Upload (with Live Preview)</label>
-          <input type="file" id="crud-image-file" name="product_image" accept="image/*" class="form-input" />
-          <span class="form-hint">Supports JPG, PNG, WebP, or SVG upload (`enctype="multipart/form-data"`).</span>
-          <div id="crud-image-preview" style="margin-top:8px;display:none;align-items:center;gap:12px;">
-            <img id="crud-preview-img" src="assets/images/logo-stamp.svg?v=80" alt="Product Upload Preview" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border-strong);" />
-            <span style="font-size:var(--text-xs);color:var(--color-palm);font-weight:700;">✓ Image Ready for Catalog</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="crud-desc">Product Description *</label>
-          <textarea id="crud-desc" name="description" class="form-textarea" rows="2" required placeholder="Breathable coastal gear built for Philippine surf towns..."></textarea>
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;gap:var(--space-2);">
-          <button type="button" class="btn btn-outline" id="cancel-crud-modal-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Product to Catalog</button>
-        </div>
-      </form>
+  <dialog class="modal-dialog admin-modal-sm operator-native-dialog" id="operator-refund-dialog" aria-labelledby="operator-refund-title">
+    <div class="modal-header admin-confirm-header">
+      <div><p class="mono">Stage 2 · Payout Confirmation</p><h3 id="operator-refund-title">Verify Refund Transaction</h3></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('dialog').close()" aria-label="Close refund dialog">✕</button>
     </div>
-  </div>
-
-  <!-- Reusable Confirmation Dialog Modal (Archive / Restore, Product Delete, Order Cancellation, Return Approval) -->
-  <div class="modal-backdrop" id="admin-confirm-modal">
-    <div class="modal-dialog admin-modal-sm" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
-      <div class="modal-header admin-confirm-header">
-        <h3 id="admin-confirm-title" style="margin:0;">Confirm Action</h3>
-        <button type="button" class="btn btn-ghost btn-sm admin-modal-close-btn" id="close-confirm-modal-btn" aria-label="Close confirmation">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
+    <form class="modal-body">
+      <div class="admin-confirm-summary"></div>
+      <div class="operator-fields">
+        <label>Payout Channel <select name="refund_channel" class="form-select" required><option value="GCash">GCash</option><option value="Cash">Cash</option></select></label>
+        <label>Transaction Reference # <input name="refund_reference" class="form-input" minlength="6" maxlength="80" required></label>
       </div>
-      <div id="admin-confirm-body"></div>
+      <label><input type="checkbox" required> I verified that the payout was sent.</label>
+      <p role="alert" class="live-status"></p>
       <div class="admin-confirm-footer">
-        <span class="pill pill-coral" id="admin-confirm-badge">CONFIRM ACTION</span>
+        <button type="button" class="btn btn-outline btn-pill" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-pill">Verify &amp; Record Refund</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="modal-dialog live-admin-confirm" id="operations-confirm" aria-labelledby="operations-confirm-title">
+    <form method="dialog">
+      <div class="modal-header admin-confirm-header">
+        <h2 id="operations-confirm-title">Confirm action</h2>
+      </div>
+      <div class="modal-body"><p id="operations-confirm-message"></p></div>
+      <div class="admin-confirm-footer">
         <div class="admin-confirm-actions">
-          <button type="button" class="btn btn-outline btn-pill" id="admin-confirm-cancel-btn">Cancel</button>
-          <button type="button" class="btn btn-coral btn-pill" id="admin-confirm-proceed-btn">Confirm</button>
+          <button class="btn btn-outline btn-pill" value="cancel" autofocus>Go back</button>
+          <button class="btn btn-coral btn-pill" value="confirm">Confirm</button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Stage 2: Refund Payout Transaction Verification Modal -->
-  <div class="modal-backdrop" id="admin-refund-modal">
-    <div class="modal-dialog admin-modal-sm" role="dialog" aria-modal="true" aria-labelledby="refund-modal-title">
-      <div class="modal-header">
-        <div>
-          <span class="pill pill-lagoon" style="margin-bottom:4px;">STAGE 2 · PAYOUT VERIFICATION</span>
-          <h3 id="refund-modal-title" style="margin:0;">Verify Refund Transaction</h3>
-        </div>
-        <button type="button" class="btn btn-ghost btn-sm" id="close-refund-modal-btn" aria-label="Close refund dialog">✕</button>
-      </div>
-
-      <form id="admin-refund-form" novalidate>
-        <input type="hidden" id="refund-ret-id" />
-        <div id="refund-order-summary" class="admin-confirm-summary" style="margin-bottom:var(--space-4);"></div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="refund-method-sel">Payout Channel *</label>
-            <select id="refund-method-sel" class="form-select" required>
-              <option value="GCash Express Refund">GCash Express Refund</option>
-              <option value="Cash / Courier Payout">Cash / Courier Payout</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="refund-txn-ref">Transaction Reference # *</label>
-            <input
-              type="text"
-              id="refund-txn-ref"
-              class="form-input mono"
-              required
-              minlength="6"
-              placeholder="e.g. GCASH-2026-884120"
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="refund-txn-notes">Finance / Audit Note (Optional)</label>
-          <input type="text" id="refund-txn-notes" class="form-input" placeholder="e.g. Sent to customer GCash number; screenshot archived" />
-        </div>
-
-        <label class="admin-verify-check">
-          <input type="checkbox" id="refund-verify-checkbox" required />
-          <span>I verify the actual refund payment transaction has been completed for the customer.</span>
-        </label>
-
-        <div id="refund-form-alert" role="alert" style="display:none;margin-top:var(--space-3);padding:0.55rem 0.75rem;border-radius:var(--radius-sm);background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.55);color:var(--color-coral-deep);font-size:0.78rem;font-weight:600;"></div>
-
-        <div style="display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-5);">
-          <button type="button" class="btn btn-outline btn-pill" id="cancel-refund-modal-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-pill">Confirm Refund Paid &amp; Email →</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="assets/js/data.js?v=80"></script>
-  <script src="assets/js/store.js?v=80"></script>
-  <script src="assets/js/components.js?v=80"></script>
-  <script src="assets/js/ocean-overdrive.js?v=80"></script>
-  <script src="assets/js/admin.js?v=80"></script>
+    </form>
+  </dialog>
+  <script src="assets/js/data.js?v=37679de-r1"></script>
+  <script src="assets/js/store.js?v=37679de-r1"></script>
+  <script src="assets/js/components.js?v=37679de-r7"></script>
+  <script src="assets/js/live-shop.js?v=37679de-r8"></script>
 </body>
 </html>

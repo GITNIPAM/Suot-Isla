@@ -13,7 +13,7 @@ CREATE TABLE users (
     full_name VARCHAR(120) NOT NULL,
     email VARCHAR(160) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    phone VARCHAR(40) NOT NULL,
+    phone VARCHAR(40) NOT NULL CHECK (phone REGEXP '^09[0-9]{9}$'),
     role ENUM('customer', 'admin', 'staff', 'courier') NOT NULL DEFAULT 'customer',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,7 +24,7 @@ CREATE TABLE user_addresses (
     user_id INT NOT NULL,
     label VARCHAR(60) DEFAULT 'Home',
     recipient_name VARCHAR(120) NOT NULL,
-    phone VARCHAR(40) NOT NULL,
+    phone VARCHAR(40) NOT NULL CHECK (phone REGEXP '^09[0-9]{9}$'),
     street_address VARCHAR(255) NOT NULL,
     barangay VARCHAR(120) NOT NULL,
     city VARCHAR(120) NOT NULL,
@@ -38,7 +38,8 @@ CREATE TABLE user_addresses (
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
-    slug VARCHAR(100) NOT NULL UNIQUE
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- 4. ISLAND_SERIES (4 Official Philippine Island Collections)
@@ -75,6 +76,7 @@ CREATE TABLE product_variants (
     color_name VARCHAR(60) NOT NULL,
     color_hex CHAR(7) DEFAULT '#0E6B74',
     stock_qty INT NOT NULL DEFAULT 15,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
     low_stock_threshold INT NOT NULL DEFAULT 5,
     price_override DECIMAL(10,2) DEFAULT NULL,
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
@@ -85,6 +87,7 @@ CREATE TABLE carts (
     cart_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL,
     session_token VARCHAR(128) NOT NULL UNIQUE,
+    UNIQUE KEY one_cart_per_user (user_id),
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
@@ -94,6 +97,7 @@ CREATE TABLE cart_items (
     cart_id INT NOT NULL,
     variant_id INT NOT NULL,
     quantity INT NOT NULL DEFAULT 1,
+    UNIQUE KEY one_line_per_variant (cart_id, variant_id),
     FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE,
     FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id) ON DELETE CASCADE
 );
@@ -115,6 +119,7 @@ CREATE TABLE orders (
     user_id INT NOT NULL,
     shipping_address_id INT DEFAULT NULL,
     shipping_address_snapshot TEXT NOT NULL,
+    billing_address_snapshot TEXT DEFAULT NULL,
     coupon_id INT DEFAULT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
     delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 150.00,
@@ -144,10 +149,12 @@ CREATE TABLE order_items (
 CREATE TABLE payments (
     payment_id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL UNIQUE,
-    payment_method ENUM('GCash', 'Maya', 'Card', 'COD') NOT NULL,
+    payment_method ENUM('GCash', 'COD') NOT NULL,
     transaction_ref VARCHAR(80) NOT NULL,
     payment_status ENUM('Pending', 'Paid', 'Failed', 'Refunded') NOT NULL DEFAULT 'Pending',
     paid_at DATETIME DEFAULT NULL,
+    payer_mobile_last4 CHAR(4) DEFAULT NULL,
+    verification_source ENUM('Mock', 'Courier', 'Gateway') DEFAULT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
 
@@ -172,9 +179,12 @@ CREATE TABLE return_requests (
     request_type ENUM('Cancellation', 'Return_Refund') NOT NULL,
     reason VARCHAR(180) NOT NULL,
     customer_notes TEXT,
-    status ENUM('Pending Review', 'Approved & Completed', 'Rejected') NOT NULL DEFAULT 'Pending Review',
+    status ENUM('Pending Review', 'Approved & Completed', 'Rejected', 'Approved · Awaiting Refund', 'Approved & Closed (Unpaid COD)', 'Refunded & Completed') NOT NULL DEFAULT 'Pending Review',
     is_restocked BOOLEAN NOT NULL DEFAULT FALSE,
     is_refunded BOOLEAN NOT NULL DEFAULT FALSE,
+    refund_channel ENUM('GCash', 'Cash') DEFAULT NULL,
+    refund_reference VARCHAR(80) DEFAULT NULL,
+    refunded_at DATETIME DEFAULT NULL,
     requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
@@ -188,7 +198,7 @@ CREATE TABLE email_logs (
     email_type VARCHAR(60) NOT NULL,
     subject VARCHAR(255) NOT NULL,
     body_preview TEXT NOT NULL,
-    sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at DATETIME NULL DEFAULT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
@@ -205,3 +215,9 @@ INSERT INTO island_series (name, tagline, slug) VALUES
 ('Boracay', 'Breezy Resortwear & Golden-Hour Linen', 'boracay'),
 ('El Nido', 'Lagoon Swimwear & Island-Hopping Essentials', 'el-nido'),
 ('La Union', 'Laid-Back Coastal Streetwear & Weekend Casuals', 'la-union');
+CREATE TABLE IF NOT EXISTS shop_visits (
+    visit_token CHAR(48) PRIMARY KEY,
+    viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    purchased_at DATETIME DEFAULT NULL,
+    INDEX (viewed_at)
+);

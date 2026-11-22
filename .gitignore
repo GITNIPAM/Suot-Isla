@@ -1,0 +1,6 @@
+/api/config.local.php
+/.env
+/.env.*
+*.log
+*.zip
+*.sql.gz
