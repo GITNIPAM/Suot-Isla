@@ -10,6 +10,46 @@
   <link rel="stylesheet" href="assets/css/storefront.css?v=78a454d-r2" />
   <link rel="stylesheet" href="assets/css/admin.css?v=78a454d-r2" />
   <link rel="stylesheet" href="assets/css/live-shop.css?v=37679de-r8" />
+  <style>
+    [data-operator-orders] .data-table th,
+    [data-operator-orders] .data-table td {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    [data-operator-orders] .data-table td {
+      vertical-align: top;
+    }
+
+    [data-operator-orders] .live-form {
+      display: grid;
+    }
+
+    [data-operator-orders] .live-form label,
+    [data-operator-orders] .live-form .suot-select-wrap {
+      min-width: 0;
+    }
+
+    @media (min-width: 769px) {
+      [data-operator-orders] .data-table {
+        table-layout: fixed;
+      }
+
+      [data-operator-orders] .data-table th,
+      [data-operator-orders] .data-table td {
+        padding-inline: clamp(.35rem, .75vw, .85rem);
+      }
+
+      [data-operator-orders] .data-table th:nth-child(2),
+      [data-operator-orders] .data-table th:nth-child(3) {
+        width: 16%;
+      }
+
+      [data-operator-orders] .data-table th:last-child {
+        width: 23%;
+      }
+    }
+  </style>
 </head>
 <body class="admin-portal">
   <!-- Dedicated Back-Office Operations Top Bar (Distinct from Customer Storefront) -->
