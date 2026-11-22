@@ -7,7 +7,7 @@
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   })[c]);
-  const button = (label, attrs = "") => '<button class="btn btn-primary" ' + attrs + '>' + esc(label) + '</button>';
+  const button = (label, attrs = "", style = "btn-primary") => '<button class="btn ' + style + '" ' + attrs + '>' + esc(label) + '</button>';
   const link = (url, label) => '<a class="btn btn-outline" href="' + esc(url) + '">' + esc(label) + '</a>';
   let fieldId = 0;
   const select = (name, values, label, selected = "") => {
@@ -601,9 +601,9 @@
     } catch { /* The completed order remains available via Your Orders. */ }
   }
 
-  function orderCommand(order, action, label, extra = "") {
+  function orderCommand(order, action, label, extra = "", style) {
     return form("orders", '<input type="hidden" name="action" value="' + action +
-      '"><input type="hidden" name="order_id" value="' + Number(order.order_id) + '">' + extra + button(label));
+      '"><input type="hidden" name="order_id" value="' + Number(order.order_id) + '">' + extra + button(label, "", style));
   }
 
   function orderInfo(order) {
@@ -696,12 +696,15 @@
     return '<span class="pill pill-'+type+'">'+esc(status)+'</span>';
   }
 
-  function operatorItems(order) {
+  function operatorItems(order, compact = false) {
     return (order?.items || []).map(item => {
       const product = window.SuotStore.getProductById(item.slug);
       const photo = product ? window.SuotStore.renderProductVisual(product,item.color_snapshot) : "";
+      const size = esc(item.size_snapshot);
+      const color = esc(item.color_snapshot);
+      const variant = compact ? ' ('+size+', '+color+')' : '<br>'+size+' · '+color;
       return '<div class="operator-item"><span class="operator-item-thumb">'+photo+'</span><span><strong>'+
-        Number(item.quantity)+'× '+esc(item.product_name_snapshot)+'</strong><br>'+esc(item.size_snapshot)+' · '+esc(item.color_snapshot)+'</span></div>';
+        Number(item.quantity)+'× '+esc(item.product_name_snapshot)+'</strong>'+variant+'</span></div>';
     }).join("") || '—';
   }
 
@@ -1347,7 +1350,9 @@
     if (user.role === "admin" && tab === "team") { await operatorTeam(); return; }
     const [{orders}, team] = await Promise.all([api("orders"), staff ? api("admin-team") : {couriers:[]}]);
     const dispatch = tab === "dispatch";
-    const displayedOrders = dispatch ? orders.filter(order => ["Pending","Confirmed","Packed","Out for Delivery","Delivered"].includes(order.order_status)) : orders;
+    const dispatchRank = {Pending:0,Confirmed:1,Packed:2,"Out for Delivery":3,Delivered:4};
+    const displayedOrders = dispatch ? orders.filter(order => Object.hasOwn(dispatchRank, order.order_status))
+      .sort((a,b) => dispatchRank[a.order_status] - dispatchRank[b.order_status]) : orders;
     const orderActions = order => {
       const transitions = [];
       let actions = "";
@@ -1363,30 +1368,39 @@
       if (!staff && order.order_status === "Out for Delivery") transitions.push(["deliver","Delivered"]);
       if (staff && !["Delivered","Cancelled","Returned"].includes(order.order_status)) transitions.push(["cancel","Cancelled"]);
       const cash = !staff && order.order_status === "Out for Delivery" && order.payment_method === "COD" ? '<label><input type="checkbox" name="collected" required> Cash collected</label>' : "";
+      const receipt = '<button type="button" class="btn btn-outline btn-sm btn-pill" data-operator-receipt="'+Number(order.order_id)+'">Receipt</button>';
       if (dispatch) {
         const transitionLabels={advance:order.order_status==="Pending"?"Confirm Order":"Mark Packed",dispatch:"Out for Delivery",deliver:"Confirm Delivered",cancel:"Cancel order"};
         const available = new Set(transitions.map(([action])=>action));
+        let workflow = "";
         for (const action of ["advance","dispatch","deliver","cancel"]) {
-          if (available.has(action)) actions+=orderCommand(order,action,transitionLabels[action],action==="deliver"?cash:"");
-          else if (action!=="cancel") actions+='<button type="button" class="btn btn-outline btn-sm btn-pill" disabled title="Unavailable for this role or status">'+transitionLabels[action]+'</button>';
+          const style = action === "cancel" ? "btn-coral" : action === "deliver" ? "btn-primary" : "btn-outline";
+          if (available.has(action)) workflow+=orderCommand(order,action,transitionLabels[action],action==="deliver"?cash:"",style+" btn-sm btn-pill");
+          else if (action!=="cancel") workflow+='<button type="button" class="btn '+style+' btn-sm btn-pill" disabled title="Unavailable for this role or status">'+transitionLabels[action]+'</button>';
         }
+        return actions+'<div class="operator-dispatch-workflow">'+workflow+receipt+'</div>';
       } else if (transitions.length) {
         actions += form("orders",'<input type="hidden" name="order_id" value="'+Number(order.order_id)+'">'+
           select("action",[["",order.order_status],...transitions],"Update status")+cash+button("Save & Email","data-save-status"),
           'data-status-update');
       }
-      return actions+'<button type="button" class="btn btn-outline btn-sm btn-pill" data-operator-receipt="'+Number(order.order_id)+'">Receipt</button>';
+      return actions+receipt;
     };
     if (dispatch) {
       const badge = document.createElement("span");
       badge.className = "pill pill-delivery";
       badge.textContent = staff ? "Courier Dispatch" : "Active Courier: "+user.name;
       panel.previousElementSibling.append(badge);
-      panel.innerHTML = displayedOrders.map(order =>
-        '<article class="surface-card dispatch-record"><div><div class="operator-dispatch-pills"><strong class="mono">#'+esc(order.order_number)+
-        '</strong>'+operatorPill(order.tracking_number)+operatorPill(order.order_status)+'</div><strong>'+esc(order.customer_name)+
-        '</strong><p>Drop-off: '+esc(order.shipping_address_snapshot)+'</p><div class="operator-dispatch-items">'+operatorItems(order)+
-        '</div></div><div class="operator-dispatch-actions">'+orderActions(order)+'</div></article>').join("") || "<p>No orders to show.</p>";
+      panel.innerHTML = displayedOrders.map(order => {
+        const priority = ["Pending","Confirmed","Out for Delivery"].includes(order.order_status);
+        const statusTone = order.order_status === "Delivered" ? "palm" : "delivery";
+        return '<article class="surface-card dispatch-record'+(priority?' dispatch-record-priority':'')+'"><div class="operator-dispatch-summary">'+
+          '<div class="operator-dispatch-pills"><strong class="mono">#'+esc(order.order_number)+'</strong>'+operatorPill(order.tracking_number)+
+          '<span class="pill pill-'+statusTone+'">'+esc(order.order_status)+'</span></div><strong>'+esc(order.customer_name)+
+          '</strong><p class="operator-dispatch-address">Drop-off: '+esc(order.shipping_address_snapshot)+
+          '</p><div class="operator-dispatch-items">'+operatorItems(order,true)+
+          '</div></div><div class="operator-dispatch-actions">'+orderActions(order)+'</div></article>';
+      }).join("") || "<p>No orders to show.</p>";
     } else {
       if (staff) {
         panel.previousElementSibling.insertAdjacentHTML("beforeend",'<button type="button" class="btn btn-outline btn-pill btn-sm" id="orders-open-email-drawer">Open Email Outbox</button>');

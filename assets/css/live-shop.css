@@ -63,6 +63,9 @@
 .inv-thumb { width: 52px; height: 64px; overflow: hidden; border-radius: var(--radius-sm); }
 .inv-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .dispatch-record { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-block-end: var(--space-4); }
+.dispatch-record-priority { border-color: rgba(14, 107, 116, .45); }
+.operator-dispatch-summary { flex: 1 1 18rem; min-width: 0; overflow-wrap: anywhere; }
+.operator-dispatch-address { font-size: var(--text-sm); color: var(--text-secondary); }
 
 #checkout-payment-modal { position: fixed; inset: 0; margin: auto; border: 0; padding: 0; max-height: 90dvh; overflow: auto; }
 #checkout-payment-modal::backdrop { background: rgb(6 26 29 / .62); backdrop-filter: blur(6px); }
@@ -72,6 +75,9 @@
 .operator-item-thumb { display: block; width: 28px; height: 35px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--color-sand); }
 .operator-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .operator-dispatch-pills, .operator-dispatch-items, .operator-member { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.operator-dispatch-pills { margin-block-end: 4px; }
+.operator-dispatch-pills .pill { min-width: 0; white-space: normal; }
+.operator-dispatch-items { margin-block-start: var(--space-2); }
 .operator-dispatch-items .operator-item { padding: 4px 8px 4px 4px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
 .operator-member .auth-avatar-badge { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--color-sand); font-size: var(--text-xs); }
 
@@ -93,9 +99,11 @@ body.admin-portal #product-crud-modal::backdrop { background: rgba(9,44,48,.56);
 
 .operator-sync-note { margin-top: auto; padding-top: var(--space-4); border-top: 1px solid rgba(244,234,213,.14); color: rgba(244,234,213,.74); font-size: var(--text-xs); }
 .operator-sync-note strong { display: block; margin-bottom: 4px; color: var(--color-sand-light); }
-.operator-dispatch-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
-.operator-dispatch-actions .live-form { margin: 0; }
-.operator-dispatch-actions .live-form:not(:has(select, input[type=checkbox])) > button { font-size: var(--text-xs); border-radius: var(--radius-pill); }
+.operator-dispatch-actions,
+.operator-dispatch-workflow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); min-width: 0; max-width: 100%; }
+.operator-dispatch-actions .live-form { margin: 0; gap: var(--space-2); max-width: 100%; }
+.operator-dispatch-actions .live-field { min-width: min(10rem, 100%); }
+.operator-dispatch-actions .btn { font-size: var(--text-xs); border-radius: var(--radius-pill); }
 
 .operator-product-footer, .operator-product-preview { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
 .operator-product-footer { justify-content: flex-end; }
