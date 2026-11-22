@@ -74,3 +74,9 @@
 .operator-dispatch-pills, .operator-dispatch-items, .operator-member { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .operator-dispatch-items .operator-item { padding: 4px 8px 4px 4px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
 .operator-member .auth-avatar-badge { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--color-sand); font-size: var(--text-xs); }
+
+.operator-role { display: block; font-weight: 700; color: var(--text-primary); background: var(--bg-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#console-role-desc { margin-top: 6px; font-size: var(--text-xs); color: rgba(244,234,213,.85); }
+.admin-tab-btn { text-decoration: none; }
+.admin-nav .mono:empty, .admin-nav .badge-count:empty { display: none; }
+.admin-thumb-sm > img { width: 100%; height: 100%; object-fit: cover; }

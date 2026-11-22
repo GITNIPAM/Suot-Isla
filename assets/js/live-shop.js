@@ -724,6 +724,298 @@
     });
   }
 
+  async function operatorAnalytics() {
+    const [inventoryData, sales, claims] = await Promise.all([api("admin-products"),api("orders"),api("returns")]);
+    const seriesById = new Map(inventoryData.series.map(series=>[Number(series.series_id),series.name]));
+    const archivedCategories = new Set(inventoryData.categories.filter(category=>Number(category.is_archived)).map(category=>Number(category.category_id)));
+    const products = new Map();
+    for (const row of inventoryData.products) {
+      if (!products.has(row.slug)) products.set(row.slug,{
+        name:row.name,sku:row.sku,series:seriesById.get(Number(row.series_id)) || "Island",
+        price:Number(row.base_price),image_url:row.image_url,slug:row.slug,stock:0,restockVariant:null,
+        archived:Number(row.is_archived) || archivedCategories.has(Number(row.category_id))
+      });
+      if (!row.variant_id || Number(row.variant_archived)) continue;
+      const product = products.get(row.slug);
+      const quantity = Number(row.stock_qty);
+      product.stock += quantity;
+      if (product.restockVariant === null || quantity < product.variantStock) {
+        product.restockVariant = Number(row.variant_id);
+        product.variantStock = quantity;
+        product.variantSku = row.variant_sku;
+      }
+    }
+
+    const orders = sales.orders;
+    const activeOrders = orders.filter(order=>!["Cancelled","Returned"].includes(order.order_status) &&
+      !["Refunded","Refund Pending"].includes(order.payment_status));
+    const activeIds = new Set(activeOrders.map(order=>order.order_id));
+    const excludedOrders = orders.filter(order=>!activeIds.has(order.order_id));
+    const orderTotal = rows => rows.reduce((sum,order)=>sum+Math.round(Number(order.total_amount)*100),0)/100;
+    const liveRevenue = orderTotal(activeOrders);
+    const excludedTotal = orderTotal(excludedOrders);
+    const collectedRevenue = orderTotal(activeOrders.filter(order=>order.payment_status==="Paid"));
+    const codPendingRevenue = orderTotal(activeOrders.filter(order=>order.payment_method==="COD" && order.payment_status==="Pending"));
+    const pendingPackOrders = activeOrders.filter(order=>["Pending","Confirmed"].includes(order.order_status));
+    const inTransitOrders = activeOrders.filter(order=>["Packed","Out for Delivery"].includes(order.order_status));
+    const actionReturns = claims.returns.filter(row=>["Pending Review","Approved · Awaiting Refund"].includes(row.status));
+    const available = [...products.values()].filter(product=>!product.archived && product.restockVariant!==null);
+    const lowStockItems = available.filter(product=>product.stock<=5).sort((a,b)=>a.stock-b.stock)
+      .map(product=>({...product,sku:product.variantSku,stock:product.variantStock}));
+
+    const seriesStats = Object.fromEntries(inventoryData.series.map(series=>[series.name,{amt:0,units:0,orders:new Set()}]));
+    const productStats = new Map();
+    for (const order of activeOrders) {
+      const subtotal = Number(order.subtotal);
+      const factor = subtotal>0 ? Math.max(0, subtotal-Number(order.discount_amount))/subtotal : 1;
+      for (const item of order.items || []) {
+        const product = products.get(item.slug);
+        if (!product) continue;
+        const qty = Number(item.quantity);
+        const revenue = Math.round(Number(item.unit_price)*qty*factor*100)/100;
+        const series = seriesStats[product.series];
+        if (series) {
+          series.amt += revenue;
+          series.units += qty;
+          series.orders.add(order.order_id);
+        }
+        if (!productStats.has(item.slug)) productStats.set(item.slug,{units:0,revenue:0});
+        const stat=productStats.get(item.slug);
+        stat.units += qty;
+        stat.revenue += revenue;
+      }
+    }
+    const maxSeriesAmt = Math.max(1,...Object.values(seriesStats).map(stat=>stat.amt));
+    const totalUrgentActions = pendingPackOrders.length+lowStockItems.length+actionReturns.length;
+    const topProducts = available.map(product=>({
+      product,liveUnits:productStats.get(product.slug)?.units || 0,liveRev:productStats.get(product.slug)?.revenue || 0
+    })).sort((a,b)=>b.liveRev-a.liveRev || b.liveUnits-a.liveUnits).slice(0,5);
+    const getProductThumb = product => image(product);
+    document.getElementById("nav-prod-count").textContent = available.length;
+    document.getElementById("nav-order-count").textContent = pendingPackOrders.length;
+    document.getElementById("nav-return-count").textContent = actionReturns.length;
+    root.innerHTML = `
+      <div class="admin-header-bar">
+        <div>
+          <h1>Store Analytics &amp; Operations Command</h1>
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0;">
+            Computed directly from active non-cancelled, non-refunded orders across all 4 Island Series.
+          </p>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-pill btn-sm" id="analytics-open-emails">Email Outbox</button>
+          <button type="button" class="btn btn-primary btn-pill btn-sm" id="analytics-go-inventory">+ Add Product</button>
+        </div>
+      </div>
+
+      <!-- High-Signal Action Required Strip -->
+      <div class="ops-attention-strip" role="region" aria-label="Urgent Operational Actions">
+        <div class="ops-attention-head">
+          <span class="ops-pulse-dot ${totalUrgentActions ? "" : "is-clear"}" aria-hidden="true"></span>
+          <div>
+            <div class="ops-attention-title">
+              ${totalUrgentActions ? `${totalUrgentActions} Operational Items Need Attention` : "All Manila Hub Queues Clear"}
+            </div>
+            <div class="ops-attention-sub">
+              ${totalUrgentActions
+                ? "Click any priority pill to jump directly into the filtered action queue."
+                : "No overdue packing, pending refunds, or critical SKU shortages right now."}
+            </div>
+          </div>
+        </div>
+
+        <div class="ops-attention-pills">
+          <button type="button" class="ops-action-chip ${pendingPackOrders.length ? "is-urgent" : ""}" id="attn-orders-btn">
+            <span>Awaiting Pack &amp; Dispatch</span>
+            <span class="ops-action-count">${pendingPackOrders.length}</span>
+          </button>
+          <button type="button" class="ops-action-chip ${lowStockItems.length ? "is-urgent" : ""}" id="attn-stock-btn">
+            <span>Critical Stock (&le;5)</span>
+            <span class="ops-action-count">${lowStockItems.length}</span>
+          </button>
+          <button type="button" class="ops-action-chip ${actionReturns.length ? "is-urgent" : ""}" id="attn-returns-btn">
+            <span>Returns &amp; Refunds Due</span>
+            <span class="ops-action-count">${actionReturns.length}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Row -->
+      <div class="ops-summary-grid">
+        <button type="button" class="ops-tile is-interactive is-active-lagoon" id="kpi-rev-btn">
+          <div class="ops-tile-top">
+            <span class="ops-tile-title">Live Net Order Revenue</span>
+            <span class="pill pill-delivery">${activeOrders.length} Active</span>
+          </div>
+          <div class="ops-tile-value" id="analytics-live-rev">${window.SuotStore.formatPrice(liveRevenue)}</div>
+          <div class="ops-tile-foot">
+            Paid: ${window.SuotStore.formatPrice(collectedRevenue)} · COD pending: ${window.SuotStore.formatPrice(codPendingRevenue)}
+            ${excludedOrders.length ? `<br />Excl. ${excludedOrders.length} cancelled/refunded (${window.SuotStore.formatPrice(excludedTotal)})` : ""}
+          </div>
+        </button>
+
+        <button type="button" class="ops-tile is-interactive ${pendingPackOrders.length ? "is-urgent-coral" : "is-active-lagoon"}" id="kpi-pack-btn">
+          <div class="ops-tile-top">
+            <span class="ops-tile-title">Orders Awaiting Pack</span>
+            <span class="pill ${pendingPackOrders.length ? "pill-coral" : "pill-delivery"}">${pendingPackOrders.length ? "Needs Pack" : "Clear"}</span>
+          </div>
+          <div class="ops-tile-value" style="${pendingPackOrders.length ? "color:var(--color-coral-deep);" : ""}">${pendingPackOrders.length}</div>
+          <div class="ops-tile-foot">${inTransitOrders.length} in transit · Click to process queue →</div>
+        </button>
+
+        <button type="button" class="ops-tile is-interactive ${lowStockItems.length ? "is-urgent-coral" : ""}" id="kpi-stock-btn">
+          <div class="ops-tile-top">
+            <span class="ops-tile-title">Low-Stock Alerts (&le; 5 units)</span>
+            <span class="pill ${lowStockItems.length ? "pill-coral" : "pill-delivery"}">${lowStockItems.length ? "Urgent" : "Healthy"}</span>
+          </div>
+          <div class="ops-tile-value" style="${lowStockItems.length ? "color:var(--color-coral-deep);" : ""}">${lowStockItems.length} ${lowStockItems.length === 1 ? "SKU" : "SKUs"}</div>
+          <div class="ops-tile-foot">Click to open Low-Stock filter in Catalog →</div>
+        </button>
+
+        <button type="button" class="ops-tile is-interactive ${actionReturns.length ? "is-urgent-coral" : ""}" id="kpi-ret-btn">
+          <div class="ops-tile-top">
+            <span class="ops-tile-title">Returns &amp; Payouts Queue</span>
+            <span class="pill ${actionReturns.length ? "pill-coral" : "pill-sand"}">${actionReturns.length ? "Review" : "Clear"}</span>
+          </div>
+          <div class="ops-tile-value">${actionReturns.length}</div>
+          <div class="ops-tile-foot">Stage 1 review &amp; Stage 2 payout confirmation →</div>
+        </button>
+      </div>
+
+      <div class="split-checkout-grid" style="padding-block:0;">
+        <!-- Island Series Breakdown + Top Sellers computed strictly from live orders -->
+        <section class="surface-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:var(--space-4);">
+            <h2 style="margin:0;font-size:var(--text-lg);">Revenue by Philippine Island Series</h2>
+            <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">Live item sales · Excl. cancelled/refunded</span>
+          </div>
+
+          <div class="series-bar-list" style="margin-bottom:var(--space-6);">
+            ${Object.entries(seriesStats)
+              .map(([series, stat]) => {
+                const pct = stat.amt > 0 ? Math.max(4, Math.min(100, Math.round((stat.amt / maxSeriesAmt) * 100))) : 0;
+                return `
+                  <div class="series-bar-item" data-series-stat="${esc(series)}">
+                    <div class="series-bar-top">
+                      <button type="button" class="card-size-pill" data-jump-series="${esc(series)}" style="font-weight:700;">
+                        ${esc(series)} · ${stat.orders.size} ord · ${stat.units} units →
+                      </button>
+                      <span class="price" data-series-rev="${esc(series)}">${window.SuotStore.formatPrice(stat.amt)}</span>
+                    </div>
+                    <div class="series-bar-track">
+                      <div class="series-bar-fill" style="width:${pct}%;"></div>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+
+          <h3 style="font-size:var(--text-base);margin-bottom:var(--space-3);">Top 5 Pieces by Live Order Revenue</h3>
+          <div class="data-table-wrap" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Series</th>
+                  <th>Price</th>
+                  <th>Active Orders</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topProducts
+                  .map(
+                    ({ product: p, liveUnits, liveRev }) => `
+                    <tr>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:0.65rem;">
+                          <div class="admin-thumb-sm">${getProductThumb(p)}</div>
+                          <div style="min-width:0;">
+                            <strong style="display:block;font-size:0.84rem;">${esc(p.name)}</strong>
+                            <span class="mono" style="font-size:0.7rem;color:var(--text-muted);">${esc(p.sku)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span class="pill pill-lagoon">${esc(p.series)}</span></td>
+                      <td class="price">${window.SuotStore.formatPrice(p.price)}</td>
+                      <td class="tabular">
+                        <strong>${liveUnits} unit${liveUnits === 1 ? "" : "s"}</strong>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">${window.SuotStore.formatPrice(liveRev)}</div>
+                      </td>
+                    </tr>
+                  `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Highlighted Low-Stock Alert Queue with Product Thumbnails -->
+        <aside class="surface-card" style="${lowStockItems.length ? "border-color:rgba(242,125,99,0.52);" : ""}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+            <h2 style="margin:0;font-size:var(--text-lg);">Low-Stock Priority Queue</h2>
+            <span class="pill ${lowStockItems.length ? "pill-coral" : "pill-delivery"}">
+              ${lowStockItems.length} ${lowStockItems.length === 1 ? "Critical SKU" : "Critical SKUs"}
+            </span>
+          </div>
+          <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-4);">
+            Products with &le; 5 total units appear here. <strong>+10 Restock</strong> adds stock to the variant shown.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+            ${
+              lowStockItems.length
+                ? lowStockItems
+                    .map(
+                      (item) => `
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:0.65rem 0.8rem;background:var(--color-coral-surface);border:1px solid rgba(242,125,99,0.35);border-radius:var(--radius-md);">
+                        <div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">
+                          <div class="admin-thumb-sm">${getProductThumb(item)}</div>
+                          <div style="min-width:0;">
+                            <strong style="font-size:0.84rem;color:var(--text-primary);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.name)}</strong>
+                            <div class="mono" style="font-size:0.72rem;color:var(--color-coral-deep);font-weight:700;">${esc(item.sku)} · Only ${item.stock} left</div>
+                          </div>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm btn-pill" data-quick-restock="${item.restockVariant}" style="flex-shrink:0;">
+                          +10 Restock
+                        </button>
+                      </div>
+                    `
+                    )
+                    .join("")
+                : `<div style="padding:var(--space-4);border-radius:var(--radius-md);background:rgba(168,213,186,0.18);font-size:var(--text-sm);color:var(--color-palm);font-weight:600;">✓ All active SKUs are stocked above the critical threshold.</div>`
+            }
+          </div>
+        </aside>
+      </div>
+    `;
+
+    root.querySelector("#analytics-open-emails").onclick = () => window.SuotUI.openDrawer("email");
+    root.querySelector("#analytics-go-inventory").onclick = () => location.assign("admin.html?tab=products&new=1");
+    const links = {
+      "attn-orders-btn":"orders&filter=needs-action","attn-stock-btn":"products&filter=low","attn-returns-btn":"returns",
+      "kpi-rev-btn":"orders","kpi-pack-btn":"orders&filter=needs-action","kpi-stock-btn":"products&filter=low","kpi-ret-btn":"returns"
+    };
+    for (const [id,path] of Object.entries(links)) root.querySelector("#"+id).onclick = () => location.assign("admin.html?tab="+path);
+    root.querySelectorAll("[data-jump-series]").forEach(button => {
+      button.onclick=()=>location.assign("admin.html?tab=products&series="+encodeURIComponent(button.dataset.jumpSeries));
+    });
+    root.querySelectorAll("[data-quick-restock]").forEach(button => {
+      button.onclick=async()=>{
+        button.disabled=true;
+        try {
+          await api("admin-products",{action:"restock",variant_id:Number(button.dataset.quickRestock),quantity:10});
+          await operatorAnalytics();
+          message("Added 10 units to inventory.");
+        } catch(error) {
+          button.disabled=false;
+          message(error.message);
+        }
+      };
+    });
+  }
+
   async function operations() {
     if (!["staff","admin","courier"].includes(user?.role)) {
       root.innerHTML=document.getElementById("operator-login").innerHTML;
@@ -756,13 +1048,23 @@
     });
     document.querySelector(".admin-sidebar").hidden = false;
     const role = document.getElementById("topbar-role-badge");
-    document.getElementById("console-role-label").textContent = user.role;
-    role.textContent = user.role.toUpperCase();
+    const roleDetails = {
+      admin:["Admin (Full System Access)","Full analytics, catalog control, returns, and team access."],
+      staff:["Staff (Catalog & Orders)","Catalog, fulfillment, courier assignment, and returns."],
+      courier:["Fulfillment / Courier Only","Track assigned deliveries and confirm their status."]
+    };
+    const [roleTitle,roleDescription] = roleDetails[user.role];
+    document.getElementById("console-role-label").textContent = roleTitle;
+    document.getElementById("console-role-desc").textContent = roleDescription+" Signed in: "+user.name+".";
+    role.textContent = "ROLE: "+user.role.toUpperCase();
     role.hidden = false;
     bindSignOut("admin-signout-btn");
     const outbox = document.getElementById("admin-open-emails-btn");
     outbox.hidden = !staff;
     outbox.onclick = staff ? () => window.SuotUI.openDrawer("email") : null;
+    if (staff) api("operator-outbox").then(({emails})=>{
+      document.getElementById("admin-email-count").textContent=emails.length;
+    }).catch(()=>{});
 
     const tabTitles={orders:"Order Fulfillment & Status Pipeline",dispatch:"Courier Dispatch Board",report:"Store Analytics & Operations Command",
       products:"Catalog & Inventory Control",team:"Team & Customer Access Control",returns:"Refund & Return Processing (2-Stage Verification)"};
@@ -777,30 +1079,7 @@
     root.innerHTML = '<div class="admin-header-bar"><div>'+heading(tabTitles[tab])+
       '<p class="operator-description">'+descriptions[tab]+'</p></div></div><div data-workspace></div>';
     const panel = root.querySelector("[data-workspace]");
-    if (staff && tab === "report") {
-      const [report,sales,claims] = await Promise.all([api("analytics"),api("orders"),api("returns")]);
-      const queue=sales.orders.filter(row=>["Pending","Confirmed"].includes(row.order_status)).length;
-      const due=claims.returns.filter(row=>["Pending Review","Approved · Awaiting Refund"].includes(row.status)).length;
-      const tiles=[["Collected Revenue",money(report.totals.revenue),"orders"],["Awaiting Pack & Dispatch",queue,"orders"],
-        ["Low-Stock Alerts",report.low_stock.length,"products"],["Returns & Payouts Queue",due,"returns"]];
-      panel.previousElementSibling.insertAdjacentHTML("beforeend",'<a href="admin.html?tab=products&amp;new=1" class="btn btn-primary btn-pill btn-sm">+ Add Product</a>');
-      const highest=Math.max(1,...report.series.map(row=>Number(row.merchandise_revenue)));
-      panel.innerHTML='<div class="ops-attention-strip"><div class="ops-attention-head"><span class="ops-pulse-dot"></span>'+
-        '<strong class="ops-attention-title">'+(queue+due+report.low_stock.length)+' operational items need attention</strong></div>'+
-        '<div class="ops-attention-pills"><a class="ops-action-chip" href="admin.html?tab=orders&amp;filter=needs-action">Awaiting Pack &amp; Dispatch <span class="ops-action-count">'+queue+'</span></a>'+
-        '<a class="ops-action-chip" href="admin.html?tab=products&amp;filter=low">Critical Stock <span class="ops-action-count">'+report.low_stock.length+'</span></a>'+
-        '<a class="ops-action-chip" href="admin.html?tab=returns">Returns &amp; Refunds Due <span class="ops-action-count">'+due+'</span></a></div></div>'+
-        '<div class="ops-summary-grid">'+tiles.map(([title,value,to])=>'<a class="ops-tile is-interactive" href="admin.html?tab='+to+'">'+
-          '<div class="ops-tile-top"><span class="ops-tile-title">'+esc(title)+'</span></div><div class="ops-tile-value">'+esc(value)+'</div></a>').join("")+'</div>'+
-        '<div class="split-checkout-grid"><section class="surface-card"><h2>Revenue by Philippine Island Series</h2>'+
-        '<div class="series-bar-list">'+report.series.map(row=>'<div class="series-bar-item"><div class="series-bar-top"><strong>'+esc(row.name)+'</strong>'+
-          '<span class="price">'+money(row.merchandise_revenue)+'</span></div><div class="series-bar-track"><div class="series-bar-fill" style="width:'+
-          Math.round(Number(row.merchandise_revenue)*100/highest)+'%"></div></div></div>').join("")+'</div>'+
-        '<h3>Top 5 best-selling products</h3>'+table(["Product","Units sold"],report.top_products.map(r=>[esc(r.name),Number(r.units_sold)]))+'</section>'+
-        '<aside class="surface-card"><h2>Low-stock alerts</h2>'+table(["Product","Variant","Stock"],report.low_stock.map(r=>[esc(r.name),esc(r.variant_sku),Number(r.stock_qty)]))+
-        '<p>Collected COD '+money(report.totals.collected_cod)+' · Pending COD '+money(report.totals.pending_cod)+'</p><p>'+esc(report.funnel.summary)+'</p></aside></div>';
-      return;
-    }
+    if (staff && tab === "report") { await operatorAnalytics(); return; }
     if (staff && tab === "returns") {
       const [claims,sales] = await Promise.all([api("returns"),api("orders")]);
       const orderById = new Map(sales.orders.map(order => [Number(order.order_id),order]));
@@ -972,7 +1251,8 @@
     }
     add.onclick = () => editor(null);
     dialog.querySelector(".modal-header button").onclick = () => dialog.close();
-    let filter = params.get("filter")==="low" ? "low" : "all";
+    const requestedSeries = series.find(([,name])=>name===params.get("series"));
+    let filter = params.get("filter")==="low" ? "low" : String(requestedSeries?.[0] ?? "all");
     const search = panel.querySelector("#admin-inv-search");
     function drawInventory() {
       const q = search.value.trim().toLowerCase();
